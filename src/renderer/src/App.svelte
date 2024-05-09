@@ -1,9 +1,23 @@
 <script lang="ts">
+  import 'bulma/css/bulma.css'
+
+  import BooksTable, { type Book } from './components/BooksTable.svelte'
   import Versions from './components/Versions.svelte'
   import electronLogo from './assets/electron.svg'
 
   const ipcHandle = (): void => window.electron.ipcRenderer.send('ping')
+  const books: Book[] = [
+    {
+      isbn: 12345,
+      title: 'Hunting Prince Dracula',
+      genre: 'Young Adult',
+      author: 'Kerri Maniscalco',
+      is_read: false
+    }
+  ]
 </script>
+
+<BooksTable {books} />
 
 <img alt="logo" class="logo" src={electronLogo} />
 <div class="creator">Powered by electron-vite</div>
