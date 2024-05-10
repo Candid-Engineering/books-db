@@ -8,8 +8,10 @@ const app = new App({
 })
 
 onScan.attachTo(document)
-document.addEventListener('scan', function (sScancode: string, iQuantity: string) {
-  alert(iQuantity + 'x ' + sScancode)
+document.addEventListener('scan', function (event) {
+  const sScanCode = event.detail.scanCode
+  const iQuantity = event.detail.qty
+  alert(iQuantity + 'x ' + sScanCode)
 })
 
 export default app
