@@ -1,12 +1,14 @@
 <script lang="ts">
   import 'bulma/css/bulma.css'
+  import onScan from 'onscan.js'
 
   import BooksTable, { type Book } from './components/BooksTable.svelte'
   import Versions from './components/Versions.svelte'
   import electronLogo from './assets/electron.svg'
+  import { onDestroy } from 'svelte'
 
   const ipcHandle = (): void => window.electron.ipcRenderer.send('ping')
-  const books: Book[] = [
+  let books: Book[] = [
     {
       isbn: 12345,
       title: 'Hunting Prince Dracula',
@@ -15,8 +17,23 @@
       is_read: false
     }
   ]
+
+  const addBook = (isbn: number): void => {
+    books = [...books, { isbn: isbn }]
+  }
+
+  const handleScan = (event: { detail: { scanCode: string } }): void => {
+    const isbn = parseInt(event.detail.scanCode, 10)
+    addBook(isbn)
+  }
+
+  onScan.attachTo(document)
+  onDestroy(() => {
+    onScan.detachFrom(document)
+  })
 </script>
 
+<svelte:document on:scan={handleScan} />
 <BooksTable {books} />
 
 <img alt="logo" class="logo" src={electronLogo} />

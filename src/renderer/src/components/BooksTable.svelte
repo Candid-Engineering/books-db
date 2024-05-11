@@ -1,10 +1,10 @@
 <script context="module" lang="ts">
   export type Book = {
     isbn: number
-    title: string
-    author: string
+    title?: string
+    author?: string
     genre?: string
-    is_read: boolean
+    is_read?: boolean
   }
 </script>
 
