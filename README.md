@@ -1,6 +1,6 @@
 # books-db
 
-An Electron application with Svelte and TypeScript
+This is currently a learning app for @rkofman to practice svelte + electron.js. The goal is to have a simple application for tracking one's physical book library. It is implemented as an Electron application with Svelte and TypeScript.
 
 ## Recommended IDE Setup
 
