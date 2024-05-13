@@ -6,6 +6,4 @@ const app = new App({
   target: document.getElementById('app') as HTMLElement
 })
 
-onScan.attachTo(document)
-
 export default app

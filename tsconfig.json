@@ -11,6 +11,7 @@
     "useDefineForClassFields": true,
     "strict": true,
     "allowJs": true,
+    "moduleResolution": "NodeNext",
     "checkJs": true,
     "lib": [
       "ESNext",

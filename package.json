@@ -5,7 +5,7 @@
   "main": "./out/main/index.js",
   "author": "Candid Engineering",
   "homepage": "https://candid-eng.com",
-  "//type:module": "type: module doesn't work with sandboxing, so not using it.",
+  "//type:module": "type: module doesn't seem to work..?",
   "scripts": {
     "format": "prettier --plugin prettier-plugin-svelte --write .",
     "lint": "eslint . --ext .js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix",
@@ -14,6 +14,7 @@
     "typecheck": "npm run typecheck:node && npm run svelte-check",
     "start": "electron-vite preview",
     "dev": "electron-vite dev",
+    "test": "vitest",
     "build": "npm run typecheck && electron-vite build",
     "postinstall": "electron-builder install-app-deps",
     "build:unpack": "npm run build && electron-builder --dir",
@@ -24,6 +25,7 @@
   "dependencies": {
     "@electron-toolkit/preload": "^3.0.0",
     "@electron-toolkit/utils": "^3.0.0",
+    "@library-pals/isbn": "github:Candid-Engineering/node-isbn",
     "bulma": "^0.9.4",
     "electron-updater": "^6.1.7",
     "onscan.js": "^1.5.2",
@@ -35,6 +37,8 @@
     "@electron-toolkit/tsconfig": "^1.0.1",
     "@sveltejs/vite-plugin-svelte": "^3.0.1",
     "@types/node": "^18.19.9",
+    "@types/node-isbn": "^1.6.4",
+    "@types/onscan.js": "^1.5.6",
     "electron": "^28.2.0",
     "electron-builder": "^24.9.1",
     "electron-vite": "^2.0.0",
@@ -46,6 +50,7 @@
     "svelte-check": "^3.6.3",
     "tslib": "^2.6.2",
     "typescript": "^5.3.3",
-    "vite": "^5.0.12"
+    "vite": "^5.0.12",
+    "vitest": "^1.6.0"
   }
 }

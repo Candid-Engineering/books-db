@@ -5,7 +5,7 @@
   import BooksTable, { type Book } from './components/BooksTable.svelte'
   import Versions from './components/Versions.svelte'
   import electronLogo from './assets/electron.svg'
-  import { onDestroy } from 'svelte'
+  import type { Action } from 'svelte/action'
 
   const ipcHandle = (): void => window.electron.ipcRenderer.send('ping')
   let books: Book[] = [
@@ -22,18 +22,38 @@
     books = [...books, { isbn: isbn }]
   }
 
-  const handleScan = (event: { detail: { scanCode: string } }): void => {
+  type scanEvent = {
+    detail: {
+      scanCode: string
+      qty: number
+    }
+  }
+  const handleScan = (event: scanEvent): void => {
     const isbn = parseInt(event.detail.scanCode, 10)
     addBook(isbn)
   }
 
-  onScan.attachTo(document)
-  onDestroy(() => {
-    onScan.detachFrom(document)
-  })
+  type ScanAttributes = {
+    'on:scan': (event: scanEvent) => void
+  }
+
+  const listenForBarcodes: Action<HTMLElement, undefined, ScanAttributes> = (node: HTMLElement) => {
+    onScan.attachTo(node)
+    return {
+      destroy: (): void => {
+        onScan.detachFrom(node)
+      }
+    }
+  }
+
+  // onScan.attachTo(document)
+  // onDestroy(() => {
+  //   onScan.detachFrom(document)
+  // })
 </script>
 
-<svelte:document on:scan={handleScan} />
+<!-- <svelte:document on:scan={handleScan} /> -->
+<svelte:document on:scan={handleScan} use:listenForBarcodes />
 <BooksTable {books} />
 
 <img alt="logo" class="logo" src={electronLogo} />
