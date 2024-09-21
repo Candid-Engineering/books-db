@@ -28,6 +28,8 @@
     "bulma": "^0.9.4",
     "electron-updater": "^6.1.7",
     "onscan.js": "^1.5.2",
+    "open-library-api": "^0.1.2",
+    "openapi-fetch": "^0.12.2",
     "svelma": "^0.4.5"
   },
   "devDependencies": {
