@@ -1,21 +1,8 @@
 import type { paths, components } from 'open-library-api'
+import { type Book } from './types/book.js'
 import createClient from 'openapi-fetch'
 
 const client = createClient<paths>({ baseUrl: 'https://openlibrary.org/' })
-
-export type Book = {
-  isbn10?: string
-  isbn13?: string
-  title: string
-  subtitle?: string
-  authors: string[]
-  tags: string[]
-  series?: string
-  pageCount?: number
-  publicationDate?: string
-  copyrightDate?: string
-  coverImages?: { small?: string; medium?: string; large?: string }
-}
 
 export async function getByISBN(isbn: string): Promise<Book> {
   const { data, error } = await client.GET('/isbn/{isbn}.json', {

@@ -1,14 +1,5 @@
-<script context="module" lang="ts">
-  export type Book = {
-    isbn: number
-    title?: string
-    author?: string
-    genre?: string
-    is_read?: boolean
-  }
-</script>
-
 <script lang="ts">
+  import { type Book } from '../../../lib/types/book.js'
   export let books: Book[] = []
 </script>
 
@@ -18,18 +9,20 @@
       <th>ISBN</th>
       <th>Title</th>
       <th>Author</th>
-      <th>Genre</th>
+      <th>Tags</th>
       <th>Read?</th>
     </tr>
   </thead>
   <tbody>
     {#each books as book}
       <tr>
-        <td>{book.isbn}</td>
-        <td>{book.title}</td>
-        <td>{book.author}</td>
-        <td>{book.genre}</td>
-        <td>{book.is_read}</td>
+        <td>{book.isbn10 ?? book.isbn13}</td>
+        <td>{book.title || ''} </td>
+        <td>{book.authors?.join(', ') || ''}</td>
+        <td>{book.tags?.join(', ') || ''}</td>
+        <td>
+          <input type="checkbox" checked={book.hasRead} />
+        </td>
       </tr>
     {:else}
       <tr>
