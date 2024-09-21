@@ -25,7 +25,6 @@
   "dependencies": {
     "@electron-toolkit/preload": "^3.0.0",
     "@electron-toolkit/utils": "^3.0.0",
-    "@library-pals/isbn": "github:Candid-Engineering/node-isbn",
     "bulma": "^0.9.4",
     "electron-updater": "^6.1.7",
     "onscan.js": "^1.5.2",
