@@ -1,6 +1,5 @@
 <script lang="ts">
-  import { type Book } from '../../../lib/types/book.js'
-  export let books: Book[] = []
+  import { books } from '../stores/Books.js'
 </script>
 
 <table class="table is-fullwidth">
@@ -14,7 +13,7 @@
     </tr>
   </thead>
   <tbody>
-    {#each books as book}
+    {#each $books as book}
       <tr>
         <td>{book.isbn10 ?? book.isbn13}</td>
         <td>{book.title || ''} </td>

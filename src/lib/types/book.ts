@@ -4,7 +4,7 @@ export type Book = {
   title: string
   subtitle?: string
   authors: string[]
-  tags: string[]
+  tags?: string[]
   series?: string
   pageCount?: number
   publicationDate?: string

@@ -8,21 +8,22 @@
   import electronLogo from './assets/electron.svg'
   import { getByISBN } from '../../lib/openLibrary.js'
   import type { Action } from 'svelte/action'
+  import { books } from './stores/Books.js'
 
   // @ts-ignore (long-term, use a d.ts fix for window.electron typing)
   const ipcHandle = (): void => window.electron.ipcRenderer.send('ping')
-  let books: Book[] = [
-    {
-      isbn10: '1234567890',
-      title: 'Hunting Prince Dracula',
-      tags: ['Young Adult', 'Fiction'],
-      authors: ['Kerri Maniscalco'],
-      hasRead: true
-    }
-  ]
+
+  const initialBook: Book = {
+    isbn10: '1234567890',
+    title: 'Hunting Prince Dracula',
+    tags: ['Young Adult', 'Fiction'],
+    authors: ['Kerri Maniscalco'],
+    hasRead: true
+  }
+  books.add(initialBook)
 
   const addBook = async (isbn: string): Promise<void> => {
-    books = [...books, await getByISBN(isbn)]
+    books.add(await getByISBN(isbn))
   }
 
   type scanEvent = {
@@ -50,7 +51,7 @@
 </script>
 
 <svelte:document on:scan={handleScan} use:listenForBarcodes />
-<BooksTable {books} />
+<BooksTable />
 
 <img alt="logo" class="logo" src={electronLogo} />
 <div class="creator">Powered by electron-vite</div>
