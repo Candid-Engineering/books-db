@@ -2,24 +2,27 @@
   import 'bulma/css/bulma.css'
   import onScan from 'onscan.js'
 
-  import BooksTable, { type Book } from './components/BooksTable.svelte'
+  import BooksTable from './components/BooksTable.svelte'
+  import { type Book } from '../../lib/types/book.js'
   import Versions from './components/Versions.svelte'
   import electronLogo from './assets/electron.svg'
+  import { getByISBN } from '../../lib/openLibrary.js'
   import type { Action } from 'svelte/action'
 
+  // @ts-ignore (long-term, use a d.ts fix for window.electron typing)
   const ipcHandle = (): void => window.electron.ipcRenderer.send('ping')
   let books: Book[] = [
     {
-      isbn: 12345,
+      isbn10: '1234567890',
       title: 'Hunting Prince Dracula',
-      genre: 'Young Adult',
-      author: 'Kerri Maniscalco',
-      is_read: false
+      tags: ['Young Adult', 'Fiction'],
+      authors: ['Kerri Maniscalco'],
+      hasRead: true
     }
   ]
 
-  const addBook = (isbn: number): void => {
-    books = [...books, { isbn: isbn }]
+  const addBook = async (isbn: string): Promise<void> => {
+    books = [...books, await getByISBN(isbn)]
   }
 
   type scanEvent = {
@@ -28,9 +31,8 @@
       qty: number
     }
   }
-  const handleScan = (event: scanEvent): void => {
-    const isbn = parseInt(event.detail.scanCode, 10)
-    addBook(isbn)
+  const handleScan = async (event: scanEvent): Promise<void> => {
+    await addBook(event.detail.scanCode)
   }
 
   type ScanAttributes = {
@@ -45,14 +47,8 @@
       }
     }
   }
-
-  // onScan.attachTo(document)
-  // onDestroy(() => {
-  //   onScan.detachFrom(document)
-  // })
 </script>
 
-<!-- <svelte:document on:scan={handleScan} /> -->
 <svelte:document on:scan={handleScan} use:listenForBarcodes />
 <BooksTable {books} />
 

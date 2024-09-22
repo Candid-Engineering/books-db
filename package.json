@@ -5,7 +5,7 @@
   "main": "./out/main/index.js",
   "author": "Candid Engineering",
   "homepage": "https://candid-eng.com",
-  "//type:module": "type: module doesn't seem to work..?",
+  "type":"module",
   "scripts": {
     "format": "prettier --plugin prettier-plugin-svelte --write .",
     "lint": "eslint . --ext .js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix",
