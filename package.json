@@ -45,7 +45,6 @@
     "electron-vite": "^2.0.0",
     "eslint": "^8.56.0",
     "eslint-plugin-svelte": "^2.35.1",
-    "jsdom": "^25.0.1",
     "prettier": "^3.2.4",
     "prettier-plugin-svelte": "^3.1.2",
     "svelte": "^5.0.0-next.257",
