@@ -1,8 +1,7 @@
 import { expect, describe, it, beforeEach, afterEach } from 'vitest'
 
-import { books } from './Books.js'
+import { books } from './Books.svelte.js'
 import { type Book } from '../../../lib/types/book.js'
-import { get } from 'svelte/store'
 
 const duneMessiah: Book = {
   isbn10: '0441172695',
@@ -29,30 +28,28 @@ const princessAndGrilledCheese: Book = {
 }
 
 describe('books', () => {
-  it.skip('should be subscribeable and unsubscribeable')
-
   afterEach(() => {
     books.reset()
   })
   it('should be initialized to an empty array', () => {
-    expect(get(books)).toStrictEqual([])
+    expect(books.value).toStrictEqual([])
   })
   describe('#add', () => {
     it('should add a book', () => {
       books.add(duneMessiah)
-      expect(get(books)).toStrictEqual([duneMessiah])
+      expect(books.value).toStrictEqual([duneMessiah])
     })
   })
   describe('with several books preloaded', () => {
     beforeEach(() => {
-      books.set([duneMessiah, princessAndGrilledCheese])
+      books.value = [duneMessiah, princessAndGrilledCheese]
     })
     describe('#remove', () => {
       it('should remove the specified book', () => {
-        const initialLength = get(books).length
+        const initialLength = books.value.length
         books.remove(duneMessiah.isbn10 as string)
-        expect.soft(initialLength - get(books).length).toStrictEqual(1)
-        expect(get(books)).toStrictEqual([princessAndGrilledCheese])
+        expect.soft(initialLength - books.value.length).toStrictEqual(1)
+        expect(books.value).toStrictEqual([princessAndGrilledCheese])
       })
     })
   })
