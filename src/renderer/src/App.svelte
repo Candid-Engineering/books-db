@@ -8,7 +8,7 @@
   import electronLogo from './assets/electron.svg'
   import { getByISBN } from '../../lib/openLibrary.js'
   import type { Action } from 'svelte/action'
-  import { books } from './stores/Books.js'
+  import { books } from './state/Books.svelte.js'
 
   // @ts-ignore (long-term, use a d.ts fix for window.electron typing)
   const ipcHandle = (): void => window.electron.ipcRenderer.send('ping')

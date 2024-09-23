@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { books } from '../stores/Books.js'
+  import { books } from '../state/Books.svelte.js'
 </script>
 
 <table class="table is-fullwidth">
@@ -13,7 +13,7 @@
     </tr>
   </thead>
   <tbody>
-    {#each $books as book}
+    {#each books.value as book}
       <tr>
         <td>{book.isbn10 ?? book.isbn13}</td>
         <td>{book.title || ''} </td>
