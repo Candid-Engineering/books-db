@@ -6,6 +6,7 @@
   "author": "Candid Engineering",
   "homepage": "https://candid-eng.com",
   "type": "module",
+  "packageManager": "pnpm@9.1.4",
   "scripts": {
     "preinstall": "npx only-allow pnpm",
     "format": "prettier --plugin prettier-plugin-svelte --write .",
