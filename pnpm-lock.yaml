@@ -69,6 +69,9 @@ importers:
       eslint-plugin-svelte:
         specifier: ^2.35.1
         version: 2.44.0(eslint@8.57.1)(svelte@5.0.0-next.257)
+      picocolors:
+        specifier: ^1.1.0
+        version: 1.1.0
       prettier:
         specifier: ^3.2.4
         version: 3.3.3
