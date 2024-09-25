@@ -3,10 +3,10 @@
   import onScan from 'onscan.js'
 
   import BooksTable from './components/BooksTable.svelte'
-  import { type Book } from '../../lib/types/book.js'
+  import { type Book } from './lib/types/book.js'
   import Versions from './components/Versions.svelte'
   import electronLogo from './assets/electron.svg'
-  import { getByISBN } from '../../lib/openLibrary.js'
+  import { getByISBN } from './lib/openLibrary.js'
   import type { Action } from 'svelte/action'
   import { books } from './state/Books.svelte.js'
 
