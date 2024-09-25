@@ -1,14 +1,14 @@
 {
   "extends": "@electron-toolkit/tsconfig/tsconfig.json",
   "include": [
-    // "src/renderer/src/env.d.ts",
-    // "src/renderer/src/**/*",
-    // "src/renderer/src/**/*.svelte",
-    "renderer/env.d.ts",
-    "renderer/**/*",
-    "renderer/**/*.svelte",
-    "preload/*.d.ts"
-, "renderer/lib", "renderer/state", "renderer/main.ts"  ],
+    "src-ui/env.d.ts",
+    "src-ui/**/*",
+    "src-ui/**/*.svelte",
+    "preload/*.d.ts",
+    "src-ui/lib",
+    "src-ui/state",
+    "src-ui/main.ts"
+  ],
   "compilerOptions": {
     "verbatimModuleSyntax": true,
     "useDefineForClassFields": true,

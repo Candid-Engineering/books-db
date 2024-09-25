@@ -9,10 +9,10 @@ export default defineConfig({
     plugins: [externalizeDepsPlugin()]
   },
   renderer: {
-    root: 'renderer/',
+    root: 'src-ui/',
     build: {
       rollupOptions: {
-        input: 'renderer/index.html'
+        input: 'src-ui/index.html'
       }
     },
     plugins: [svelte()]
