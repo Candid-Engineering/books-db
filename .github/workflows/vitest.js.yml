@@ -25,6 +25,9 @@ jobs:
     - name: Install pnpm
       uses: pnpm/action-setup@v4
 
+    - name: Install rust toolchain
+      uses: actions-rust-lang/setup-rust-toolchain@v1
+
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v4
       with:
@@ -34,4 +37,4 @@ jobs:
     # frozen lockfile should already be the default in CI, but making sure:
     - run: pnpm install --frozen-lockfile
 #    - run: npm run build --if-present
-    - run: pnpm test run
+    - run: pnpm test
