@@ -1,15 +1,24 @@
 node_modules
-dist
+
+# Output
 out
+.output
+.vercel
+/.svelte-kit
+/build
+
+# OS
 .DS_Store
-*.log*
+Thumbs.db
 
-# dotenv environment variable files
+# Env
 .env
-.env.development.local
-.env.test.local
-.env.production.local
-.env.local
+.env.*
+!.env.example
+!.env.test
 
-# temp files:
-*~
+# Vite
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*
+
+*storybook.log

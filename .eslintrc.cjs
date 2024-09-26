@@ -5,8 +5,7 @@ module.exports = {
   extends: [
     'eslint:recommended',
     'plugin:svelte/recommended',
-    '@electron-toolkit/eslint-config-ts/recommended',
-    '@electron-toolkit/eslint-config-prettier'
+    'plugin:storybook/recommended'
   ],
   overrides: [
     {
@@ -18,6 +17,5 @@ module.exports = {
     }
   ],
   rules: {
-    'svelte/no-unused-svelte-ignore': 'off'
   }
 }
