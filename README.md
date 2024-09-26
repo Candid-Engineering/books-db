@@ -10,25 +10,34 @@ This is currently a learning app for @rkofman to practice svelte + electron.js. 
 
 ### Install
 
+It is recommended to use a node version manager such as <a href="https://github.com/nodenv/nodenv">nodenv</a> to install the required version of node. See `.node-version` for the current required version.
+
+We also specify a specific version of `pnpm` in the `packageManager` field of `package.json`. Make sure to have it installed.
+
+To install javascript packages, we use the previously installed pnpm package manager:
 ```bash
-$ npm install
+pnpm install
 ```
 
-### Development
+## Testing
+To run javascript unit tests, we use vitest; launched via pnpm:
 
 ```bash
-$ npm run dev
+pnpm test
 ```
+## Developing
 
-### Build
+Start a SvelteKit development server (no Electron/Tauri features available):
 
 ```bash
-# For windows
-$ npm run build:win
-
-# For macOS
-$ npm run build:mac
-
-# For Linux
-$ npm run build:linux
+pnpm run svelte:dev
 ```
+
+Start the existing Electron app:
+
+```bash
+pnpm run electron:dev
+```
+
+
+## Building
