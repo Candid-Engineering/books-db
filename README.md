@@ -33,11 +33,4 @@ Start a SvelteKit development server (no Electron/Tauri features available):
 pnpm run svelte:dev
 ```
 
-Start the existing Electron app:
-
-```bash
-pnpm run electron:dev
-```
-
-
 ## Building

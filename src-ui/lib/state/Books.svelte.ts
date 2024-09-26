@@ -1,4 +1,4 @@
-import { type Book } from '../lib/types/book.js'
+import { type Book } from '../types/book.js'
 
 type BooksStore = {
   value: Book[]

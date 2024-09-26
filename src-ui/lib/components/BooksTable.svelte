@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { books } from '../state/Books.svelte.js'
+  import { books } from '../state/Books.svelte'
 </script>
 
 <table class="table is-fullwidth">

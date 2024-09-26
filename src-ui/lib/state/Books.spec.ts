@@ -1,7 +1,7 @@
 import { expect, describe, it, beforeEach, afterEach } from 'vitest'
 
 import { books } from './Books.svelte.js'
-import { type Book } from '../lib/types/book.js'
+import { type Book } from '../types/book.js'
 
 const duneMessiah: Book = {
   isbn10: '0441172695',
