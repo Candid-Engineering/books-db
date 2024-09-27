@@ -28,7 +28,7 @@ function createBooks(): BooksStore {
     },
     reset: (): void => {
       val = []
-    }
+    },
   }
 }
 
