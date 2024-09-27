@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { BookWithoutId } from '$lib/types/book.js'
+  import type { Book, BookWithoutId } from '$lib/types/book.js'
   import 'bulma/css/bulma.css'
   import onScan from 'onscan.js'
   import type { Action } from 'svelte/action'
@@ -32,6 +32,11 @@
   const handleScan = async (event: scanEvent): Promise<void> => {
     await addBook(event.detail.scanCode)
   }
+  const handleEdit: (book: Book, field: keyof Book, e: Event) => void = (book, field, e) => {
+    const target = e.target as HTMLElement
+    const updatedBook: Book = { ...book, [field]: target.innerText.trim() }
+    books.edit(updatedBook)
+  }
 
   type ScanAttributes = {
     'on:scan': (event: scanEvent) => void
@@ -60,7 +65,7 @@
   </thead>
   <tbody>
     {#each books.value as book}
-      <BooksTableRow {book} />
+      <BooksTableRow {book} {handleEdit} />
     {:else}
       <tr>
         <td colspan="5">
