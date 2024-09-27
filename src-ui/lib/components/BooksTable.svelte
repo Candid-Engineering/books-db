@@ -1,5 +1,6 @@
 <script lang="ts">
   import { books } from '../state/Books.svelte'
+  import BooksTableRow from './BooksTableRow.svelte'
 </script>
 
 <table class="table is-fullwidth">
@@ -14,15 +15,7 @@
   </thead>
   <tbody>
     {#each books.value as book}
-      <tr>
-        <td>{book.isbn10 ?? book.isbn13}</td>
-        <td>{book.title || ''} </td>
-        <td>{book.authors?.join(', ') || ''}</td>
-        <td>{book.tags?.join(', ') || ''}</td>
-        <td>
-          <input type="checkbox" checked={book.hasRead} />
-        </td>
-      </tr>
+      <BooksTableRow {book} />
     {:else}
       <tr>
         <td colspan="5">
