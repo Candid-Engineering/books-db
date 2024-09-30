@@ -1,6 +1,7 @@
 <script lang="ts">
   import 'bulma/css/bulma.css'
   import onScan from 'onscan.js'
+
   import { books } from '../state/Books.svelte'
 
   import type { Action } from 'svelte/action'
@@ -8,7 +9,7 @@
   import { type Book } from '../../lib/types/book.js'
   import BooksTableRow from './BooksTableRow.svelte'
 
-  const initialBook: Book = {
+  const initialBook: Partial<Book> = {
     isbn10: '1234567890',
     title: 'Hunting Prince Dracula',
     tags: ['Young Adult', 'Fiction'],

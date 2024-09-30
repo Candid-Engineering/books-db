@@ -1,8 +1,9 @@
 import { type Book } from '../types/book.js'
+import { v4 as uuidv4 } from 'uuid'
 
 type BooksStore = {
   value: Book[]
-  add: (book: Book) => void
+  add: (book: Book | Partial<Book>) => void
   remove: (isbn: string) => void
   reset: () => void
 }
@@ -20,8 +21,9 @@ function createBooks(): BooksStore {
     set value(newVal: Book[]) {
       val = newVal
     },
-    add: (book: Book): void => {
-      val = [...val, book]
+    add: (book: Book | Partial<Book>): void => {
+      book.id = uuidv4()
+      val = [...val, book as Book]
     },
     remove: (isbn: string): void => {
       val = val.filter((book) => book.isbn10 != isbn && book.isbn13 != isbn)
