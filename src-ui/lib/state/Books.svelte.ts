@@ -22,6 +22,8 @@ function createBooks(): BooksStore {
       val = newVal
     },
     add: (book: Book | Partial<Book>): void => {
+      // NOTE (isummit): we're using this instead of window.crypto because window.crypto.randomUUID is
+      // not available for older versions of mac os, which some of our users may be on.
       book.id = uuidv4()
       val = [...val, book as Book]
     },

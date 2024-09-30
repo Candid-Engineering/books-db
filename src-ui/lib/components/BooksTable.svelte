@@ -1,9 +1,7 @@
 <script lang="ts">
   import 'bulma/css/bulma.css'
   import onScan from 'onscan.js'
-
   import { books } from '../state/Books.svelte'
-
   import type { Action } from 'svelte/action'
   import { getByISBN } from '../../lib/openLibrary.js'
   import { type Book } from '../../lib/types/book.js'
@@ -19,6 +17,7 @@
 
   if (books.value.length == 0) {
     books.add(initialBook)
+    console.log(books.value)
   }
 
   const addBook = async (isbn: string): Promise<void> => {
