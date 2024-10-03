@@ -1,13 +1,13 @@
 <script lang="ts">
+  import type { BookWithoutId } from '$lib/types/book.js'
   import 'bulma/css/bulma.css'
   import onScan from 'onscan.js'
-  import { books } from '../state/Books.svelte'
   import type { Action } from 'svelte/action'
   import { getByISBN } from '../../lib/openLibrary.js'
-  import { type Book } from '../../lib/types/book.js'
+  import { books } from '../state/Books.svelte'
   import BooksTableRow from './BooksTableRow.svelte'
 
-  const initialBook: Partial<Book> = {
+  const initialBook: BookWithoutId = {
     isbn10: '1234567890',
     title: 'Hunting Prince Dracula',
     tags: ['Young Adult', 'Fiction'],
@@ -17,7 +17,6 @@
 
   if (books.value.length == 0) {
     books.add(initialBook)
-    console.log(books.value)
   }
 
   const addBook = async (isbn: string): Promise<void> => {

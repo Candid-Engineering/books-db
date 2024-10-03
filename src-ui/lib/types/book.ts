@@ -13,3 +13,5 @@ export type Book = {
   coverImages?: { small?: string; medium?: string; large?: string }
   hasRead?: boolean
 }
+
+export type BookWithoutId = Partial<Omit<Book, 'id'>>
