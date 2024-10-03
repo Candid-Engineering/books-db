@@ -1,5 +1,5 @@
 {
-  "$schema": "../node_modules/@tauri-apps/cli/schema.json",
+  "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "build": {
     "beforeBuildCommand": "npm run svelte:build",
     "beforeDevCommand": "npm run svelte:dev",
@@ -44,7 +44,11 @@
   "mainBinaryName": "books-db",
   "version": "0.1.0",
   "identifier": "com.candid-eng.books-db",
-  "plugins": {},
+  "plugins": {
+    "sql": {
+      "preload": ["sqlite:books-dev.db"]
+    }
+  },
   "app": {
     "windows": [
       {

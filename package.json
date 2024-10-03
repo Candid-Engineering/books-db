@@ -22,6 +22,7 @@
     "js:typecheck": "tsc --noEmit -p tsconfig.node.json --composite false",
     "js:test": "vitest",
     "rust:test": "cargo test --manifest-path src-tauri/Cargo.toml",
+    "rust:cargo": "cd src-tauri && cargo",
     "svelte:check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "svelte:check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
     "svelte:dev": "vite dev",
@@ -32,6 +33,7 @@
     "storybook:build": "storybook build"
   },
   "dependencies": {
+    "@tauri-apps/plugin-sql": "github:tauri-apps/tauri-plugin-sql#v2",
     "bulma": "^1.0.2",
     "onscan.js": "^1.5.2",
     "open-library-api": "^0.1.2",
