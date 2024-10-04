@@ -1,4 +1,5 @@
 export type Book = {
+  id: string
   isbn10?: string
   isbn13?: string
   title: string
@@ -12,3 +13,5 @@ export type Book = {
   coverImages?: { small?: string; medium?: string; large?: string }
   hasRead?: boolean
 }
+
+export type BookWithoutId = Partial<Omit<Book, 'id'>>
