@@ -47,9 +47,12 @@ describe('books', () => {
   })
 
   describe('with several books preloaded', () => {
+    let duneMessiahId: string
+
     beforeEach(() => {
       books.add(duneMessiah)
       books.add(princessAndGrilledCheese)
+      duneMessiahId = books.value[0].id
     })
 
     it('should contain two books after adding', () => {
@@ -57,16 +60,10 @@ describe('books', () => {
     })
 
     describe('#remove', () => {
-      it('should remove a book by ISBN-10', () => {
-        books.remove(duneMessiah.isbn10 as string)
+      it('should remove a book by ID', () => {
+        books.remove(duneMessiahId)
         expect(books.value.length).toBe(1)
         expect(books.value[0].title).toBe(princessAndGrilledCheese.title)
-      })
-
-      it('should remove a book by ISBN-13', () => {
-        books.remove(princessAndGrilledCheese.isbn13 as string)
-        expect(books.value.length).toBe(1)
-        expect(books.value[0].title).toBe('Dune Messiah')
       })
     })
   })

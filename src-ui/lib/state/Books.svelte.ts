@@ -4,7 +4,7 @@ import { type Book, type BookWithoutId } from '../types/book.js'
 type BooksStore = {
   value: Book[]
   add: (book: BookWithoutId) => void
-  remove: (isbn: string) => void
+  remove: (id: string) => void
   reset: () => void
 }
 
@@ -26,8 +26,8 @@ function createBooks(): BooksStore {
       // not available for older versions of mac os, which some of our users may be on (v11.1)
       val = [...val, { ...book, id: uuidv4() } as Book]
     },
-    remove: (isbn: string): void => {
-      val = val.filter((book) => book.isbn10 != isbn && book.isbn13 != isbn)
+    remove: (id: string): void => {
+      val = val.filter((book) => book.id != id)
     },
     reset: (): void => {
       val = []
