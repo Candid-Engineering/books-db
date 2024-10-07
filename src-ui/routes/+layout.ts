@@ -1,12 +1,13 @@
-import Database from '@tauri-apps/plugin-sql'
-
+import {invoke, type InvokeArgs, type InvokeOptions} from "@tauri-apps/api/core"
 export const prerender = true
 export const ssr = false
 
+declare global {
+  interface Window { invoke: <T>(cmd: string, args?: InvokeArgs | undefined, options?: InvokeOptions | undefined) => Promise<T>  }
+}
+
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export async function load({ params }) {
-  const db = await Database.load('sqlite:books-dev.db')
-  window.db = db
-  console.log('DB: ', db)
-  return { db }
+  // TODO(rkofman): remove this stub in favor of implementing the .ts side of the sqlite-proxy plugin.
+  window.invoke = invoke;
 }

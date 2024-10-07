@@ -33,7 +33,7 @@
     "storybook:build": "storybook build"
   },
   "dependencies": {
-    "@tauri-apps/plugin-sql": "github:tauri-apps/tauri-plugin-sql#v2",
+    "@tauri-apps/api": "^2.0.2",
     "bulma": "^1.0.2",
     "onscan.js": "^1.5.2",
     "open-library-api": "^0.1.2",

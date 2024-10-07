@@ -1,1 +1,0 @@
-{"main":{"identifier":"main","description":"The main app permissions","local":true,"windows":["main"],"permissions":["core:default","sql:default","sql:allow-execute"]}}

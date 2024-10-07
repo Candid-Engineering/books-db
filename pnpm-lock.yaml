@@ -8,9 +8,9 @@ importers:
 
   .:
     dependencies:
-      '@tauri-apps/plugin-sql':
-        specifier: github:tauri-apps/tauri-plugin-sql#v2
-        version: https://codeload.github.com/tauri-apps/tauri-plugin-sql/tar.gz/d6783aaeae65ce929eee2c93d4619ab7eb75ead7
+      '@tauri-apps/api':
+        specifier: ^2.0.2
+        version: 2.0.2
       bulma:
         specifier: ^1.0.2
         version: 1.0.2
@@ -1022,8 +1022,8 @@ packages:
       svelte: ^5.0.0-next.96 || ^5.0.0
       vite: ^5.0.0
 
-  '@tauri-apps/api@2.0.0-rc.6':
-    resolution: {integrity: sha512-oENxL0C5WqHNSXWjZEbjnzoBwFFyn8do5S0elOg0ME1cLvWJOAKmqdCnWPpAwtzHQZ+xAzMU0/k8nPpJq4OQYA==}
+  '@tauri-apps/api@2.0.2':
+    resolution: {integrity: sha512-3wSwmG+1kr6WrgAFKK5ijkNFPp8TT3FLj3YHUb5EwMO+3FxX4uWlfSWkeeBy+Kc1RsKzugtYLuuya+98Flj+3w==}
 
   '@tauri-apps/cli-darwin-arm64@2.0.0-rc.16':
     resolution: {integrity: sha512-lISZU4gG0c9PbY7h/j/gW7nJLxZEygNBrYEET6zN8R99Znf5rSO+CfjenaMcJUUj6yTAd8gzdakRpLqNSAWegA==}
@@ -1089,10 +1089,6 @@ packages:
     resolution: {integrity: sha512-wdjZg/M3dcxiqgWG6VRnABpX0dYxRww93t0d1MYoZxFDrnyoUz5kYwFQ0v4J9u0qenEgskjoypvon7V/Nj9qrg==}
     engines: {node: '>= 10'}
     hasBin: true
-
-  '@tauri-apps/plugin-sql@https://codeload.github.com/tauri-apps/tauri-plugin-sql/tar.gz/d6783aaeae65ce929eee2c93d4619ab7eb75ead7':
-    resolution: {tarball: https://codeload.github.com/tauri-apps/tauri-plugin-sql/tar.gz/d6783aaeae65ce929eee2c93d4619ab7eb75ead7}
-    version: 2.0.0-rc.1
 
   '@testing-library/dom@10.4.0':
     resolution: {integrity: sha512-pemlzrSESWbdAloYml3bAJMEfNh1Z7EduzqPKprCH5S341frlpYnUEW0H72dLxa6IsYr+mPno20GiSm+h9dEdQ==}
@@ -5592,7 +5588,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@tauri-apps/api@2.0.0-rc.6': {}
+  '@tauri-apps/api@2.0.2': {}
 
   '@tauri-apps/cli-darwin-arm64@2.0.0-rc.16':
     optional: true
@@ -5636,10 +5632,6 @@ snapshots:
       '@tauri-apps/cli-win32-arm64-msvc': 2.0.0-rc.16
       '@tauri-apps/cli-win32-ia32-msvc': 2.0.0-rc.16
       '@tauri-apps/cli-win32-x64-msvc': 2.0.0-rc.16
-
-  '@tauri-apps/plugin-sql@https://codeload.github.com/tauri-apps/tauri-plugin-sql/tar.gz/d6783aaeae65ce929eee2c93d4619ab7eb75ead7':
-    dependencies:
-      '@tauri-apps/api': 2.0.0-rc.6
 
   '@testing-library/dom@10.4.0':
     dependencies:

@@ -1,1 +1,1 @@
-pub mod test;
+pub mod sqlite_proxy;
