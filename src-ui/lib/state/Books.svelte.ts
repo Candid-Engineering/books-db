@@ -1,9 +1,10 @@
-import { type Book } from '../types/book.js'
+import { v4 as uuidv4 } from 'uuid'
+import { type Book, type BookWithoutId } from '../types/book.js'
 
 type BooksStore = {
   value: Book[]
-  add: (book: Book) => void
-  remove: (isbn: string) => void
+  add: (book: BookWithoutId) => void
+  remove: (id: string) => void
   reset: () => void
 }
 
@@ -20,15 +21,17 @@ function createBooks(): BooksStore {
     set value(newVal: Book[]) {
       val = newVal
     },
-    add: (book: Book): void => {
-      val = [...val, book]
+    add: (book: BookWithoutId): void => {
+      // NOTE (isummit): we're using this instead of window.crypto because window.crypto.randomUUID is
+      // not available for older versions of mac os, which some of our users may be on (v11.1)
+      val = [...val, { ...book, id: uuidv4() } as Book]
     },
-    remove: (isbn: string): void => {
-      val = val.filter((book) => book.isbn10 != isbn && book.isbn13 != isbn)
+    remove: (id: string): void => {
+      val = val.filter((book) => book.id != id)
     },
     reset: (): void => {
       val = []
-    }
+    },
   }
 }
 
