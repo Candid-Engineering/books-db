@@ -50,9 +50,8 @@ describe('books', () => {
     let duneMessiahId: string
 
     beforeEach(() => {
-      books.add(duneMessiah)
+      duneMessiahId = books.add(duneMessiah)
       books.add(princessAndGrilledCheese)
-      duneMessiahId = books.value[0].id
     })
 
     it('should contain two books after adding', () => {
