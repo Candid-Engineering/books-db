@@ -37,23 +37,22 @@ describe('books', () => {
 
   describe('#add', () => {
     it('should add a book with a unique ID', () => {
-      books.add(duneMessiah)
+      const duneMessiahId = books.add(duneMessiah)
       const addedBook = books.value[0]
 
       expect(addedBook.title).toBe(duneMessiah.title)
       expect(addedBook.id).toBeDefined()
+      expect(addedBook.id).toBe(duneMessiahId)
       expect(addedBook.isbn10).toBe(duneMessiah.isbn10)
     })
   })
 
   describe('with several books preloaded', () => {
     let duneMessiahWithId: Book
-    let princessAndGrilledCheeseWithId: Book
     beforeEach(() => {
       books.add(duneMessiah)
-      books.add(princessAndGrilledCheese)
       duneMessiahWithId = books.value[0]
-      princessAndGrilledCheeseWithId = books.value[1]
+      books.add(princessAndGrilledCheese)
     })
 
     it('should contain two books after adding', () => {
