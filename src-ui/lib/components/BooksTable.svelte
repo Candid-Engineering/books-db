@@ -6,6 +6,36 @@
   import { getByISBN } from '../../lib/openLibrary.js'
   import { books } from '../state/Books.svelte'
   import BooksTableRow from './BooksTableRow.svelte'
+  const isbns: Array<string> = []
+
+  async function fetchBooksWithISBNs() {
+    try {
+      // Fetch works for author John Scalzi
+      const worksResponse = await fetch('https://openlibrary.org/authors/OL10677176A/works.json')
+      const worksData = await worksResponse.json()
+
+      // Iterate over the works to get editions (and their ISBNs)
+      await Promise.all(
+        worksData.entries.map(async (work: { key: string }) => {
+          // Fetch editions for each work
+          const editionsResponse = await fetch(
+            `https://openlibrary.org/works/${work.key.split('/').pop()}/editions.json`
+          )
+          const editionsData = await editionsResponse.json()
+          // Extract ISBNs from the editions, checking if the field exists
+          editionsData.entries.map(
+            (edition: { isbn_13: Array<string>; isbn_10: Array<string> }) => {
+              isbns.push(edition.isbn_13[0] || edition.isbn_10[0])
+            }
+          )
+        })
+      )
+
+      console.log(isbns)
+    } catch (error) {
+      console.error('Error fetching books or ISBNs:', error)
+    }
+  }
 
   const initialBook: BookWithoutId = {
     isbn10: '1234567890',
@@ -17,6 +47,7 @@
 
   if (books.value.length == 0) {
     books.add(initialBook)
+    fetchBooksWithISBNs()
   }
 
   const addBook = async (isbn: string): Promise<void> => {
