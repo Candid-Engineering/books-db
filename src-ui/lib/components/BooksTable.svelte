@@ -3,7 +3,7 @@
   import 'bulma/css/bulma.css'
   import onScan from 'onscan.js'
   import type { Action } from 'svelte/action'
-  import { getByISBN } from '../../lib/openLibrary.js'
+  import { client, getByISBN } from '../../lib/openLibrary.js'
   import { books } from '../state/Books.svelte'
   import BooksTableRow from './BooksTableRow.svelte'
   const isbns: Array<string> = []
@@ -11,8 +11,12 @@
   async function fetchBooksWithISBNs() {
     try {
       // Fetch works for author John Scalzi
-      const worksResponse = await fetch('https://openlibrary.org/authors/OL10677176A/works.json')
-      const worksData = await worksResponse.json()
+      // const worksResponse = await fetch('https://openlibrary.org/authors/OL10677176A/works.json')
+      const worksData = await client.GET('/authors/{id}.json', {
+        params: { path: { id: 'OL10677176A' } },
+      })
+      console.log('worksData is: ', worksData)
+      //const worksData = await worksResponse.json()
 
       // Iterate over the works to get editions (and their ISBNs)
       await Promise.all(
@@ -46,8 +50,9 @@
   }
 
   if (books.value.length == 0) {
-    books.add(initialBook)
     fetchBooksWithISBNs()
+    console.log(isbns)
+    books.add(initialBook)
   }
 
   const addBook = async (isbn: string): Promise<void> => {
@@ -85,6 +90,12 @@
       },
     }
   }
+  const simulateScan: () => void = () => {
+    console.log('isbns is: ', isbns)
+    const randISBN = isbns[Math.floor(Math.random() * isbns.length - 1)]
+    console.log('randISBN is: ', randISBN)
+    onScan.simulate(document, randISBN)
+  }
 </script>
 
 <svelte:document on:scan={handleScan} use:listenForBarcodes />
@@ -115,3 +126,6 @@
     {/each}
   </tbody>
 </table>
+<div class="action">
+  <button on:click={simulateScan}>Simulate Scan </button>
+</div>
