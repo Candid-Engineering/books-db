@@ -4,6 +4,7 @@ import { type Book, type BookWithoutId } from '../types/book.js'
 type BooksStore = {
   value: Book[]
   add: (book: BookWithoutId) => string
+  edit: (book: Book) => void
   remove: (id: string) => void
   reset: () => void
 }
@@ -27,6 +28,9 @@ function createBooks(): BooksStore {
       const id = uuidv4()
       val = [...val, { ...book, id } as Book]
       return id
+    },
+    edit: (updatedBook: Book): void => {
+      val = val.map((book) => (book.id === updatedBook.id ? updatedBook : book))
     },
     remove: (id: string): void => {
       val = val.filter((book) => book.id != id)
