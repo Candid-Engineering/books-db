@@ -32,10 +32,14 @@
   const handleScan = async (event: scanEvent): Promise<void> => {
     await addBook(event.detail.scanCode)
   }
-  const handleEdit: (book: Book, field: keyof Book, e: Event) => void = (book, field, e) => {
+  const handleEdit = (book: Book, field: keyof Book, e: Event) => {
     const target = e.target as HTMLElement
-    const updatedBook: Book = { ...book, [field]: target.innerText.trim() }
-    books.edit(updatedBook)
+    const value =
+      field === 'authors'
+        ? target.innerText.split(',').map((author) => author.trim())
+        : target.innerText.trim()
+
+    books.edit({ ...book, [field]: value })
   }
 
   type ScanAttributes = {
