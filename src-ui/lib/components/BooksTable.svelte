@@ -6,7 +6,6 @@
   import { getByISBN } from '../../lib/openLibrary.js'
   import { books } from '../state/Books.svelte'
   import BooksTableRow from './BooksTableRow.svelte'
-  const isbns: Array<string> = []
 
   const initialBook: BookWithoutId = {
     isbn10: '1234567890',
@@ -17,8 +16,6 @@
   }
 
   if (books.value.length == 0) {
-    fetchBooksWithISBNs()
-    console.log(isbns)
     books.add(initialBook)
   }
 
@@ -58,10 +55,7 @@
     }
   }
   const simulateScan: () => void = () => {
-    console.log('isbns is: ', isbns)
-    const randISBN = isbns[Math.floor(Math.random() * isbns.length - 1)]
-    console.log('randISBN is: ', randISBN)
-    onScan.simulate(document, randISBN)
+    onScan.simulate(document, '9780316538725') // hardcoded isbn for 'Princess and the Grilled Cheese Sandwich (a Graphic Novel)'
   }
 </script>
 
