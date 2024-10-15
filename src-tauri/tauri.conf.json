@@ -44,11 +44,7 @@
   "mainBinaryName": "books-db",
   "version": "0.1.0",
   "identifier": "com.candid-eng.books-db",
-  "plugins": {
-    "sql": {
-      "preload": ["sqlite:books-dev.db"]
-    }
-  },
+  "plugins": {},
   "app": {
     "windows": [
       {
