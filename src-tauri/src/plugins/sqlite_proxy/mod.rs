@@ -1,7 +1,6 @@
 mod commands;
 mod error;
 mod lib;
-mod models;
 use std::sync::Mutex;
 
 pub use commands::*;
@@ -24,10 +23,12 @@ pub fn init(filename: impl Into<String> + Send + 'static) -> TauriPlugin<Wry> {
 
     // typescript export happens during runtime, so should not happen on user machines.
     #[cfg(debug_assertions)] // <- Only export on non-release builds
-    specta_builder.export(
-        Typescript::default(),
-        "../src-ui/lib/generated/sqlite_proxy.ts",
-    ).expect("Failed to export typescript bindings");
+    specta_builder
+        .export(
+            Typescript::default(),
+            "../src-ui/lib/generated/sqlite_proxy.ts",
+        )
+        .expect("Failed to export typescript bindings");
 
     Builder::new("sqlite-proxy")
         .setup(move |app, api| {

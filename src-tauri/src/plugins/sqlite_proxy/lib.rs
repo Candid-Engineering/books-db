@@ -25,10 +25,10 @@ pub(super) fn query(
 ) -> Res<Vec<Map<String, Value>>> {
     let params = params_from_iter(params.unwrap_or_default());
     let mut statement = connection.prepare(&sql)?;
-    let rows = statement.query(params).unwrap();
+    let rows = statement.query(params)?;
     let rows: std::result::Result<Vec<Map<String, Value>>, serde_rusqlite::Error> =
         from_rows::<Map<String, Value>>(rows).collect();
-    rows.map_err(Error::from)
+    Ok(rows?)
 }
 
 pub(super) fn query_row(
@@ -37,14 +37,16 @@ pub(super) fn query_row(
     params: Option<Vec<Value>>,
 ) -> Res<Map<String, Value>> {
     let params = params_from_iter(params.unwrap_or_default());
-    let mut statement = connection.prepare(&sql).unwrap();
-    let row = statement.query_row(params, |row| {
-        Ok(from_row::<Map<String, Value>>(row))
-    })??;
+    let mut statement = connection.prepare(&sql)?;
+    let row = statement.query_row(params, |row| Ok(from_row::<Map<String, Value>>(row)))??;
     Ok(row)
 }
 
-pub(super) fn execute(connection: &Connection, sql: String, params: Option<Vec<Value>>) -> Res<i32> {
+pub(super) fn execute(
+    connection: &Connection,
+    sql: String,
+    params: Option<Vec<Value>>,
+) -> Res<i32> {
     let params = params_from_iter(params.unwrap_or_default());
     let mut statement = connection.prepare(&sql)?;
     let count = statement.execute(params)?;
