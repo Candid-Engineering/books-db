@@ -15,12 +15,13 @@
     hasRead: true,
   }
 
+
   if (books.value.length == 0) {
     books.add(initialBook)
   }
 
   const addBook = async (isbn: string): Promise<void> => {
-    books.add(await getByISBN(isbn))
+      books.add(await getByISBN(isbn))
   }
 
   type scanEvent = {
@@ -29,8 +30,9 @@
       qty: number
     }
   }
+  let promise: Promise<void> | undefined;
   const handleScan = async (event: scanEvent): Promise<void> => {
-    await addBook(event.detail.scanCode)
+    promise = addBook(event.detail.scanCode)
   }
   const handleEdit = (book: Book, field: keyof Book, e: Event) => {
     const target = e.target as HTMLElement
@@ -46,7 +48,7 @@
     'on:scan': (event: scanEvent) => void
   }
 
-  const listenForBarcodes: Action<HTMLElement, undefined, ScanAttributes> = (node: HTMLElement) => {
+const listenForBarcodes: Action<HTMLElement, undefined, ScanAttributes> = (node: HTMLElement) => {
     onScan.attachTo(node, {})
     return {
       destroy: (): void => {
@@ -56,7 +58,18 @@
   }
 </script>
 
-<svelte:document on:scan={handleScan} use:listenForBarcodes />
+
+<button on:click={() => onScan.simulate(document, '1234567890123')}>
+	Simulate ISBN
+</button>
+
+{#await promise}
+  <p>Loading...</p>
+{:catch error}
+  <p style="color: red">{error.message}</p>
+{/await}
+
+<svelte:document use:listenForBarcodes on:scan={handleScan} />
 <table class="table is-fullwidth">
   <thead>
     <tr>
