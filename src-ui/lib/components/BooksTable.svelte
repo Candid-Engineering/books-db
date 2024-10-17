@@ -15,25 +15,13 @@
     hasRead: true,
   }
 
-  let loading_visibility = "hidden";
-  let loading_text = "";
 
   if (books.value.length == 0) {
     books.add(initialBook)
   }
 
   const addBook = async (isbn: string): Promise<void> => {
-    try {
-      loading_visibility = "visible"
-      loading_text = "Loading..."
       books.add(await getByISBN(isbn))
-      loading_visibility = "hidden"
-      loading_text = "";
-
-    } catch (error) {
-      loading_text = "Error Fetching Book!"
-      loading_visibility = "visible"
-    }
   }
 
   type scanEvent = {
@@ -42,8 +30,9 @@
       qty: number
     }
   }
+  let promise: Promise<void> | undefined;
   const handleScan = async (event: scanEvent): Promise<void> => {
-    await addBook(event.detail.scanCode)
+    promise = addBook(event.detail.scanCode)
   }
   const handleEdit = (book: Book, field: keyof Book, e: Event) => {
     const target = e.target as HTMLElement
@@ -69,10 +58,17 @@ const listenForBarcodes: Action<HTMLElement, undefined, ScanAttributes> = (node:
   }
 </script>
 
+
 <button on:click={() => onScan.simulate(document, '1234567890123')}>
 	Simulate ISBN
 </button>
-<span id="scan_progress" style="visibility: {loading_visibility};">{loading_text}</span>
+
+{#await promise}
+  <p>Loading...</p>
+{:catch error}
+  <p style="color: red">{error.message}</p>
+{/await}
+
 <svelte:document use:listenForBarcodes on:scan={handleScan} />
 <table class="table is-fullwidth">
   <thead>
