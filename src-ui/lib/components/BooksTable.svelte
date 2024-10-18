@@ -15,13 +15,14 @@
     hasRead: true,
   }
 
-
   if (books.value.length == 0) {
     books.add(initialBook)
   }
 
   const addBook = async (isbn: string): Promise<void> => {
-      books.add(await getByISBN(isbn))
+    isLoading = true
+    books.add(await getByISBN(isbn))
+    isLoading = false
   }
 
   type scanEvent = {
@@ -32,6 +33,7 @@
   }
   let promise: Promise<void> | undefined;
   const handleScan = async (event: scanEvent): Promise<void> => {
+    
     promise = addBook(event.detail.scanCode)
   }
   const handleEdit = (book: Book, field: keyof Book, e: Event) => {
@@ -56,14 +58,14 @@ const listenForBarcodes: Action<HTMLElement, undefined, ScanAttributes> = (node:
       },
     }
   }
+  let isLoading = false
 </script>
 
-
-<button on:click={() => onScan.simulate(document, '1234567890123')}>
+<button disabled='{isLoading}'on:click={() => onScan.simulate(document, '1234567890123')}>
 	Simulate ISBN
 </button>
 
-{#await promise}
+{#await promise }
   <p>Loading...</p>
 {:catch error}
   <p style="color: red">{error.message}</p>
