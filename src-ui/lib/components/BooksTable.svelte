@@ -33,7 +33,6 @@
   }
   let promise: Promise<void> | undefined;
   const handleScan = async (event: scanEvent): Promise<void> => {
-    
     promise = addBook(event.detail.scanCode)
   }
   const handleEdit = (book: Book, field: keyof Book, e: Event) => {
