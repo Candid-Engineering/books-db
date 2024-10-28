@@ -5,13 +5,12 @@ name: Vitest CI
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ['main']
   pull_request:
-    branches: [ "main" ]
+    branches: ['main']
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
     strategy:
@@ -20,21 +19,21 @@ jobs:
         # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
 
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Install pnpm
-      uses: pnpm/action-setup@v4
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
 
-    # - name: Install rust toolchain
-    #   uses: actions-rust-lang/setup-rust-toolchain@v1
+      # - name: Install rust toolchain
+      #   uses: actions-rust-lang/setup-rust-toolchain@v1
 
-    - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ matrix.node-version }}
-        cache: 'pnpm'
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'pnpm'
 
-    # frozen lockfile should already be the default in CI, but making sure:
-    - run: pnpm install --frozen-lockfile
-#    - run: npm run build --if-present
-    - run: pnpm js:test run
+      # frozen lockfile should already be the default in CI, but making sure:
+      - run: pnpm install --frozen-lockfile
+      #    - run: npm run build --if-present
+      - run: pnpm js:test run

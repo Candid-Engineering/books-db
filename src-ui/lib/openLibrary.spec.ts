@@ -13,7 +13,7 @@ describe('book', () => {
         coverImages: {
           large: 'https://covers.openlibrary.org/b/olid/OL7524009M-L.jpg',
           medium: 'https://covers.openlibrary.org/b/olid/OL7524009M-M.jpg',
-          small: 'https://covers.openlibrary.org/b/olid/OL7524009M-S.jpg'
+          small: 'https://covers.openlibrary.org/b/olid/OL7524009M-S.jpg',
         },
         isbn10: '0441004229',
         isbn13: '9780441004225',
@@ -22,7 +22,7 @@ describe('book', () => {
         series: 'The Stainless Steel Rat',
         // subtitle: undefined,
         tags: [],
-        title: 'Adventures of the Stainless Steel Rat'
+        title: 'Adventures of the Stainless Steel Rat',
       }
       expect(book).toEqual(expected)
     })
@@ -32,4 +32,3 @@ describe('book', () => {
     it.skip('should be able to retrieve The Princess and the Grilled Cheese Sandwich (9780316538725)', async () => {})
   })
 })
-
