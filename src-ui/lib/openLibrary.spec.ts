@@ -5,7 +5,6 @@ describe('book', () => {
   describe('#getByISBN', () => {
     const isbn = '9780441004225'
     it('should be able to retrieve The Stainless Steel Rat (9780441004225)', async () => {
-      9780425038192
       const book = await getByISBN(isbn)
       const expected = {
         authors: ['Harry Harrison'],

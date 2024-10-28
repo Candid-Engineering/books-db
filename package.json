@@ -18,7 +18,8 @@
     "dev": "pnpm tauri dev",
     "build": "pnpm tauri build",
     "js:format": "prettier --write .",
-    "js:lint": "prettier --check . && eslint . --fix",
+    "js:lint": "eslint .",
+    "js:fix": "prettier --write . && eslint . --fix",
     "js:typecheck": "tsc --noEmit -p tsconfig.node.json --composite false",
     "js:test": "vitest",
     "rust:test": "cargo test --manifest-path src-tauri/Cargo.toml",
@@ -79,7 +80,7 @@
     "tslib": "^2.6.2",
     "tsx": "^4.19.1",
     "typescript": "^5.3.3",
-    "typescript-eslint": "^8.0.0",
+    "typescript-eslint": "^8.12.0",
     "vite": "^5.4.8",
     "vitest": "^2.0.0"
   },
