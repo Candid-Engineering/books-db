@@ -9,8 +9,21 @@
     "resolveJsonModule": true,
     "skipLibCheck": true,
     "sourceMap": true,
-    "strict": true,
-  }
+    "strict": true
+  },
+  "include": [
+    "./svelte-kit/ambient.d.ts",
+    "./svelte-kit/non-ambient.d.ts",
+    "./src-ui/**/*.js",
+    "./src-ui/**/*.ts",
+    "./src-ui/**/*.svelte",
+    "./.storybook/**/*.js",
+    "./.storybook/**/*.ts",
+    "./.storybook/**/*.svelte",
+    "./*.config.js",
+    "./*.config.ts",
+    "./vitest.diff.ts"
+  ]
   // Path aliases are handled by https://kit.svelte.dev/docs/configuration#alias
   // except $lib which is handled by https://kit.svelte.dev/docs/configuration#files
   //
