@@ -20,7 +20,7 @@
     "js:format": "prettier --write .",
     "js:lint": "eslint .",
     "js:fix": "prettier --write . && eslint . --fix",
-    "js:typecheck": "tsc --noEmit -p tsconfig.node.json --composite false",
+    "js:typecheck": "tsc --noEmit -p tsconfig.json --composite false",
     "js:test": "vitest",
     "rust:test": "cargo test --manifest-path src-tauri/Cargo.toml",
     "rust:cargo": "cd src-tauri && cargo",
