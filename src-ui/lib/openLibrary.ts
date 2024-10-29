@@ -6,7 +6,7 @@ const client = createClient<paths>({ baseUrl: 'https://openlibrary.org/' })
 
 export async function getByISBN(isbn: string): Promise<Book> {
   const { data, error } = await client.GET('/isbn/{isbn}.json', {
-    params: { path: { isbn: isbn } }
+    params: { path: { isbn: isbn } },
   })
   if (error) {
     throw new Error('Error handling not implemented yet for Open Library API')
@@ -34,8 +34,8 @@ async function normalizeOpenLibraryBook(data: components['schemas']['Edition']):
     coverImages: {
       small: `https://covers.openlibrary.org/b/olid/${id}-S.jpg`,
       medium: `https://covers.openlibrary.org/b/olid/${id}-M.jpg`,
-      large: `https://covers.openlibrary.org/b/olid/${id}-L.jpg`
-    }
+      large: `https://covers.openlibrary.org/b/olid/${id}-L.jpg`,
+    },
   }
 }
 

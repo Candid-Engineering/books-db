@@ -31,9 +31,8 @@
       qty: number
     }
   }
-  let promise: Promise<void> | undefined;
+  let promise: Promise<void> | undefined
   const handleScan = async (event: scanEvent): Promise<void> => {
-    
     promise = addBook(event.detail.scanCode)
   }
   const handleEdit = (book: Book, field: keyof Book, e: Event) => {
@@ -50,7 +49,7 @@
     'on:scan': (event: scanEvent) => void
   }
 
-const listenForBarcodes: Action<HTMLElement, undefined, ScanAttributes> = (node: HTMLElement) => {
+  const listenForBarcodes: Action<HTMLElement, undefined, ScanAttributes> = (node: HTMLElement) => {
     onScan.attachTo(node, {})
     return {
       destroy: (): void => {
@@ -61,11 +60,11 @@ const listenForBarcodes: Action<HTMLElement, undefined, ScanAttributes> = (node:
   let isLoading = false
 </script>
 
-<button disabled='{isLoading}'on:click={() => onScan.simulate(document, '1234567890123')}>
-	Simulate ISBN
+<button disabled={isLoading} on:click={() => onScan.simulate(document, '1234567890123')}>
+  Simulate ISBN
 </button>
 
-{#await promise }
+{#await promise}
   <p>Loading...</p>
 {:catch error}
   <p style="color: red">{error.message}</p>
