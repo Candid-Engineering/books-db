@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Book } from '../../lib/types/book.js'
+  import type { Book } from '$lib/types/book.js'
 
   export let book: Book
   export let handleEdit: (book: Book, field: keyof Book, event: Event) => void

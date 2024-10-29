@@ -5,5 +5,6 @@ export default defineConfig({
   plugins: [sveltekit()],
   test: {
     diff: './vitest.diff.ts',
+    environment: 'jsdom',
   },
 })

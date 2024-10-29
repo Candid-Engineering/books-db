@@ -1,8 +1,10 @@
 import { expect, describe, it, beforeEach, afterEach } from 'vitest'
-import { books } from './Books.svelte.js'
-import { type Book, type BookWithoutId } from '../types/book.js'
+import { createTestBooksStore, type BooksStore } from './Books.svelte.js'
+import { type Book, type NewBook } from '$lib/types/book.js'
+import { createTestDB } from '$lib/db/test_helpers.js'
+import type { Database } from 'sql.js'
 
-const duneMessiah: BookWithoutId = {
+const duneMessiah: NewBook = {
   isbn10: '0441172695',
   isbn13: '9780441172696',
   title: 'Dune Messiah',
@@ -20,25 +22,34 @@ const duneMessiah: BookWithoutId = {
   pageCount: 329,
 }
 
-const princessAndGrilledCheese: BookWithoutId = {
+const princessAndGrilledCheese: NewBook = {
   isbn13: '9780316538725',
   title: 'Princess and the Grilled Cheese Sandwich (a Graphic Novel)',
   authors: ['Deya Muniz'],
 }
 
-describe('books', () => {
+let booksStore: BooksStore
+let db: Database
+
+describe('booksStore', () => {
+  beforeEach(async () => {
+    const { drizzle, sqlite } = createTestDB()
+    db = sqlite
+    booksStore = await createTestBooksStore(drizzle)
+  })
+
   afterEach(() => {
-    books.reset()
+    db.close()
   })
 
   it('should be initialized to an empty array', () => {
-    expect(books.value).toStrictEqual([])
+    expect(booksStore.value).toStrictEqual([])
   })
 
   describe('#add', () => {
-    it('should add a book with a unique ID', () => {
-      const duneMessiahId = books.add(duneMessiah)
-      const addedBook = books.value[0]
+    it('should add a book with a unique ID', async () => {
+      const duneMessiahId = await booksStore.add(duneMessiah)
+      const addedBook = booksStore.value[0]
 
       expect(addedBook.title).toBe(duneMessiah.title)
       expect(addedBook.id).toBeDefined()
@@ -49,57 +60,57 @@ describe('books', () => {
 
   describe('with several books preloaded', () => {
     let duneMessiahWithId: Book
-    beforeEach(() => {
-      books.add(duneMessiah)
-      duneMessiahWithId = books.value[0]
-      books.add(princessAndGrilledCheese)
+    beforeEach(async () => {
+      await booksStore.add(duneMessiah)
+      duneMessiahWithId = booksStore.value[0]
+      await booksStore.add(princessAndGrilledCheese)
     })
 
     it('should contain two books after adding', () => {
-      expect(books.value.length).toBe(2)
+      expect(booksStore.value.length).toBe(2)
     })
     describe('#edit', () => {
-      it('should edit a book title', () => {
+      it('should edit a book title', async () => {
         const updatedBook = {
           ...duneMessiahWithId,
           title: 'Dune Messiah: Revised Edition',
         }
-        books.edit(updatedBook)
-        const editedBook = books.value.find((book) => book.id === duneMessiahWithId.id)
+        await booksStore.edit(updatedBook)
+        const editedBook = booksStore.value.find((book) => book.id === duneMessiahWithId.id)
         expect(editedBook?.title).toBe('Dune Messiah: Revised Edition')
       })
 
-      it('should edit a book subtitle', () => {
+      it('should edit a book subtitle', async () => {
         const updatedBook = {
           ...duneMessiahWithId,
           subtitle: 'Revised Subtitle',
         }
-        books.edit(updatedBook)
-        const editedBook = books.value.find((book) => book.id === duneMessiahWithId.id)
+        await booksStore.edit(updatedBook)
+        const editedBook = booksStore.value.find((book) => book.id === duneMessiahWithId.id)
         expect(editedBook?.subtitle).toBe('Revised Subtitle')
       })
 
-      it('should edit the authors of a book', () => {
+      it('should edit the authors of a book', async () => {
         const updatedBook = {
           ...duneMessiahWithId,
           authors: ['Frank Herbert', 'New Co-Author'],
         }
-        books.edit(updatedBook)
-        const editedBook = books.value.find((book) => book.id === duneMessiahWithId.id)
+        await booksStore.edit(updatedBook)
+        const editedBook = booksStore.value.find((book) => book.id === duneMessiahWithId.id)
         expect(editedBook?.authors).toContain('New Co-Author')
       })
 
-      it('should edit the publication date', () => {
+      it('should edit the publication date', async () => {
         const updatedBook = {
           ...duneMessiahWithId,
           publicationDate: 'August 1, 1990',
         }
-        books.edit(updatedBook)
-        const editedBook = books.value.find((book) => book.id === duneMessiahWithId.id)
+        await booksStore.edit(updatedBook)
+        const editedBook = booksStore.value.find((book) => book.id === duneMessiahWithId.id)
         expect(editedBook?.publicationDate).toBe('August 1, 1990')
       })
 
-      it('should edit the cover images', () => {
+      it('should edit the cover images', async () => {
         const updatedBook = {
           ...duneMessiahWithId,
           coverImages: {
@@ -108,49 +119,49 @@ describe('books', () => {
             small: 'https://some-new-link.com/new_small.jpg',
           },
         }
-        books.edit(updatedBook)
-        const editedBook = books.value.find((book) => book.id === duneMessiahWithId.id)
+        await booksStore.edit(updatedBook)
+        const editedBook = booksStore.value.find((book) => book.id === duneMessiahWithId.id)
         expect(editedBook?.coverImages?.large).toBe('https://some-new-link.com/new_large.jpg')
         expect(editedBook?.coverImages?.medium).toBe('https://some-new-link.com/new_medium.jpg')
         expect(editedBook?.coverImages?.small).toBe('https://some-new-link.com/new_small.jpg')
       })
 
-      it('should edit the tags of a book', () => {
+      it('should edit the tags of a book', async () => {
         const updatedBook = {
           ...duneMessiahWithId,
           tags: ['Science Fiction', 'Classic'],
         }
-        books.edit(updatedBook)
-        const editedBook = books.value.find((book) => book.id === duneMessiahWithId.id)
+        await booksStore.edit(updatedBook)
+        const editedBook = booksStore.value.find((book) => book.id === duneMessiahWithId.id)
         expect(editedBook?.tags).toContain('Science Fiction')
       })
 
-      it('should edit the page count of a book', () => {
+      it('should edit the page count of a book', async () => {
         const updatedBook = {
           ...duneMessiahWithId,
           pageCount: 500,
         }
-        books.edit(updatedBook)
-        const editedBook = books.value.find((book) => book.id === duneMessiahWithId.id)
+        await booksStore.edit(updatedBook)
+        const editedBook = booksStore.value.find((book) => book.id === duneMessiahWithId.id)
         expect(editedBook?.pageCount).toBe(500)
       })
 
-      it('should edit the series of a book', () => {
+      it('should edit the series of a book', async () => {
         const updatedBook = {
           ...duneMessiahWithId,
           series: 'Dune Chronicles (Revised)',
         }
-        books.edit(updatedBook)
-        const editedBook = books.value.find((book) => book.id === duneMessiahWithId.id)
+        await booksStore.edit(updatedBook)
+        const editedBook = booksStore.value.find((book) => book.id === duneMessiahWithId.id)
         expect(editedBook?.series).toBe('Dune Chronicles (Revised)')
       })
     })
 
     describe('#remove', () => {
-      it('should remove a book by ID', () => {
-        books.remove(duneMessiahWithId.id)
-        expect(books.value.length).toBe(1)
-        expect(books.value[0].title).toBe(princessAndGrilledCheese.title)
+      it('should remove a book by ID', async () => {
+        await booksStore.remove(duneMessiahWithId.id)
+        expect(booksStore.value.length).toBe(1)
+        expect(booksStore.value[0].title).toBe(princessAndGrilledCheese.title)
       })
     })
   })

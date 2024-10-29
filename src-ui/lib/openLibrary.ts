@@ -1,6 +1,6 @@
 import type { components, paths } from 'open-library-api'
 import createClient from 'openapi-fetch'
-import { type BookWithoutId } from './types/book.js'
+import { type NewBook } from './types/book.js'
 
 const fetchWithTimeout = async (request: Request | string, timeout = 3000): Promise<Response> => {
   const controller = new AbortController()
@@ -27,7 +27,7 @@ const client = createClient<paths>({
   fetch: (request: Request) => fetchWithTimeout(request),
 })
 
-export async function getByISBN(isbn: string): Promise<BookWithoutId> {
+export async function getByISBN(isbn: string): Promise<NewBook> {
   const { data, error } = await client.GET('/isbn/{isbn}.json', {
     params: { path: { isbn } },
   })
@@ -40,9 +40,7 @@ export async function getByISBN(isbn: string): Promise<BookWithoutId> {
   return await normalizeOpenLibraryBook(data)
 }
 
-async function normalizeOpenLibraryBook(
-  data: components['schemas']['Edition']
-): Promise<BookWithoutId> {
+async function normalizeOpenLibraryBook(data: components['schemas']['Edition']): Promise<NewBook> {
   const id = data.key.split('/').pop()
   const authorIds = data.authors?.map((v) => v.key.split('/').pop() || '').filter(Boolean) || []
   return {
