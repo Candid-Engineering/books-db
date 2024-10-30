@@ -1,12 +1,35 @@
-import type { paths, components } from 'open-library-api'
-import { type Book } from './types/book.js'
+import type { components, paths } from 'open-library-api'
 import createClient from 'openapi-fetch'
+import { type BookWithoutId } from './types/book.js'
 
-const client = createClient<paths>({ baseUrl: 'https://openlibrary.org/' })
+const fetchWithTimeout = async (request: Request | string, timeout = 3000): Promise<Response> => {
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => {
+    controller.abort()
+  }, timeout)
 
-export async function getByISBN(isbn: string): Promise<Book> {
+  return await fetch(request, { signal: controller.signal })
+    .then((response) => {
+      clearTimeout(timeoutId)
+      return response
+    })
+    .catch((error) => {
+      clearTimeout(timeoutId)
+      if (error.name === 'AbortError') {
+        throw new Error('Fetch request timed out')
+      }
+      throw error
+    })
+}
+
+const client = createClient<paths>({
+  baseUrl: 'https://openlibrary.org/',
+  fetch: (request: Request) => fetchWithTimeout(request),
+})
+
+export async function getByISBN(isbn: string): Promise<BookWithoutId> {
   const { data, error } = await client.GET('/isbn/{isbn}.json', {
-    params: { path: { isbn: isbn } },
+    params: { path: { isbn } },
   })
   if (error) {
     throw new Error('Error handling not implemented yet for Open Library API')
@@ -17,7 +40,9 @@ export async function getByISBN(isbn: string): Promise<Book> {
   return await normalizeOpenLibraryBook(data)
 }
 
-async function normalizeOpenLibraryBook(data: components['schemas']['Edition']): Promise<Book> {
+async function normalizeOpenLibraryBook(
+  data: components['schemas']['Edition']
+): Promise<BookWithoutId> {
   const id = data.key.split('/').pop()
   const authorIds = data.authors?.map((v) => v.key.split('/').pop() || '').filter(Boolean) || []
   return {
