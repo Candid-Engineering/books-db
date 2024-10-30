@@ -1,6 +1,7 @@
 use std::{fs::create_dir_all, path::PathBuf};
 
 use super::error::{Error, Res};
+use super::json_param::into_json_params;
 use rusqlite::{params_from_iter, Connection};
 use serde_json::{Map, Value};
 use serde_rusqlite::{from_row, from_rows};
@@ -23,7 +24,8 @@ pub(super) fn query(
     sql: String,
     params: Option<Vec<Value>>,
 ) -> Res<Vec<Map<String, Value>>> {
-    let params = params_from_iter(params.unwrap_or_default());
+    let params: Vec<_> = into_json_params(params.unwrap_or_default());
+    let params = params_from_iter(params);
     let mut statement = connection.prepare(&sql)?;
     let rows = statement.query(params)?;
     let rows: std::result::Result<Vec<Map<String, Value>>, serde_rusqlite::Error> =
@@ -36,10 +38,11 @@ pub(super) fn query_row(
     sql: String,
     params: Option<Vec<Value>>,
 ) -> Res<Map<String, Value>> {
-    let params = params_from_iter(params.unwrap_or_default());
+    let params: Vec<_> = into_json_params(params.unwrap_or_default());
+    let params = params_from_iter(params);
     let mut statement = connection.prepare(&sql)?;
-    let row = statement.query_row(params, |row| Ok(from_row::<Map<String, Value>>(row)))??;
-    Ok(row)
+    let row = statement.query_row(params, |row| Ok(from_row::<Map<String, Value>>(row)))?;
+    Ok(row?)
 }
 
 pub(super) fn execute(
@@ -47,15 +50,13 @@ pub(super) fn execute(
     sql: String,
     params: Option<Vec<Value>>,
 ) -> Res<i32> {
-    let params = params_from_iter(params.unwrap_or_default());
+    let params: Vec<_> = into_json_params(params.unwrap_or_default());
+    let params = params_from_iter(params);
+
     let mut statement = connection.prepare(&sql)?;
     let count = statement.execute(params)?;
-    if count > i32::MAX as usize {
-        Ok(i32::MAX)
-    } else {
-        // if too many rows are affected, we return the largest number we can represent in json.
-        Ok(count as i32)
-    }
+    // if too many rows are affected, we return the largest number we can represent in json:
+    Ok(count.try_into().unwrap_or(i32::MAX))
 }
 
 #[cfg(test)]
@@ -153,30 +154,37 @@ mod test {
         ]);
 
         // `#query` -> `[{column_name: value, ..}, {..}]`
-        let expected: Vec<Map<String, Value>> = vec![
-          json!({"id": 1, "title": "The Last Hot Time", "authors": "[\"John M. Ford\"]"}).as_object().unwrap().clone(),
-          json!({"id": 2, "title": "The Princess and the Grilled Cheese Sandwich", "authors": "[\"Deya Muniz\"]"}).as_object().unwrap().clone()
-        ];
+        let result = query(
+            &connection,
+            "SELECT title, id, authors FROM books LIMIT 10".to_string(),
+            None,
+        )
+        .unwrap();
         assert_eq!(
-            expected,
-            query(
-                &connection,
-                "SELECT * FROM books LIMIT 10".to_string(),
-                None,
-            )
-            .unwrap()
+          vec![
+            json!({"id": 1, "title": "The Last Hot Time", "authors": "[\"John M. Ford\"]"}).as_object().unwrap().clone(),
+            json!({"id": 2, "title": "The Princess and the Grilled Cheese Sandwich", "authors": "[\"Deya Muniz\"]"}).as_object().unwrap().clone(),
+          ],
+          result
         );
+        // Keys must respect query order
+        assert_eq!(result[0].keys().map(|k| k.as_str()).collect::<Vec<_>>(), vec!["title", "id", "authors"]);
+        assert_eq!(result[1].keys().map(|k| k.as_str()).collect::<Vec<_>>(), vec!["title", "id", "authors"]);
 
         // #`query_row` -> {column_name: value}
-        assert_eq!(
-            json!({"id": 2, "title": "The Princess and the Grilled Cheese Sandwich", "authors": "[\"Deya Muniz\"]"}).as_object().unwrap().clone(),
-            query_row(
+        let result = query_row(
                 &connection,
                 "SELECT * FROM books WHERE id = 2".to_string(),
                 None,
             )
-            .unwrap()
+            .unwrap();
+        assert_eq!(
+            json!({"id": 2, "title": "The Princess and the Grilled Cheese Sandwich", "authors": "[\"Deya Muniz\"]"}).as_object().unwrap().clone(),
+            result
         );
+
+        // keys maintain order of table definition by default
+        assert_eq!(result.keys().map(|k| k.as_str()).collect::<Vec<_>>(), vec!["id", "title", "authors"]);
         Ok(())
     }
 
@@ -195,6 +203,58 @@ mod test {
         assert_eq!(1, execute(&connection, "INSERT INTO books VALUES (2, 'The Fellowship of the Ring', '[\"J. R. R. Tolkien\"]')".to_string(), None).unwrap());
         // TODO(rkofman): use json extension for the authors query and update; to avoid string-matching on an array?
         assert_eq!(2, execute(&connection, "UPDATE books SET authors = '[\"John Ronald Reuel Tolkien\"]' WHERE authors = '[\"J. R. R. Tolkien\"]'".to_string(), None).unwrap());
+        Ok(())
+    }
+
+    #[test]
+    fn test_params() -> Result<(), Error> {
+        let connection = new_books_db();
+        // execute with param
+        assert_eq!(
+            1,
+            execute(
+                &connection,
+                "INSERT INTO books VALUES (?, ?, ?)".to_string(),
+                Some(vec!(
+                    json!(1),
+                    json!("The Hobbit"),
+                    json!(["J. R. R. Tolkien"])
+                )),
+            )
+            .unwrap()
+        );
+
+        let expected: Vec<Map<String, Value>> = vec![
+            json!({"id": 1, "title": "The Hobbit", "authors": "[\"J. R. R. Tolkien\"]"})
+                .as_object()
+                .unwrap()
+                .clone(),
+        ];
+
+        // query with param
+        assert_eq!(
+            expected,
+            query(
+                &connection,
+                "SELECT * FROM books WHERE \"title\" = ?".to_string(),
+                Some(vec!(json!("The Hobbit"))),
+            )
+            .unwrap()
+        );
+
+        // query_row with param
+        assert_eq!(
+            json!({"id": 1, "title": "The Hobbit", "authors": "[\"J. R. R. Tolkien\"]"})
+                .as_object()
+                .unwrap()
+                .clone(),
+            query_row(
+                &connection,
+                "SELECT * FROM books WHERE \"title\" = ?".to_string(),
+                Some(vec!(json!("The Hobbit"))),
+            )
+            .unwrap()
+        );
         Ok(())
     }
 }
