@@ -1,6 +1,5 @@
 // @ts-check
 import js from '@eslint/js'
-import ts from 'typescript-eslint'
 import tseslint from 'typescript-eslint'
 import svelte from 'eslint-plugin-svelte'
 import prettier from 'eslint-config-prettier'
@@ -10,7 +9,7 @@ import globals from 'globals'
 
 export default tseslint.config(
   js.configs.recommended,
-  ...ts.configs.recommendedTypeChecked,
+  ...tseslint.configs.recommendedTypeChecked,
   ...svelte.configs['flat/recommended'],
   prettier,
   ...svelte.configs['flat/prettier'],
@@ -33,7 +32,7 @@ export default tseslint.config(
     files: ['**/*.svelte'],
     languageOptions: {
       parserOptions: {
-        parser: ts.parser,
+        parser: tseslint.parser,
       },
     },
   },
@@ -45,7 +44,8 @@ export default tseslint.config(
       'node_modules/',
       'out/',
       '.gitignore',
-      'src-ui/stories/',
+      'src-ui/target',
+      'target/',
       'src-ui/lib/generated/',
       '!.storybook',
     ],
