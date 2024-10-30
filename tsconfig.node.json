@@ -1,7 +1,0 @@
-{
-  "include": ["src-ui/**/*"],
-  "compilerOptions": {
-    "composite": true,
-    "types": []
-  }
-}
