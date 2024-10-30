@@ -168,23 +168,32 @@ mod test {
           result
         );
         // Keys must respect query order
-        assert_eq!(result[0].keys().map(|k| k.as_str()).collect::<Vec<_>>(), vec!["title", "id", "authors"]);
-        assert_eq!(result[1].keys().map(|k| k.as_str()).collect::<Vec<_>>(), vec!["title", "id", "authors"]);
+        assert_eq!(
+            result[0].keys().map(|k| k.as_str()).collect::<Vec<_>>(),
+            vec!["title", "id", "authors"]
+        );
+        assert_eq!(
+            result[1].keys().map(|k| k.as_str()).collect::<Vec<_>>(),
+            vec!["title", "id", "authors"]
+        );
 
         // #`query_row` -> {column_name: value}
         let result = query_row(
-                &connection,
-                "SELECT * FROM books WHERE id = 2".to_string(),
-                None,
-            )
-            .unwrap();
+            &connection,
+            "SELECT * FROM books WHERE id = 2".to_string(),
+            None,
+        )
+        .unwrap();
         assert_eq!(
             json!({"id": 2, "title": "The Princess and the Grilled Cheese Sandwich", "authors": "[\"Deya Muniz\"]"}).as_object().unwrap().clone(),
             result
         );
 
         // keys maintain order of table definition by default
-        assert_eq!(result.keys().map(|k| k.as_str()).collect::<Vec<_>>(), vec!["id", "title", "authors"]);
+        assert_eq!(
+            result.keys().map(|k| k.as_str()).collect::<Vec<_>>(),
+            vec!["id", "title", "authors"]
+        );
         Ok(())
     }
 
