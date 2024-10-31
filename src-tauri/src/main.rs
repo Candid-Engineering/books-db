@@ -3,6 +3,9 @@
 
 use std::env;
 
+use migrations::lib::get_migrations;
+
+pub mod migrations;
 pub mod plugins;
 
 fn main() {
@@ -15,7 +18,10 @@ fn main() {
         // TODO(rkofman): the name of the DB should be updated based on `.env` variables.
         // `books.db` for prod, `books-dev.db` for dev, and probably `:memory:` for test.
         // Also: consider moving this to the config file (assuming per-env configs).
-        .plugin(plugins::sqlite_proxy::init("books-dev.db"))
+        .plugin(plugins::sqlite_proxy::init(
+            "books-dev.db",
+            &get_migrations(),
+        ))
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
