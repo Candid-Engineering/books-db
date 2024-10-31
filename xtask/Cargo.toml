@@ -1,0 +1,26 @@
+[package]
+name = "xtask"
+version = "0.1.0"
+default-run = "xtask"
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+description.workspace = true
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[build-dependencies]
+
+[dependencies]
+tauri = { version = "2.0.2", features = ["test"] }
+anyhow = "1.0.89"
+rusqlite = { version = "0.32.1", features = ["bundled", "serde_json", "modern-full"] }
+log = "0.4.22"
+serde_rusqlite = "0.36.0"
+pretty_env_logger = "0.5.0"
+directories = "5.0.1"
+duct = "0.13.7"
+
+[dev-dependencies]

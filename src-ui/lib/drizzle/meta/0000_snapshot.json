@@ -1,0 +1,117 @@
+{
+  "id": "00000000-0000-0000-0000-000000000000",
+  "prevId": "",
+  "version": "6",
+  "dialect": "sqlite",
+  "tables": {
+    "books": {
+      "name": "books",
+      "columns": {
+        "id": {
+          "default": "(uuid_blob(uuid()))",
+          "autoincrement": false,
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "isbn10": {
+          "autoincrement": false,
+          "name": "isbn10",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "isbn13": {
+          "autoincrement": false,
+          "name": "isbn13",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "title": {
+          "autoincrement": false,
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "subtitle": {
+          "autoincrement": false,
+          "name": "subtitle",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "authors": {
+          "autoincrement": false,
+          "name": "authors",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tags": {
+          "autoincrement": false,
+          "name": "tags",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "series": {
+          "autoincrement": false,
+          "name": "series",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "pageCount": {
+          "autoincrement": false,
+          "name": "pageCount",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "publicationDate": {
+          "autoincrement": false,
+          "name": "publicationDate",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "copyrightDate": {
+          "autoincrement": false,
+          "name": "copyrightDate",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "coverImages": {
+          "autoincrement": false,
+          "name": "coverImages",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "hasRead": {
+          "autoincrement": false,
+          "name": "hasRead",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "compositePrimaryKeys": {},
+      "indexes": {},
+      "foreignKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    }
+  },
+  "views": {},
+  "enums": {},
+  "_meta": {
+    "schemas": {},
+    "tables": {},
+    "columns": {}
+  }
+}

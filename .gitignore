@@ -6,6 +6,7 @@ out
 .vercel
 /.svelte-kit
 /build
+target
 
 # OS
 .DS_Store

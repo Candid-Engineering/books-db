@@ -1,0 +1,11 @@
+[workspace]
+members = ["src-tauri", "xtask"]
+resolver = "2"
+
+[workspace.package]
+authors = ["Candid Engineering"]
+license = ""
+repository = ""
+edition = "2021"
+rust-version = "1.81"
+description = "Use a barcode scanner to catalog your books!"
