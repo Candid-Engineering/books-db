@@ -1,5 +1,6 @@
 mod commands;
 mod error;
+mod json_param;
 mod lib;
 use std::sync::Mutex;
 
