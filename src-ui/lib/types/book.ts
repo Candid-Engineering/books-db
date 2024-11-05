@@ -1,17 +1,4 @@
-export type Book = {
-  id: string
-  isbn10?: string
-  isbn13?: string
-  title: string
-  subtitle?: string
-  authors: string[]
-  tags?: string[]
-  series?: string
-  pageCount?: number
-  publicationDate?: string
-  copyrightDate?: string
-  coverImages?: { small?: string; medium?: string; large?: string }
-  hasRead?: boolean
-}
+import * as schema from '$lib/drizzle/schema'
 
-export type BookWithoutId = Partial<Omit<Book, 'id'>>
+export type Book = typeof schema.books.$inferSelect
+export type NewBook = typeof schema.books.$inferInsert
