@@ -32,7 +32,10 @@
       "providerShortName": null,
       "signingIdentity": null
     },
-    "resources": [],
+    "resources": {
+      "../migrations/meta": "migrations/meta",
+      "../migrations/*": "migrations/"
+    },
     "shortDescription": "",
     "linux": {
       "deb": {
@@ -44,7 +47,7 @@
   "mainBinaryName": "books-db",
   "version": "0.1.0",
   "identifier": "com.candid-eng.books-db",
-  "plugins": {},
+  "plugins": { "fs": {} },
   "app": {
     "windows": [
       {

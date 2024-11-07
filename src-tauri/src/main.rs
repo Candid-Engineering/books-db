@@ -15,6 +15,7 @@ fn main() {
     pretty_env_logger::init();
 
     tauri::Builder::default()
+        .plugin(tauri_plugin_fs::init())
         // TODO(rkofman): the name of the DB should be updated based on `.env` variables.
         // `books.db` for prod, `books-dev.db` for dev, and probably `:memory:` for test.
         // Also: consider moving this to the config file (assuming per-env configs).
