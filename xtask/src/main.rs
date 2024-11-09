@@ -25,13 +25,19 @@ fn main() {
         "db:drop" => {
             let db_path = get_full_db_path();
             match remove_file(&db_path) {
-              Ok(_) => info!("Successfully deleted database file at: '{}'", db_path.display().to_string()),
-              Err(_e) => {
-                error!("⚠️ Could not find database at: '{}'.", db_path.display().to_string());
-                error!("  🤔 Is it already dropped?");
-                error!("  🤔 Do you have permissions?");
-                error!("  🤔 Is it the correct path?");
-            }
+                Ok(_) => info!(
+                    "Successfully deleted database file at: '{}'",
+                    db_path.display().to_string()
+                ),
+                Err(_e) => {
+                    error!(
+                        "⚠️ Could not find database at: '{}'.",
+                        db_path.display().to_string()
+                    );
+                    error!("  🤔 Is it already dropped?");
+                    error!("  🤔 Do you have permissions?");
+                    error!("  🤔 Is it the correct path?");
+                }
             };
         }
         "gen:migration" => {

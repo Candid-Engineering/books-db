@@ -3,8 +3,10 @@ import * as orm from 'drizzle-orm'
 import * as schema from '$lib/db/schema'
 import * as fs from '@tauri-apps/plugin-fs'
 import { commands } from '$lib/generated/sqlite_proxy'
+import { migrate } from '$lib/db/migrator'
 
-declare global {
+
+ declare global {
   interface Window {
     db: typeof db
     schema: typeof schema
@@ -19,3 +21,5 @@ window.schema = schema
 window.orm = orm
 window.fs = fs
 window.sqlite = commands
+
+await migrate(db)
