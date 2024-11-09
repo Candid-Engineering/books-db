@@ -1,4 +1,4 @@
-import * as schema from '$lib/drizzle/schema'
+import * as schema from '$lib/db/schema'
 import initSqlJs, { type Database } from 'sql.js'
 import { drizzle, SqliteRemoteDatabase } from 'drizzle-orm/sqlite-proxy'
 

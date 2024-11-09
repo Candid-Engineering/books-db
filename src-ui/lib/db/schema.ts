@@ -6,16 +6,12 @@ export const books = sqliteTable('books', {
   isbn13: text(),
   title: text().notNull(),
   subtitle: text(),
-  // authors: text().notNull(), // NOTE: manually keep the line below after schema pull overrides it.
   authors: text({ mode: 'json' }).notNull().$type<string[]>(),
-  // tags: text(),
   tags: text({ mode: 'json' }).$type<string[]>(),
   series: text(),
   pageCount: integer(),
   publicationDate: text(),
   copyrightDate: text(),
-  // coverImages: text(), // NOTE: manually keep the line below after schema pull overrides it.
   coverImages: text({ mode: 'json' }).$type<{ small?: string; medium?: string; large?: string }>(),
-  // hasRead: integer(), // NOTE: manually keep the line below after schema pull overrides it.
   hasRead: integer({ mode: 'boolean' }),
 })

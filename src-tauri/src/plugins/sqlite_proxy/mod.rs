@@ -2,14 +2,11 @@ mod commands;
 mod error;
 mod json_param;
 mod lib;
-pub(crate) mod migrations;
 use std::sync::Mutex;
 
 pub use commands::*;
 pub use error::{Error, Res};
 use lib::connection_for;
-use migrations::apply_migrations;
-use migrations::Migration;
 use specta_typescript::Typescript;
 use tauri::plugin::Builder;
 use tauri::plugin::PluginApi;

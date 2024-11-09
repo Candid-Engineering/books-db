@@ -1,7 +1,7 @@
 import { v4 as uuidv4 } from 'uuid'
 import { type Book, type NewBook } from '$lib/types/book.js'
 import realDb from '$lib/db/index.js'
-import * as schema from '$lib/drizzle/schema'
+import * as schema from '$lib/db/schema'
 import type { SqliteRemoteDatabase } from 'drizzle-orm/sqlite-proxy'
 import { eq } from 'drizzle-orm/sql/expressions/conditions'
 
