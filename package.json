@@ -16,6 +16,8 @@
     "test:rust": "pnpm rust:test",
     "test:e2e": "pnpm e2e",
     "dev": "pnpm tauri dev",
+    "db:drop": "cargo xtask db:drop",
+    "gen:migration": "cargo xtask gen:migration",
     "build": "pnpm tauri build",
     "gen:schema": "cargo xtask gen:schema",
     "js:format": "prettier --write .",
