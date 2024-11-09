@@ -26,11 +26,9 @@
 
   const addByISBN = async (isbn: string): Promise<void> => {
     return booksStorePromise.then(async (booksStore) => {
-      isLoading = true
-      const book = await getByISBN(isbn)
+        const book = await getByISBN(isbn)
       await booksStore.add(book)
-      isLoading = false
-    })
+      })
   }
 
   type scanEvent = {
@@ -67,18 +65,7 @@
       },
     }
   }
-  let isLoading = $state(false)
 </script>
-
-<button disabled={isLoading} onclick={() => onScan.simulate(document, '1234567890123')}>
-  Simulate ISBN
-</button>
-
-{#await promise}
-  <p>Loading...</p>
-{:catch error}
-  <p style="color: red">{error.message}</p>
-{/await}
 
 <svelte:document use:listenForBarcodes on:scan={handleScan} />
 {#await booksStorePromise}
