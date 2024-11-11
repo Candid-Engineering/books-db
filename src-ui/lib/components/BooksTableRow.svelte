@@ -18,7 +18,7 @@
 <!-- note: `slide` transitions (which I prefer here) don't currently work on tables: https://github.com/sveltejs/svelte/issues/4948 -->
 <tr transition:fade={{ duration: 300 }}>
   <td
-    ><button aria-label="delete book button" class="delete" on:click={() => removeBook(book.id)}
+    ><button aria-label="delete book" class="delete" on:click={() => removeBook(book.id)}
     ></button></td
   >
   <td
