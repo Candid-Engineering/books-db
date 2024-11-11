@@ -11,14 +11,23 @@
       ;(event.currentTarget as HTMLTableCellElement).blur?.()
     }
   }
+  export let removeBook: (id: string) => Promise<void>
+  console.log('book is: ', book)
 </script>
 
 <!-- note: `slide` transitions (which I prefer here) don't currently work on tables: https://github.com/sveltejs/svelte/issues/4948 -->
 <tr transition:fade={{ duration: 300 }}>
   <td
+    ><button aria-label="delete book button" class="delete" on:click={() => removeBook(book.id)}
+    ></button></td
+  >
+  <td
     contenteditable="true"
     on:blur={(e) => handleEdit(book, 'isbn10', e)}
     on:keydown={handleEnter()}>{book.isbn10 ?? book.isbn13}</td
+  >
+  <td contenteditable="true" on:blur={(e) => handleEdit(book, 'isbn10', e)}
+    >{book.isbn10 ?? book.isbn13}</td
   >
   <td
     contenteditable="true"

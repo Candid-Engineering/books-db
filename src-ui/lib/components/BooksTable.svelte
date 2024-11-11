@@ -41,7 +41,7 @@
   const handleScan = (event: scanEvent): void => {
     promise = addByISBN(event.detail.scanCode)
   }
-  const handleEdit = (book: Book, field: keyof Book, e: Event) => {
+  const handleEdit = async (book: Book, field: keyof Book, e: Event) => {
     const target = e.target as HTMLElement
     const value =
       field === 'authors' || 'tags'
@@ -74,6 +74,7 @@
   <table class="table is-fullwidth">
     <thead>
       <tr>
+        <th></th>
         <th>ISBN</th>
         <th>Title</th>
         <th>Author</th>
@@ -83,7 +84,7 @@
     </thead>
     <tbody>
       {#each booksStore.value as book}
-        <BooksTableRow {book} {handleEdit} />
+        <BooksTableRow {book} {handleEdit} {removeBook} />
       {:else}
         <tr>
           <td colspan="5">
