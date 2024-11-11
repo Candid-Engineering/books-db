@@ -5,8 +5,7 @@ import * as fs from '@tauri-apps/plugin-fs'
 import { commands } from '$lib/generated/sqlite_proxy'
 import { migrate } from '$lib/db/migrator'
 
-
- declare global {
+declare global {
   interface Window {
     db: typeof db
     schema: typeof schema
