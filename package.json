@@ -47,6 +47,7 @@
     "onscan.js": "^1.5.2",
     "open-library-api": "^0.1.2",
     "openapi-fetch": "^0.12.5",
+    "svelte-modals": "^2.0.0",
     "uuid": "^10.0.0"
   },
   "devDependencies": {
