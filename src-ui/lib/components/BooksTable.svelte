@@ -44,7 +44,7 @@
   const handleEdit = (book: Book, field: keyof Book, e: Event) => {
     const target = e.target as HTMLElement
     const value =
-      field === 'authors'
+      field === 'authors' || 'tags'
         ? target.innerText.split(',').map((author) => author.trim())
         : target.innerText.trim()
 
