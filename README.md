@@ -114,4 +114,5 @@ pnpm run build
 1. Update `src-ui/lib/db/schema.ts`
 2. Run `cargo xtask ben:migration [migration_name]`
 3. `pnpm dev` will start the app and apply any migrations since the latest fully applied one.
-  * Note: Currently only **new** migrations will be applied (measured by timestamp). If a migration was _skipped_, it will remain skipped.
+
+- Note: Currently only **new** migrations will be applied (measured by timestamp). If a migration was _skipped_, it will remain skipped.

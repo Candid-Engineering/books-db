@@ -26,9 +26,9 @@
 
   const addByISBN = async (isbn: string): Promise<void> => {
     return booksStorePromise.then(async (booksStore) => {
-        const book = await getByISBN(isbn)
+      const book = await getByISBN(isbn)
       await booksStore.add(book)
-      })
+    })
   }
 
   type scanEvent = {
