@@ -74,6 +74,7 @@
   <table class="table is-fullwidth">
     <thead>
       <tr>
+        <!-- First blank header is for the "delete" button in each row -->
         <th></th>
         <th>ISBN</th>
         <th>Title</th>
@@ -84,7 +85,7 @@
     </thead>
     <tbody>
       {#each booksStore.value as book}
-        <BooksTableRow {book} {handleEdit} {removeBook} />
+        <BooksTableRow {book} />
       {:else}
         <tr>
           <td colspan="5">

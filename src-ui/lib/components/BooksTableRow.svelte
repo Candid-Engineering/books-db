@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { createBooksStore } from '$lib/state/Books.svelte'
   import type { Book } from '$lib/types/book.js'
   import { fade } from 'svelte/transition'
 
@@ -13,6 +14,24 @@
   }
   export let removeBook: (id: string) => Promise<void>
   console.log('book is: ', book)
+
+  let booksStorePromise = createBooksStore()
+  const handleEdit = async (book: Book, field: keyof Book, e: Event) => {
+    const target = e.target as HTMLElement
+    const value =
+      field === 'authors'
+        ? target.innerText.split(',').map((author) => author.trim())
+        : target.innerText.trim()
+
+    return booksStorePromise.then(async (booksStore) => {
+      await booksStore.edit({ ...book, [field]: value })
+    })
+  }
+  const removeBook = async (id: string): Promise<void> => {
+    return booksStorePromise.then(async (booksStore) => {
+      await booksStore.remove(id)
+    })
+  }
 </script>
 
 <!-- note: `slide` transitions (which I prefer here) don't currently work on tables: https://github.com/sveltejs/svelte/issues/4948 -->
