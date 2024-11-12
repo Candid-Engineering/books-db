@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { createBooksStore } from '$lib/state/Books.svelte'
   import type { Book } from '$lib/types/book.js'
   import { fade } from 'svelte/transition'
 
