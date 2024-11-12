@@ -1,24 +1,15 @@
 <script lang="ts">
+  import { createBooksStore } from '$lib/state/Books.svelte'
   import type { Book } from '$lib/types/book.js'
   import { fade } from 'svelte/transition'
 
   export let book: Book
-  export let handleEdit: (book: Book, field: keyof Book, event: Event) => void
-
-  const handleEnter = () => (event: Event) => {
-    if (event instanceof KeyboardEvent && event.key === 'Enter') {
-      event.preventDefault?.()
-      ;(event.currentTarget as HTMLTableCellElement).blur?.()
-    }
-  }
-  export let removeBook: (id: string) => Promise<void>
-  console.log('book is: ', book)
 
   let booksStorePromise = createBooksStore()
   const handleEdit = async (book: Book, field: keyof Book, e: Event) => {
     const target = e.target as HTMLElement
     const value =
-      field === 'authors'
+      field === 'authors' || 'tags'
         ? target.innerText.split(',').map((author) => author.trim())
         : target.innerText.trim()
 
@@ -30,6 +21,13 @@
     return booksStorePromise.then(async (booksStore) => {
       await booksStore.remove(id)
     })
+  }
+
+  const handleEnter = () => (event: Event) => {
+    if (event instanceof KeyboardEvent && event.key === 'Enter') {
+      event.preventDefault?.()
+      ;(event.currentTarget as HTMLTableCellElement).blur?.()
+    }
   }
 </script>
 
