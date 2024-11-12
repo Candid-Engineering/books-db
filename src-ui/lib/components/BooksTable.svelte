@@ -74,8 +74,7 @@
   <table class="table is-fullwidth">
     <thead>
       <tr>
-        <!-- First blank header is for the "delete" button in each row -->
-        <th></th>
+        <th><!-- delete action --></th>
         <th>ISBN</th>
         <th>Title</th>
         <th>Author</th>
