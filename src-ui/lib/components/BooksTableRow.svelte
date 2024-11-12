@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Book } from '$lib/types/book.js'
+  import { fade } from 'svelte/transition'
 
   export let book: Book
   export let handleEdit: (book: Book, field: keyof Book, event: Event) => void
@@ -12,7 +13,8 @@
   }
 </script>
 
-<tr>
+<!-- note: `slide` transitions (which I prefer here) don't currently work on tables: https://github.com/sveltejs/svelte/issues/4948 -->
+<tr transition:fade={{ duration: 300 }}>
   <td
     contenteditable="true"
     on:blur={(e) => handleEdit(book, 'isbn10', e)}
