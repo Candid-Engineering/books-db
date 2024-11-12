@@ -6,12 +6,12 @@
   import type { Action } from 'svelte/action'
   import BooksTableRow from './BooksTableRow.svelte'
   import { modals } from 'svelte-modals'
-  //import AddBookModal from '$lib/components/AddBookModal.svelte'
+  import AddBookModal from '$lib/components/AddBookModal.svelte'
 
   let booksStorePromise = createBooksStore()
-  /*   function handleClick() {
+  function handleClick() {
     modals.open(AddBookModal, { title: 'Add Book Manually', message: 'wow a modal' })
-  } */
+  }
   $effect(() => {
     const initialBook: NewBook = {
       isbn10: '1234567890',
@@ -63,11 +63,11 @@
 </script>
 
 <svelte:document use:listenForBarcodes on:scan={handleScan} />
+<button class="button is-primary" onclick={handleClick}>Open Modal</button>
+
 {#await booksStorePromise}
   ...initial loading of books...
 {:then booksStore}
-  <!-- <button onclick={handleClick}>Open Modal</button> -->
-
   <table class="table is-fullwidth">
     <thead>
       <tr>
