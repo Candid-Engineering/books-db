@@ -6,6 +6,7 @@
   export let book: Book
 
   let booksStorePromise = createBooksStore()
+  console.log(book)
   const handleEdit = async (book: Book, field: keyof Book, e: Event) => {
     const target = e.target as HTMLElement
     const value =
