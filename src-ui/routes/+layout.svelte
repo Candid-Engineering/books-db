@@ -1,5 +1,5 @@
 <script lang="ts">
-  import Nav from '$lib/components/core/Nav.svelte'
+  import NavBar from '$lib/components/core/NavBar.svelte'
   import 'bulma/css/bulma.css'
 </script>
 
@@ -8,10 +8,10 @@
 </svelte:head>
 
 <header>
-  <Nav>
+  <NavBar>
     <a class="navbar-item" href="/">Home</a>
     <a class="navbar-item" href="/about">About</a>
-  </Nav>
+  </NavBar>
 </header>
 <main>
   <section class="section">
