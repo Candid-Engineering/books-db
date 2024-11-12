@@ -11,6 +11,7 @@
     "sourceMap": true,
     "strict": true
   },
+  "types": ["svelte"],
   "include": [
     "./svelte-kit/ambient.d.ts",
     "./svelte-kit/non-ambient.d.ts",
