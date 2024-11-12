@@ -6,9 +6,9 @@
   }
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
   let { children }: Props = $props()
-  let open = $state(false)
+  let isOpen = $state(false)
   function handleHamburgerClick() {
-    open = !open
+    isOpen = !isOpen
   }
 </script>
 
@@ -20,7 +20,8 @@
       onclick={handleHamburgerClick}
       href="#placeholder"
       role="button"
-      class="navbar-burger {open ? 'is-active' : ''}"
+      class="navbar-burger"
+      class:is-active={isOpen}
       aria-label="menu"
       aria-expanded="false"
       data-target="navbarBasicExample"
@@ -33,7 +34,7 @@
       <!-- end "hamburger menu" icon: -->
     </a>
   </div>
-  <div class="navbar-menu {open ? 'is-active' : ''}">
+  <div class="navbar-menu" class:is-active={isOpen}>
     <div class="navbar-start">
       {@render children?.()}
     </div>
