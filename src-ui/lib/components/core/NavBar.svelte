@@ -4,6 +4,7 @@
   interface Props {
     children: Snippet | undefined
   }
+  // TODO(rkofman): this _shouldn't_ be necessary if we have the right eslint/svelte rules setup; but alas.
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
   let { children }: Props = $props()
   let isOpen = $state(false)
