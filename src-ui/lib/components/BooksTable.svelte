@@ -1,10 +1,10 @@
 <script lang="ts">
-  import type { Book, NewBook } from '$lib/types/book.js'
+  import { getByISBN } from '$lib/openLibrary.js'
+  import { createBooksStore } from '$lib/state/Books.svelte'
+  import type { NewBook } from '$lib/types/book.js'
   import 'bulma/css/bulma.css'
   import onScan from 'onscan.js'
   import type { Action } from 'svelte/action'
-  import { getByISBN } from '$lib/openLibrary.js'
-  import { createBooksStore } from '$lib/state/Books.svelte'
   import BooksTableRow from './BooksTableRow.svelte'
 
   let booksStorePromise = createBooksStore()
@@ -17,11 +17,15 @@
       authors: ['Kerri Maniscalco'],
       hasRead: true,
     }
-    void booksStorePromise.then(async (booksStore) => {
-      if (booksStore.value.length === 0) {
-        await booksStore.add(initialBook)
-      }
-    })
+    void booksStorePromise
+      .then(async (booksStore) => {
+        if (booksStore.value.length === 0) {
+          await booksStore.add(initialBook)
+        }
+      })
+      .catch((err: any) => {
+        console.log('Err is: ', err)
+      })
   })
 
   const addByISBN = async (isbn: string): Promise<void> => {
@@ -41,7 +45,7 @@
   const handleScan = (event: scanEvent): void => {
     promise = addByISBN(event.detail.scanCode)
   }
-  const handleEdit = (book: Book, field: keyof Book, e: Event) => {
+  const handleEdit = async (book: Book, field: keyof Book, e: Event) => {
     const target = e.target as HTMLElement
     const value =
       field === 'authors' || 'tags'
@@ -74,6 +78,7 @@
   <table class="table is-fullwidth">
     <thead>
       <tr>
+        <th><!-- delete action --></th>
         <th>ISBN</th>
         <th>Title</th>
         <th>Author</th>
@@ -83,7 +88,7 @@
     </thead>
     <tbody>
       {#each booksStore.value as book}
-        <BooksTableRow {book} {handleEdit} />
+        <BooksTableRow {book} />
       {:else}
         <tr>
           <td colspan="5">
