@@ -41,9 +41,8 @@
       qty: number
     }
   }
-  let promise = $state<Promise<void>>()
   const handleScan = (event: scanEvent): void => {
-    promise = addByISBN(event.detail.scanCode)
+    void addByISBN(event.detail.scanCode)
   }
 
   type ScanAttributes = {
