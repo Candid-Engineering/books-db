@@ -6,13 +6,12 @@
   export let book: Book
 
   let booksStorePromise = createBooksStore()
-  console.log(book)
   const handleEdit = async (book: Book, field: keyof Book, e: Event) => {
     const target = e.target as HTMLElement
-    const value =
-      field === 'authors' || 'tags'
-        ? target.innerText.split(',').map((author) => author.trim())
-        : target.innerText.trim()
+    let value: string | string[] = target.innerText.trim()
+    if (field === 'authors' || field == 'tags') {
+      value = target.innerText.split(',').map((author) => author.trim())
+    }
 
     return booksStorePromise.then(async (booksStore) => {
       await booksStore.edit({ ...book, [field]: value })

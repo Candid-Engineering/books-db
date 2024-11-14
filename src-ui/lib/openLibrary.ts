@@ -13,7 +13,7 @@ const fetchWithTimeout = async (request: Request | string, timeout = 3000): Prom
       clearTimeout(timeoutId)
       return response
     })
-    .catch((error) => {
+    .catch((error: Error) => {
       clearTimeout(timeoutId)
       if (error.name === 'AbortError') {
         throw new Error('Fetch request timed out')

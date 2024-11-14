@@ -23,7 +23,7 @@
           await booksStore.add(initialBook)
         }
       })
-      .catch((err: any) => {
+      .catch((err: unknown) => {
         console.log('Err is: ', err)
       })
   })
@@ -41,20 +41,8 @@
       qty: number
     }
   }
-  let promise = $state<Promise<void>>()
   const handleScan = (event: scanEvent): void => {
-    promise = addByISBN(event.detail.scanCode)
-  }
-  const handleEdit = async (book: Book, field: keyof Book, e: Event) => {
-    const target = e.target as HTMLElement
-    const value =
-      field === 'authors' || 'tags'
-        ? target.innerText.split(',').map((author) => author.trim())
-        : target.innerText.trim()
-
-    return booksStorePromise.then(async (booksStore) => {
-      await booksStore.edit({ ...book, [field]: value })
-    })
+    void addByISBN(event.detail.scanCode)
   }
 
   type ScanAttributes = {
