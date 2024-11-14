@@ -194,8 +194,10 @@ describe('book', () => {
       )
       await getByISBN(isbn)
         .then(() => {
-          throw new Error('Test failed: Expected a timeout error')
+          throw new Error('Test failed: Expected an aborted network request (due to timeout)')
         })
+        .catch((error) => {
+          expect(error.message).toBe('Aborted')
         .catch((error: Error) => {
           expect(error.message).toBe('Fetch request timed out')
         })

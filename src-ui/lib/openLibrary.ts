@@ -2,29 +2,9 @@ import type { components, paths } from 'open-library-api'
 import createClient from 'openapi-fetch'
 import { type NewBook } from './types/book.js'
 
-const fetchWithTimeout = async (request: Request | string, timeout = 3000): Promise<Response> => {
-  const controller = new AbortController()
-  const timeoutId = setTimeout(() => {
-    controller.abort()
-  }, timeout)
-
-  return await fetch(request, { signal: controller.signal })
-    .then((response) => {
-      clearTimeout(timeoutId)
-      return response
-    })
-    .catch((error: Error) => {
-      clearTimeout(timeoutId)
-      if (error.name === 'AbortError') {
-        throw new Error('Fetch request timed out')
-      }
-      throw error
-    })
-}
-
 const client = createClient<paths>({
   baseUrl: 'https://openlibrary.org/',
-  fetch: (request: Request) => fetchWithTimeout(request),
+  fetch: (request: Request) => fetch(request, { signal: AbortSignal.timeout(3000) }),
 })
 
 export async function getByISBN(isbn: string): Promise<NewBook> {
