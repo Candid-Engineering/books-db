@@ -9,12 +9,12 @@ import globals from 'globals'
 
 export default tseslint.config(
   js.configs.recommended,
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
-  ...storybook.configs['flat/recommended'],
   ...tseslint.configs.recommendedTypeChecked,
   ...svelte.configs['flat/recommended'],
   prettier,
   ...svelte.configs['flat/prettier'],
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
+  ...storybook.configs['flat/recommended'],
   {
     languageOptions: {
       globals: {
