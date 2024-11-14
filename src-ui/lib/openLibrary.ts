@@ -1,15 +1,17 @@
 import type { components, paths } from 'open-library-api'
-import createClient from 'openapi-fetch'
+import createOasClient from 'openapi-fetch'
 import { type NewBook } from './types/book.js'
 
-const client = createClient<paths>({
+const DEFAULT_TIMEOUT = 3000
+
+const client = createOasClient<paths>({
   baseUrl: 'https://openlibrary.org/',
-  fetch: (request: Request) => fetch(request, { signal: AbortSignal.timeout(3000) }),
 })
 
-export async function getByISBN(isbn: string): Promise<NewBook> {
+export async function getByISBN(isbn: string, timeout = DEFAULT_TIMEOUT): Promise<NewBook> {
   const { data, error } = await client.GET('/isbn/{isbn}.json', {
     params: { path: { isbn } },
+    signal: AbortSignal.timeout(timeout),
   })
   if (error) {
     throw new Error('Error handling not implemented yet for Open Library API')
@@ -28,7 +30,7 @@ async function normalizeOpenLibraryBook(data: components['schemas']['Edition']):
     isbn13: data.isbn_13?.[0],
     title: data.title,
     subtitle: data.subtitle,
-    authors: await Promise.all(authorIds?.map(getAuthorName)),
+    authors: await Promise.all(authorIds?.map((id) => getAuthorName(id))),
     tags: data.subjects ?? [],
     series: data.series?.[0],
     pageCount: normalizePages(data.number_of_pages),
@@ -48,8 +50,11 @@ function normalizePages(originalCount: number | undefined): number | undefined {
   return originalCount
 }
 
-async function getAuthorName(id: string): Promise<string> {
-  const { data, error } = await client.GET('/authors/{id}.json', { params: { path: { id: id } } })
+async function getAuthorName(id: string, timeout = DEFAULT_TIMEOUT): Promise<string> {
+  const { data, error } = await client.GET('/authors/{id}.json', {
+    params: { path: { id: id } },
+    signal: AbortSignal.timeout(timeout),
+  })
   if (error) {
     throw new Error('Error handling not implemented yet for Open Library API')
   }
