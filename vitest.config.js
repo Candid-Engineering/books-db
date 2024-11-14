@@ -6,5 +6,6 @@ export default defineConfig({
   test: {
     diff: './vitest.diff.ts',
     environment: 'jsdom',
+    setupFiles: ['./src-ui/testing/msw-setup.ts'],
   },
 })

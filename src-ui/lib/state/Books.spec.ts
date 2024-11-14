@@ -1,8 +1,10 @@
-import { expect, describe, it, beforeEach, afterEach } from 'vitest'
+import { http, HttpResponse } from 'msw'
+import { expect, describe, it, beforeEach, afterEach, beforeAll } from 'vitest'
 import { createTestBooksStore, type BooksStore } from './Books.svelte.js'
 import { type Book, type NewBook } from '$lib/types/book.js'
 import { createTestDB } from '$lib/db/test_helpers.js'
 import type { Database } from 'sql.js'
+import { mockServer } from '../../testing/msw-setup.js'
 
 const duneMessiah: NewBook = {
   isbn10: '0441172695',
@@ -36,6 +38,116 @@ describe('booksStore', () => {
     const { drizzle, sqlite } = createTestDB()
     db = sqlite
     booksStore = await createTestBooksStore(drizzle)
+    mockServer.use(
+      http.get('https://openlibrary.org/isbn/9780441004225.json', () => {
+        return HttpResponse.json({
+          identifiers: {
+            goodreads: ['64396'],
+            librarything: ['52023'],
+          },
+          title: 'Adventures of the Stainless Steel Rat',
+          authors: [
+            {
+              key: '/authors/OL27278A',
+            },
+          ],
+          publish_date: 'October 1996',
+          publishers: ['Ace Books'],
+          covers: [283622],
+          languages: [
+            {
+              key: '/languages/eng',
+            },
+          ],
+          type: {
+            key: '/type/edition',
+          },
+          local_id: ['urn:bwbsku:T2-AQV-123', 'urn:bwbsku:086-BAC-919'],
+          source_records: [
+            'promise:bwb_daily_pallets_2021-07-15:T2-AQV-123',
+            'bwb:9780441004225',
+            'promise:bwb_daily_pallets_2021-05-14:086-BAC-919',
+          ],
+          key: '/books/OL7524009M',
+          works: [
+            {
+              key: '/works/OL467275W',
+            },
+          ],
+          classifications: {},
+          series: ['The Stainless Steel Rat'],
+          ocaid: 'adventuresofstai00harr_0',
+          isbn_10: ['0441004229'],
+          isbn_13: ['9780441004225'],
+          oclc_numbers: ['20230277'],
+          number_of_pages: 402,
+          latest_revision: 21,
+          revision: 21,
+          created: {
+            type: '/type/datetime',
+            value: '2008-04-29T13:35:46.876380',
+          },
+          last_modified: {
+            type: '/type/datetime',
+            value: '2024-05-29T21:37:41.873318',
+          },
+        })
+      }),
+      http.get('https://openlibrary.org/books/OL7524009M.json', () => {
+        return HttpResponse.json({
+          identifiers: {
+            goodreads: ['64396'],
+            librarything: ['52023'],
+          },
+          title: 'Adventures of the Stainless Steel Rat',
+          authors: [
+            {
+              key: '/authors/OL27278A',
+            },
+          ],
+          publish_date: 'October 1996',
+          publishers: ['Ace Books'],
+          covers: [283622],
+          languages: [
+            {
+              key: '/languages/eng',
+            },
+          ],
+          type: {
+            key: '/type/edition',
+          },
+          local_id: ['urn:bwbsku:T2-AQV-123', 'urn:bwbsku:086-BAC-919'],
+          source_records: [
+            'promise:bwb_daily_pallets_2021-07-15:T2-AQV-123',
+            'bwb:9780441004225',
+            'promise:bwb_daily_pallets_2021-05-14:086-BAC-919',
+          ],
+          key: '/books/OL7524009M',
+          works: [
+            {
+              key: '/works/OL467275W',
+            },
+          ],
+          classifications: {},
+          series: ['The Stainless Steel Rat'],
+          ocaid: 'adventuresofstai00harr_0',
+          isbn_10: ['0441004229'],
+          isbn_13: ['9780441004225'],
+          oclc_numbers: ['20230277'],
+          number_of_pages: 402,
+          latest_revision: 21,
+          revision: 21,
+          created: {
+            type: '/type/datetime',
+            value: '2008-04-29T13:35:46.876380',
+          },
+          last_modified: {
+            type: '/type/datetime',
+            value: '2024-05-29T21:37:41.873318',
+          },
+        })
+      })
+    )
   })
 
   afterEach(() => {
