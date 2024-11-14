@@ -39,7 +39,7 @@ describe('book', () => {
         .then(() => {
           throw new Error('Test failed: Expected a timeout error')
         })
-        .catch((error) => {
+        .catch((error: Error) => {
           expect(error.message).toBe('Fetch request timed out')
         })
     })
