@@ -4,6 +4,7 @@ import { type NewBook } from './types/book.js'
 
 const DEFAULT_TIMEOUT = 3000
 
+console.log("CREATE CLIENT --> MUST BE CALLED AFTER SERVER LISTEN")
 const client = createOasClient<paths>({
   baseUrl: 'https://openlibrary.org/',
 })

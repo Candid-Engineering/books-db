@@ -4,7 +4,10 @@ import { setupServer } from 'msw/node'
 export const mockServer = setupServer()
 
 // Start server before all tests
-beforeAll(() => mockServer.listen({ onUnhandledRequest: 'error' }))
+beforeAll(() => {
+  console.log("SERVER LISTEN")
+  mockServer.listen({ onUnhandledRequest: 'error' })
+})
 
 //  Close server after all tests
 afterAll(() => mockServer.close())
