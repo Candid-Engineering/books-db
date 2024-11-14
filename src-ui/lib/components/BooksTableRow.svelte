@@ -63,4 +63,7 @@
   <td>
     <input type="checkbox" checked={book.hasRead} />
   </td>
+  <td>
+    {book.scanDate ? new Date(book.scanDate).toLocaleDateString() : ''}
+  </td>
 </tr>

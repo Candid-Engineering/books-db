@@ -14,4 +14,5 @@ export const books = sqliteTable('books', {
   copyrightDate: text(),
   coverImages: text({ mode: 'json' }).$type<{ small?: string; medium?: string; large?: string }>(),
   hasRead: integer({ mode: 'boolean' }),
+  scanDate: text(),
 })

@@ -8,6 +8,13 @@
       "when": 1730947149010,
       "tag": "20241107023909_add_books_table",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1731614835583,
+      "tag": "20241114200715_addScanDate",
+      "breakpoints": true
     }
   ]
 }
