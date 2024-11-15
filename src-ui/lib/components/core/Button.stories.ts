@@ -5,12 +5,11 @@ import Button from './Button.svelte'
 const meta = {
   title: 'Example/Button',
   component: Button,
-  tags: ['autodocs'],
+  tags: ['basic'],
   argTypes: {
-    backgroundColor: { control: 'color' },
     size: {
       control: { type: 'select' },
-      options: ['small', 'medium', 'large'],
+      options: ['small', 'medium', 'large', 'regular'],
     },
   },
 } satisfies Meta<Button>
@@ -35,6 +34,20 @@ export const Secondary: Story = {
 export const Large: Story = {
   args: {
     size: 'large',
+    label: 'Button',
+  },
+}
+
+export const Medium: Story = {
+  args: {
+    size: 'medium',
+    label: 'Button',
+  },
+}
+
+export const Normal: Story = {
+  args: {
+    size: 'normal',
     label: 'Button',
   },
 }
