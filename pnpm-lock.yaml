@@ -40,34 +40,34 @@ importers:
         specifier: ^2.0.2
         version: 2.0.2(react@18.3.1)
       '@storybook/addon-essentials':
-        specifier: 8.4.4
+        specifier: ^8.3.3
         version: 8.4.4(@types/react@18.3.12)(storybook@8.4.4(prettier@3.3.3))
       '@storybook/addon-interactions':
-        specifier: 8.4.4
+        specifier: ^8.3.3
         version: 8.4.4(storybook@8.4.4(prettier@3.3.3))
       '@storybook/addon-links':
         specifier: 8.3.3
         version: 8.3.3(react@18.3.1)(storybook@8.4.4(prettier@3.3.3))
       '@storybook/addon-svelte-csf':
         specifier: 5.0.0-next.11
-        version: 5.0.0-next.11(@storybook/svelte@8.3.3(storybook@8.4.4(prettier@3.3.3))(svelte@5.2.0))(@sveltejs/vite-plugin-svelte@4.0.1(svelte@5.2.0)(vite@5.4.11(@types/node@22.9.0)))(storybook@8.4.4(prettier@3.3.3))(svelte@5.2.0)(vite@5.4.11(@types/node@22.9.0))
+        version: 5.0.0-next.11(@storybook/svelte@8.4.4(storybook@8.4.4(prettier@3.3.3))(svelte@5.2.0))(@sveltejs/vite-plugin-svelte@4.0.1(svelte@5.2.0)(vite@5.4.11(@types/node@22.9.0)))(storybook@8.4.4(prettier@3.3.3))(svelte@5.2.0)(vite@5.4.11(@types/node@22.9.0))
       '@storybook/blocks':
-        specifier: 8.3.3
-        version: 8.3.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(storybook@8.4.4(prettier@3.3.3))
+        specifier: ^8.3.3
+        version: 8.4.4(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(storybook@8.4.4(prettier@3.3.3))
       '@storybook/html':
-        specifier: 8.3.3
+        specifier: ^8.3.3
         version: 8.3.3(storybook@8.4.4(prettier@3.3.3))
       '@storybook/svelte':
-        specifier: 8.3.3
-        version: 8.3.3(storybook@8.4.4(prettier@3.3.3))(svelte@5.2.0)
+        specifier: ^8.3.3
+        version: 8.4.4(storybook@8.4.4(prettier@3.3.3))(svelte@5.2.0)
       '@storybook/svelte-vite':
-        specifier: 8.4.4
+        specifier: ^8.3.3
         version: 8.4.4(@sveltejs/vite-plugin-svelte@4.0.1(svelte@5.2.0)(vite@5.4.11(@types/node@22.9.0)))(postcss-load-config@3.1.4(postcss@8.4.49))(postcss@8.4.49)(storybook@8.4.4(prettier@3.3.3))(svelte@5.2.0)(vite@5.4.11(@types/node@22.9.0))
       '@storybook/sveltekit':
-        specifier: 8.4.4
+        specifier: ^8.3.3
         version: 8.4.4(@sveltejs/vite-plugin-svelte@4.0.1(svelte@5.2.0)(vite@5.4.11(@types/node@22.9.0)))(postcss-load-config@3.1.4(postcss@8.4.49))(postcss@8.4.49)(storybook@8.4.4(prettier@3.3.3))(svelte@5.2.0)(vite@5.4.11(@types/node@22.9.0))
       '@storybook/test':
-        specifier: 8.4.4
+        specifier: ^8.3.3
         version: 8.4.4(storybook@8.4.4(prettier@3.3.3))
       '@sveltejs/adapter-auto':
         specifier: ^3.3.1
@@ -160,7 +160,7 @@ importers:
         specifier: ^1.12.0
         version: 1.12.0
       storybook:
-        specifier: 8.4.4
+        specifier: ^8.3.3
         version: 8.4.4(prettier@3.3.3)
       svelte:
         specifier: ^5.2.0
@@ -1178,18 +1178,6 @@ packages:
     peerDependencies:
       storybook: ^8.4.4
 
-  '@storybook/blocks@8.3.3':
-    resolution: {integrity: sha512-8Vsvxqstop3xfbsx3Dn1nEjyxvQUcOYd8vpxyp2YumxYO8FlXIRuYL6HAkYbcX8JexsKvCZYxor52D2vUGIKZg==}
-    peerDependencies:
-      react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0-beta
-      react-dom: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0-beta
-      storybook: ^8.3.3
-    peerDependenciesMeta:
-      react:
-        optional: true
-      react-dom:
-        optional: true
-
   '@storybook/blocks@8.4.4':
     resolution: {integrity: sha512-LwM3guL7uWpYR1a/SY0KZjCUskTKEaS22eF7GK8iXAV5BY4KpKr6ArW4O9orK29KtFwKhDZQLcMcECsOJBVk/A==}
     peerDependencies:
@@ -1285,13 +1273,6 @@ packages:
       storybook: ^8.4.4
       svelte: ^4.0.0 || ^5.0.0
       vite: ^4.0.0 || ^5.0.0
-
-  '@storybook/svelte@8.3.3':
-    resolution: {integrity: sha512-B09dLNvO1nWjsbjGb8vBLVH/3KyO4J/S6cHv5ZKGHWEAdX5MKUHbWjzw+6mzEwXL4hQqsQJfO5R42I55XUVTAA==}
-    engines: {node: '>=18.0.0'}
-    peerDependencies:
-      storybook: ^8.3.3
-      svelte: ^4.0.0 || ^5.0.0-next.65
 
   '@storybook/svelte@8.4.4':
     resolution: {integrity: sha512-TQf+2fTUgxAAC7ZCBDVnEcmqtxCAKr1fQwUWbzUM2CaBZOXk/kVgnfYAhgh7GQwy+x/xR5lLVynlIE1+5Px6vA==}
@@ -1486,9 +1467,6 @@ packages:
 
   '@types/json-schema@7.0.15':
     resolution: {integrity: sha512-5+fP8P8MFNC+AyZCDxrB2pkZFPGzqQWUzpSeuuVLvm8VMcorNYavBqoFcxK8bQz4Qsbn4oUEEem4wDLfcysGHA==}
-
-  '@types/lodash@4.17.13':
-    resolution: {integrity: sha512-lfx+dftrEZcdBPczf9d0Qv0x+j/rfNCMuC6OcfXmO8gkfeNAY88PgKUbvG56whcN23gc27yenwF6oJZXGFpYxg==}
 
   '@types/mdx@2.0.13':
     resolution: {integrity: sha512-+OWZQfAYyio6YkJb3HLxDrvnx6SWWDbC0zVPfBRzUk0/nqoDyf6dNxQi3eArPe8rJ473nobTMQ/8Zk+LxJ+Yuw==}
@@ -3274,12 +3252,6 @@ packages:
   map-or-similar@1.5.0:
     resolution: {integrity: sha512-0aF7ZmVon1igznGI4VS30yugpduQW3y3GkcgGJOp7d8x8QrizhigUxjI/m2UojsXXto+jLAH3KSz+xOJTiORjg==}
 
-  markdown-to-jsx@7.6.2:
-    resolution: {integrity: sha512-gEcyiJXzBxmId2Y/kydLbD6KRNccDiUy/Src1cFGn3s2X0LZZ/hUiEc2VisFyA5kUE3SXclTCczjQiAuqKZiFQ==}
-    engines: {node: '>= 10'}
-    peerDependencies:
-      react: '>= 0.14.0'
-
   memoizerific@1.11.3:
     resolution: {integrity: sha512-/EuHYwAPdLtXwAwSZkh/Gutery6pD2KYd44oQLhAvQp/50mpyduZh8Q7PYHXTCJ+wuXxt7oij2LXyIJOOYFPog==}
 
@@ -3676,12 +3648,6 @@ packages:
   rc@1.2.8:
     resolution: {integrity: sha512-y3bGgqKj3QBdxLbLkomlohkvsA8gdAiUQlSBJnBhfn+BPxg4bc62d8TcBW15wavDfgexCgccckhcZvywyQYPOw==}
     hasBin: true
-
-  react-colorful@5.6.1:
-    resolution: {integrity: sha512-1exovf0uGTGyq5mXQT0zgQ80uvj2PCwvF8zY1RN9/vbJVSjSo3fsB/4L3ObbF7u70NduSiK4xu4Y6q1MHoUGEw==}
-    peerDependencies:
-      react: '>=16.8.0'
-      react-dom: '>=16.8.0'
 
   react-confetti@6.1.0:
     resolution: {integrity: sha512-7Ypx4vz0+g8ECVxr88W9zhcQpbeujJAVqL14ZnXJ3I23mOI9/oBVTQ3dkJhUmB0D6XOtCZEM6N0Gm9PMngkORw==}
@@ -4124,9 +4090,6 @@ packages:
 
   tar-stream@3.1.7:
     resolution: {integrity: sha512-qJj60CXt7IU1Ffyc3NJMjh6EkuCFej46zUqJ4J7pqYlThyd9bO0XBTmcOIhSzZJVWfsLks0+nle/j538YAW9RQ==}
-
-  telejson@7.2.0:
-    resolution: {integrity: sha512-1QTEcJkJEhc8OnStBx/ILRu5J2p0GjvWsBx56bmZRqnrkdBMUe+nX92jxV+p3dB4CP6PZCdJMQJwCggkNBMzkQ==}
 
   text-decoder@1.2.1:
     resolution: {integrity: sha512-x9v3H/lTKIJKQQe7RPQkLfKAnc9lUTkWDypIQgTzPJAq+5/GCDHonmshfvlsNSj58yyshbIJJDLmU15qNERrXQ==}
@@ -5337,12 +5300,12 @@ snapshots:
       storybook: 8.4.4(prettier@3.3.3)
       ts-dedent: 2.2.0
 
-  '@storybook/addon-svelte-csf@5.0.0-next.11(@storybook/svelte@8.3.3(storybook@8.4.4(prettier@3.3.3))(svelte@5.2.0))(@sveltejs/vite-plugin-svelte@4.0.1(svelte@5.2.0)(vite@5.4.11(@types/node@22.9.0)))(storybook@8.4.4(prettier@3.3.3))(svelte@5.2.0)(vite@5.4.11(@types/node@22.9.0))':
+  '@storybook/addon-svelte-csf@5.0.0-next.11(@storybook/svelte@8.4.4(storybook@8.4.4(prettier@3.3.3))(svelte@5.2.0))(@sveltejs/vite-plugin-svelte@4.0.1(svelte@5.2.0)(vite@5.4.11(@types/node@22.9.0)))(storybook@8.4.4(prettier@3.3.3))(svelte@5.2.0)(vite@5.4.11(@types/node@22.9.0))':
     dependencies:
       '@storybook/csf': 0.1.11
       '@storybook/docs-tools': 8.4.4(storybook@8.4.4(prettier@3.3.3))
       '@storybook/node-logger': 8.4.4(storybook@8.4.4(prettier@3.3.3))
-      '@storybook/svelte': 8.3.3(storybook@8.4.4(prettier@3.3.3))(svelte@5.2.0)
+      '@storybook/svelte': 8.4.4(storybook@8.4.4(prettier@3.3.3))(svelte@5.2.0)
       '@storybook/types': 8.4.4(storybook@8.4.4(prettier@3.3.3))
       '@sveltejs/vite-plugin-svelte': 4.0.1(svelte@5.2.0)(vite@5.4.11(@types/node@22.9.0))
       dedent: 1.5.3
@@ -5365,27 +5328,6 @@ snapshots:
     dependencies:
       memoizerific: 1.11.3
       storybook: 8.4.4(prettier@3.3.3)
-
-  '@storybook/blocks@8.3.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(storybook@8.4.4(prettier@3.3.3))':
-    dependencies:
-      '@storybook/csf': 0.1.11
-      '@storybook/global': 5.0.0
-      '@storybook/icons': 1.2.12(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      '@types/lodash': 4.17.13
-      color-convert: 2.0.1
-      dequal: 2.0.3
-      lodash: 4.17.21
-      markdown-to-jsx: 7.6.2(react@18.3.1)
-      memoizerific: 1.11.3
-      polished: 4.3.1
-      react-colorful: 5.6.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      storybook: 8.4.4(prettier@3.3.3)
-      telejson: 7.2.0
-      ts-dedent: 2.2.0
-      util-deprecate: 1.0.2
-    optionalDependencies:
-      react: 18.3.1
-      react-dom: 18.3.1(react@18.3.1)
 
   '@storybook/blocks@8.4.4(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(storybook@8.4.4(prettier@3.3.3))':
     dependencies:
@@ -5507,21 +5449,6 @@ snapshots:
       - sass
       - stylus
       - sugarss
-      - supports-color
-
-  '@storybook/svelte@8.3.3(storybook@8.4.4(prettier@3.3.3))(svelte@5.2.0)':
-    dependencies:
-      '@storybook/components': 8.4.4(storybook@8.4.4(prettier@3.3.3))
-      '@storybook/global': 5.0.0
-      '@storybook/manager-api': 8.4.4(storybook@8.4.4(prettier@3.3.3))
-      '@storybook/preview-api': 8.4.4(storybook@8.4.4(prettier@3.3.3))
-      '@storybook/theming': 8.4.4(storybook@8.4.4(prettier@3.3.3))
-      storybook: 8.4.4(prettier@3.3.3)
-      svelte: 5.2.0
-      sveltedoc-parser: 4.2.1
-      ts-dedent: 2.2.0
-      type-fest: 2.19.0
-    transitivePeerDependencies:
       - supports-color
 
   '@storybook/svelte@8.4.4(storybook@8.4.4(prettier@3.3.3))(svelte@5.2.0)':
@@ -5754,8 +5681,6 @@ snapshots:
       '@types/istanbul-lib-report': 3.0.3
 
   '@types/json-schema@7.0.15': {}
-
-  '@types/lodash@4.17.13': {}
 
   '@types/mdx@2.0.13': {}
 
@@ -6942,7 +6867,7 @@ snapshots:
       eslint-scope: 7.2.2
       eslint-utils: 3.0.0(eslint@8.4.1)
       eslint-visitor-keys: 3.4.3
-      espree: 9.2.0
+      espree: 9.6.1
       esquery: 1.6.0
       esutils: 2.0.3
       fast-deep-equal: 3.1.3
@@ -7785,10 +7710,6 @@ snapshots:
 
   map-or-similar@1.5.0: {}
 
-  markdown-to-jsx@7.6.2(react@18.3.1):
-    dependencies:
-      react: 18.3.1
-
   memoizerific@1.11.3:
     dependencies:
       map-or-similar: 1.5.0
@@ -8202,11 +8123,6 @@ snapshots:
       ini: 1.3.8
       minimist: 1.2.8
       strip-json-comments: 2.0.1
-
-  react-colorful@5.6.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
-    dependencies:
-      react: 18.3.1
-      react-dom: 18.3.1(react@18.3.1)
 
   react-confetti@6.1.0(react@18.3.1):
     dependencies:
@@ -8699,10 +8615,6 @@ snapshots:
       b4a: 1.6.7
       fast-fifo: 1.3.2
       streamx: 2.20.2
-
-  telejson@7.2.0:
-    dependencies:
-      memoizerific: 1.11.3
 
   text-decoder@1.2.1: {}
 
