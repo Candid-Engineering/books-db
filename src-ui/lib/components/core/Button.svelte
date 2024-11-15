@@ -14,8 +14,8 @@
     /**
      * Button contents
      */
-    label?: string
 
+    label?: string
     children?: Snippet
   }
 
@@ -24,17 +24,13 @@
     size = 'normal',
     label = '',
     children,
-    class: classProp = '',
+    class: classProp,
     ...restProps
-  } : Props = $props()
+  }: Props = $props()
 
-  let btnClasses = ['button', `is-${size}`]
-  if (classProp) {
-    btnClasses.push(classProp)
-  }
 </script>
 
-<button type="button" class:is-primary={primary} class={btnClasses.join(' ')} {...restProps}>
+<button type="button" class:is-primary={primary} class="button is-{size} {classProp}" {...restProps}>
   {#if children}
     {@render children?.()}
   {:else}
