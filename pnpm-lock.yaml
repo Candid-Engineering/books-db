@@ -54,15 +54,9 @@ importers:
       '@storybook/blocks':
         specifier: 8.3.3
         version: 8.3.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(storybook@8.3.3)
-      '@storybook/html':
-        specifier: 8.3.3
-        version: 8.3.3(storybook@8.3.3)
       '@storybook/svelte':
         specifier: 8.3.3
         version: 8.3.3(storybook@8.3.3)(svelte@5.2.0)
-      '@storybook/svelte-vite':
-        specifier: 8.3.3
-        version: 8.3.3(@sveltejs/vite-plugin-svelte@4.0.1(svelte@5.2.0)(vite@5.4.11(@types/node@22.9.0)))(postcss-load-config@3.1.4(postcss@8.4.49))(postcss@8.4.49)(storybook@8.3.3)(svelte@5.2.0)(typescript@5.6.3)(vite@5.4.11(@types/node@22.9.0))
       '@storybook/sveltekit':
         specifier: 8.3.3
         version: 8.3.3(@sveltejs/vite-plugin-svelte@4.0.1(svelte@5.2.0)(vite@5.4.11(@types/node@22.9.0)))(postcss-load-config@3.1.4(postcss@8.4.49))(postcss@8.4.49)(storybook@8.3.3)(svelte@5.2.0)(typescript@5.6.3)(vite@5.4.11(@types/node@22.9.0))
@@ -1229,12 +1223,6 @@ packages:
 
   '@storybook/global@5.0.0':
     resolution: {integrity: sha512-FcOqPAXACP0I3oJ/ws6/rrPT9WGhu915Cg8D02a9YxLo0DE9zI+a9A5gRGvmQ09fiWPukqI8ZAEoQEdWUKMQdQ==}
-
-  '@storybook/html@8.3.3':
-    resolution: {integrity: sha512-YNQNO27MWd3nVSEEqTjmxYJcTlxdNZ0xydUvKsqeFNx3YO/G/RVaLI1/TaJE4mNPD6UkOZjd59QwVT3b9UEa5A==}
-    engines: {node: '>=18.0.0'}
-    peerDependencies:
-      storybook: ^8.3.3
 
   '@storybook/icons@1.2.12':
     resolution: {integrity: sha512-UxgyK5W3/UV4VrI3dl6ajGfHM4aOqMAkFLWe2KibeQudLf6NJpDrDMSHwZj+3iKC4jFU7dkKbbtH2h/al4sW3Q==}
@@ -5692,16 +5680,6 @@ snapshots:
       storybook: 8.3.3
 
   '@storybook/global@5.0.0': {}
-
-  '@storybook/html@8.3.3(storybook@8.3.3)':
-    dependencies:
-      '@storybook/components': 8.4.4(storybook@8.3.3)
-      '@storybook/global': 5.0.0
-      '@storybook/manager-api': 8.4.4(storybook@8.3.3)
-      '@storybook/preview-api': 8.4.4(storybook@8.3.3)
-      '@storybook/theming': 8.4.4(storybook@8.3.3)
-      storybook: 8.3.3
-      ts-dedent: 2.2.0
 
   '@storybook/icons@1.2.12(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
     dependencies:
