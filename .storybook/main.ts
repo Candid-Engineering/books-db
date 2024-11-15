@@ -1,7 +1,7 @@
 import type { StorybookConfig } from '@storybook/sveltekit'
 
 const config: StorybookConfig = {
-  stories: ['../src/**/*.mdx', '../src/**/*.stories.@(js|ts|svelte)'],
+  stories: ['../src-ui/stories/**/*.mdx', '../src-ui/stories/**/*.stories.@(js|ts|svelte)'],
   addons: [
     '@storybook/addon-svelte-csf',
     '@storybook/addon-links',

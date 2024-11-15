@@ -34,7 +34,7 @@
     "svelte:dev": "vite dev",
     "svelte:build": "vite build",
     "svelte:preview": "vite preview",
-    "storybook": "pnpx run storybook:dev",
+    "storybook": "pnpm storybook:dev",
     "storybook:dev": "storybook dev -p 6006",
     "storybook:build": "storybook build"
   },
