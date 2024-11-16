@@ -4,7 +4,7 @@ import * as schema from '$lib/db/schema'
 import * as fs from '@tauri-apps/plugin-fs'
 import { commands } from '$lib/generated/sqlite_proxy'
 import { migrate } from '$lib/db/migrator'
-import { createBooksStore } from '$lib/state/Books.svelte'
+import { getBooksStore } from '$lib/state/Books.svelte'
 
 declare global {
   interface Window {
@@ -23,4 +23,4 @@ window.fs = fs
 window.sqlite = commands
 
 await migrate(db)
-window.booksStore = await createBooksStore()
+window.booksStore = await getBooksStore()
