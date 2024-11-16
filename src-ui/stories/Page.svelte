@@ -1,17 +1,11 @@
 <script lang="ts">
   import './page.css'
-  import Header from '$lib/components/core/Header.svelte'
+  import NavBar from '$lib/components/core/NavBar.svelte'
 
-  let user: { name: string } | null = null
 </script>
 
 <article>
-  <Header
-    {user}
-    on:login={() => (user = { name: 'Jane Doe' })}
-    on:logout={() => (user = null)}
-    on:createAccount={() => (user = { name: 'Jane Doe' })}
-  />
+  <NavBar><a href="#top" class="navbar-item">example link</a></NavBar>
 
   <section class="storybook-page">
     <h2>Pages in Storybook</h2>
