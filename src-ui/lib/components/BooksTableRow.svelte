@@ -2,6 +2,7 @@
   import { createBooksStore } from '$lib/state/Books.svelte'
   import type { Book } from '$lib/types/book.js'
   import { fade } from 'svelte/transition'
+  import Button from './core/Button.svelte'
 
   export let book: Book
 
@@ -34,8 +35,8 @@
 <!-- note: `slide` transitions (which I prefer here) don't currently work on tables: https://github.com/sveltejs/svelte/issues/4948 -->
 <tr transition:fade={{ duration: 300 }}>
   <td
-    ><button aria-label="delete book" class="delete" on:click={() => removeBook(book.id)}
-    ></button></td
+    ><Button aria-label="delete book" class="delete" onclick={() => removeBook(book.id)}
+    ></Button></td
   >
   <td
     contenteditable="true"

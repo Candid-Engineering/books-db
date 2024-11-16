@@ -2,7 +2,6 @@
   import { getByISBN } from '$lib/openLibrary.js'
   import { createBooksStore } from '$lib/state/Books.svelte'
   import type { NewBook } from '$lib/types/book.js'
-  import 'bulma/css/bulma.css'
   import onScan from 'onscan.js'
   import type { Action } from 'svelte/action'
   import BooksTableRow from './BooksTableRow.svelte'

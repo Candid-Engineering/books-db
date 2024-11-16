@@ -1,4 +1,5 @@
 import type { Preview } from '@storybook/svelte'
+import 'bulma/css/bulma.css'
 
 const preview: Preview = {
   parameters: {
