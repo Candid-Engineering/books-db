@@ -66,7 +66,8 @@
     <thead>
       <tr>
         <th><!-- delete action --></th>
-        <th>ISBN</th>
+        <th>ISBN 10</th>
+        <th>ISBN 13</th>
         <th>Title</th>
         <th>Author</th>
         <th>Tags</th>
@@ -78,7 +79,7 @@
         <BooksTableRow {book} />
       {:else}
         <tr>
-          <td colspan="5">
+          <td colspan="7">
             <section class="section">
               <div class="content has-text-grey has-text-centered">
                 <p><i class="far fa-3x fa-frown"></i></p>
