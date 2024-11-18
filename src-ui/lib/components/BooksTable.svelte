@@ -63,7 +63,7 @@
 </script>
 
 <svelte:document use:listenForBarcodes on:scan={handleScan} />
-<button class="button is-primary" onclick={handleClick}>Open Modal</button>
+<button class="button is-primary" onclick={handleClick}>Add Book</button>
 
 {#await booksStorePromise}
   ...initial loading of books...
