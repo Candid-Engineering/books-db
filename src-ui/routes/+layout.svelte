@@ -1,6 +1,7 @@
 <script lang="ts">
   import NavBar from '$lib/components/core/NavBar.svelte'
   import 'bulma/css/bulma.css'
+  import 'bulma-checkbox/css/main.css'
 </script>
 
 <svelte:head>

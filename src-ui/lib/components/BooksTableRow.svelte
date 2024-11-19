@@ -57,6 +57,10 @@
     >{book.tags?.join(', ') || ''}</td
   >
   <td>
-    <input type="checkbox" checked={book.hasRead} />
+    <label class="b-checkbox checkbox is-large m-2">
+      <input type="checkbox" value="false" checked={book.hasRead}>
+      <span class="check is-info"></span>
+      <!-- <span class="control-label"></span> -->
+    </label>
   </td>
 </tr>

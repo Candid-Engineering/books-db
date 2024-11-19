@@ -43,6 +43,7 @@
     "@tauri-apps/plugin-fs": "^2.0.2",
     "better-sqlite3": "^11.5.0",
     "bulma": "^1.0.2",
+    "bulma-checkbox": "^1.2.1",
     "drizzle-orm": "^0.36.3",
     "lodash": "^4.17.21",
     "onscan.js": "^1.5.2",

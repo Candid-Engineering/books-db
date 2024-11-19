@@ -20,6 +20,9 @@ importers:
       bulma:
         specifier: ^1.0.2
         version: 1.0.2
+      bulma-checkbox:
+        specifier: ^1.2.1
+        version: 1.2.1
       drizzle-orm:
         specifier: ^0.36.3
         version: 0.36.3(@types/react@18.3.12)(@types/sql.js@1.4.9)(better-sqlite3@11.5.0)(react@18.3.1)(sql.js@1.12.0)
@@ -1950,6 +1953,12 @@ packages:
 
   buffer@6.0.3:
     resolution: {integrity: sha512-FTiCpNxtwiZZHEZbcbTIcZjERVICn9yq/pDFkTl95/AxzD1naBctN7YO68riM/gLSDY7sdrMby8hofADYuuqOA==}
+
+  bulma-checkbox@1.2.1:
+    resolution: {integrity: sha512-Ad7kSzwYwHLYyow92IJPz9jgolDDo5ivlFdSBe7W4LR9WnLt/Gd2iE07m3uhoU/g37oIZcMHNC33ZxJKqAuSzQ==}
+
+  bulma@0.9.4:
+    resolution: {integrity: sha512-86FlT5+1GrsgKbPLRRY7cGDg8fsJiP/jzTqXXVqiUZZ2aZT8uemEOHlU1CDU+TxklPEZ11HZNNWclRBBecP4CQ==}
 
   bulma@1.0.2:
     resolution: {integrity: sha512-D7GnDuF6seb6HkcnRMM9E739QpEY9chDzzeFrHMyEns/EXyDJuQ0XA0KxbBl/B2NTsKSoDomW61jFGFaAxhK5A==}
@@ -6631,6 +6640,12 @@ snapshots:
     dependencies:
       base64-js: 1.5.1
       ieee754: 1.2.1
+
+  bulma-checkbox@1.2.1:
+    dependencies:
+      bulma: 0.9.4
+
+  bulma@0.9.4: {}
 
   bulma@1.0.2: {}
 
