@@ -27,10 +27,14 @@
     class: classProp,
     ...restProps
   }: Props = $props()
-
 </script>
 
-<button type="button" class:is-primary={primary} class="button is-{size} {classProp}" {...restProps}>
+<button
+  type="button"
+  class:is-primary={primary}
+  class="button is-{size} {classProp}"
+  {...restProps}
+>
   {#if children}
     {@render children?.()}
   {:else}
