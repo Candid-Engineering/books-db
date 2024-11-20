@@ -9,7 +9,7 @@
     component: Button,
     tags: ['basic', 'autodocs'],
     args: {
-      label: "click me",
+      label: 'click me',
       onclick: fn(),
     },
     argTypes: {
