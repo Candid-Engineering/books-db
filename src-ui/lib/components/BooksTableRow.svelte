@@ -20,11 +20,19 @@
     await booksStore.remove(id)
   }
 
-  const handleEnter = () => (event: Event) => {
+  function handleEnter(event: Event) {
     if (event instanceof KeyboardEvent && event.key === 'Enter') {
       event.preventDefault?.()
       ;(event.currentTarget as HTMLTableCellElement).blur?.()
     }
+  }
+
+
+  async function toggleRead(event: Event & { currentTarget: EventTarget & HTMLInputElement }, book: Book) {
+    // TODO(rkofman): instead of updating the whole book element, there should be a method on the store
+    // to set the single field to a new value; filtered by ID.
+    const readAt = book.readAt ? null : new Date()
+    await booksStore.edit({...book, readAt})
   }
 </script>
 
@@ -36,30 +44,30 @@
   >
   <td
     contenteditable="true"
-    on:blur={(e) => handleEdit(book, 'isbn10', e)}
-    on:keydown={handleEnter()}>{book.isbn10}</td
+    onblur={(e) => handleEdit(book, 'isbn10', e)}
+    onkeydown={handleEnter}>{book.isbn10}</td
   >
-  <td contenteditable="true" on:blur={(e) => handleEdit(book, 'isbn13', e)}
+  <td contenteditable="true" onblur={(e) => handleEdit(book, 'isbn13', e)}
     >{book.isbn13}</td
   >
   <td
     contenteditable="true"
-    on:blur={(e) => handleEdit(book, 'title', e)}
-    on:keydown={handleEnter()}
+    onblur={(e) => handleEdit(book, 'title', e)}
+    onkeydown={handleEnter}
     >{book?.title || ''}
   </td>
   <td
     contenteditable="true"
-    on:blur={(e) => handleEdit(book, 'authors', e)}
-    on:keydown={handleEnter()}>{book.authors?.join(', ') || ''}</td
+    onblur={(e) => handleEdit(book, 'authors', e)}
+    onkeydown={handleEnter}>{book.authors?.join(', ') || ''}</td
   >
-  <td contenteditable="true" on:blur={(e) => handleEdit(book, 'tags', e)} on:keydown={handleEnter()}
+  <td contenteditable="true" onblur={(e) => handleEdit(book, 'tags', e)} onkeydown={handleEnter}
     >{book.tags?.join(', ') || ''}</td
   >
   <td>
-    <label class="b-checkbox checkbox is-large m-2">
-      <input type="checkbox" value="false" checked={book.hasRead}>
-      <span class="check is-info"></span>
+    <label class="b-checkbox checkbox is-medium m-1">
+      <input type="checkbox" value="false" checked={!!book.readAt} onchange={(e) => toggleRead(e, book)}>
+      <span class="check"></span>
       <!-- <span class="control-label"></span> -->
     </label>
   </td>
