@@ -1,12 +1,12 @@
 <script lang="ts">
-  import { createBooksStore } from '$lib/state/Books.svelte'
+  import { getBooksStore } from '$lib/state/Books.svelte'
   import type { Book } from '$lib/types/book.js'
   import { fade } from 'svelte/transition'
   import Button from './core/Button.svelte'
 
   export let book: Book
 
-  let booksStorePromise = createBooksStore()
+  let booksStore = getBooksStore()
   const handleEdit = async (book: Book, field: keyof Book, e: Event) => {
     const target = e.target as HTMLElement
     let value: string | string[] = target.innerText.trim()
@@ -14,14 +14,10 @@
       value = target.innerText.split(',').map((author) => author.trim())
     }
 
-    return booksStorePromise.then(async (booksStore) => {
-      await booksStore.edit({ ...book, [field]: value })
-    })
+    await booksStore.edit({ ...book, [field]: value })
   }
   const removeBook = async (id: string): Promise<void> => {
-    return booksStorePromise.then(async (booksStore) => {
-      await booksStore.remove(id)
-    })
+    await booksStore.remove(id)
   }
 
   const handleEnter = () => (event: Event) => {
@@ -41,10 +37,10 @@
   <td
     contenteditable="true"
     on:blur={(e) => handleEdit(book, 'isbn10', e)}
-    on:keydown={handleEnter()}>{book.isbn10 ?? book.isbn13}</td
+    on:keydown={handleEnter()}>{book.isbn10}</td
   >
-  <td contenteditable="true" on:blur={(e) => handleEdit(book, 'isbn10', e)}
-    >{book.isbn10 ?? book.isbn13}</td
+  <td contenteditable="true" on:blur={(e) => handleEdit(book, 'isbn13', e)}
+    >{book.isbn13}</td
   >
   <td
     contenteditable="true"
