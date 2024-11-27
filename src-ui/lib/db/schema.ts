@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm';
 import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core'
 
 export const books = sqliteTable('books', {
@@ -14,5 +15,5 @@ export const books = sqliteTable('books', {
   copyrightDate: text(),
   coverImages: text({ mode: 'json' }).$type<{ small?: string; medium?: string; large?: string }>(),
   hasRead: integer({ mode: 'boolean' }),
-  scanDate: text(),
+  createdAt: integer({ mode: 'timestamp'}).notNull().default(sql`(unixepoch())`),
 })

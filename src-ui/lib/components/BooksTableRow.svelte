@@ -6,7 +6,6 @@
   export let book: Book
 
   let booksStorePromise = createBooksStore()
-  console.log(book)
   const handleEdit = async (book: Book, field: keyof Book, e: Event) => {
     const target = e.target as HTMLElement
     const value =
@@ -64,6 +63,6 @@
     <input type="checkbox" checked={book.hasRead} />
   </td>
   <td>
-    {book.scanDate ? new Date(book.scanDate).toLocaleDateString() : ''}
+    {book.createdAt.toLocaleDateString()}
   </td>
 </tr>

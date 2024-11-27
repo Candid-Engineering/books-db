@@ -31,10 +31,7 @@
   const addByISBN = async (isbn: string): Promise<void> => {
     return booksStorePromise.then(async (booksStore) => {
       const book = await getByISBN(isbn)
-      await booksStore.add({
-        ...book,
-        scanDate: new Date().toISOString()
-      })
+      await booksStore.add(book)
     })
   }
 
@@ -88,7 +85,7 @@
         <th>Author</th>
         <th>Tags</th>
         <th>Read?</th>
-        <th>Scan Date</th>
+        <th>Scanned</th>
       </tr>
     </thead>
     <tbody>

@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "16135e6e-787a-4542-9e09-d36688a89c56",
+  "id": "0d3fd1f5-1949-4a3a-834b-e7c312dc03c5",
   "prevId": "036d5aa5-3f33-4f29-ba7d-e861976ad6b7",
   "tables": {
     "books": {
@@ -99,12 +99,13 @@
           "notNull": false,
           "autoincrement": false
         },
-        "scanDate": {
-          "name": "scanDate",
-          "type": "text",
+        "createdAt": {
+          "name": "createdAt",
+          "type": "integer",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(unixepoch())"
         }
       },
       "indexes": {},
