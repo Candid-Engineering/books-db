@@ -93,7 +93,7 @@
         <BooksTableRow {book} />
       {:else}
         <tr>
-          <td colspan="6">
+          <td colspan="8">
             <section class="section">
               <div class="content has-text-grey has-text-centered">
                 <p><i class="far fa-3x fa-frown"></i></p>
