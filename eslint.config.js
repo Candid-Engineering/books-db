@@ -49,6 +49,7 @@ export default tseslint.config(
       'src-ui/lib/generated/',
       'src-ui/lib/drizzle/',
       '!.storybook',
+      'src-tauri/target/',
     ],
   },
   {

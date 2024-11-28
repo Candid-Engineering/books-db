@@ -1,26 +1,23 @@
 <script lang="ts">
-  import { createBooksStore } from '$lib/state/Books.svelte'
+  import { getBooksStore } from '$lib/state/Books.svelte'
   import type { Book } from '$lib/types/book.js'
   import { fade } from 'svelte/transition'
+  import Button from './core/Button.svelte'
 
   export let book: Book
 
-  let booksStorePromise = createBooksStore()
+  let booksStore = getBooksStore()
   const handleEdit = async (book: Book, field: keyof Book, e: Event) => {
     const target = e.target as HTMLElement
-    const value =
-      field === 'authors' || 'tags'
-        ? target.innerText.split(',').map((author) => author.trim())
-        : target.innerText.trim()
+    let value: string | string[] = target.innerText.trim()
+    if (field === 'authors' || field == 'tags') {
+      value = target.innerText.split(',').map((author) => author.trim())
+    }
 
-    return booksStorePromise.then(async (booksStore) => {
-      await booksStore.edit({ ...book, [field]: value })
-    })
+    await booksStore.edit({ ...book, [field]: value })
   }
   const removeBook = async (id: string): Promise<void> => {
-    return booksStorePromise.then(async (booksStore) => {
-      await booksStore.remove(id)
-    })
+    await booksStore.remove(id)
   }
 
   const handleEnter = () => (event: Event) => {
@@ -34,16 +31,16 @@
 <!-- note: `slide` transitions (which I prefer here) don't currently work on tables: https://github.com/sveltejs/svelte/issues/4948 -->
 <tr transition:fade={{ duration: 300 }}>
   <td
-    ><button aria-label="delete book" class="delete" on:click={() => removeBook(book.id)}
-    ></button></td
+    ><Button aria-label="delete book" class="delete" onclick={() => removeBook(book.id)}
+    ></Button></td
   >
   <td
     contenteditable="true"
     on:blur={(e) => handleEdit(book, 'isbn10', e)}
-    on:keydown={handleEnter()}>{book.isbn10 ?? book.isbn13}</td
+    on:keydown={handleEnter()}>{book.isbn10}</td
   >
-  <td contenteditable="true" on:blur={(e) => handleEdit(book, 'isbn10', e)}
-    >{book.isbn10 ?? book.isbn13}</td
+  <td contenteditable="true" on:blur={(e) => handleEdit(book, 'isbn13', e)}
+    >{book.isbn13}</td
   >
   <td
     contenteditable="true"
