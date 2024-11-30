@@ -25,7 +25,7 @@ export function createTestDB(): {
       publicationDate TEXT,
       copyrightDate TEXT,
       coverImages TEXT,
-      hasRead INTEGER,
+      readAt INTEGER,
       createdAt INTEGER DEFAULT(unixepoch()) NOT NULL
     );`
   db.exec(sqlSchema)
