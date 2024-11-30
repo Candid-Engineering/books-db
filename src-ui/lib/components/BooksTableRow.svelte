@@ -39,9 +39,7 @@
     on:blur={(e) => handleEdit(book, 'isbn10', e)}
     on:keydown={handleEnter()}>{book.isbn10}</td
   >
-  <td contenteditable="true" on:blur={(e) => handleEdit(book, 'isbn13', e)}
-    >{book.isbn13}</td
-  >
+  <td contenteditable="true" on:blur={(e) => handleEdit(book, 'isbn13', e)}>{book.isbn13}</td>
   <td
     contenteditable="true"
     on:blur={(e) => handleEdit(book, 'title', e)}
