@@ -1,8 +1,8 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "5bff5a4c-ae2d-45a6-a92a-f0c8e45b1cf8",
-  "prevId": "036d5aa5-3f33-4f29-ba7d-e861976ad6b7",
+  "id": "01c51000-9bab-4e0c-ad08-44d5be9d79c7",
+  "prevId": "0d3fd1f5-1949-4a3a-834b-e7c312dc03c5",
   "tables": {
     "books": {
       "name": "books",
@@ -98,6 +98,14 @@
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(unixepoch())"
         }
       },
       "indexes": {},
