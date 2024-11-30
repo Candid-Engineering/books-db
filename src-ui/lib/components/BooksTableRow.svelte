@@ -63,7 +63,7 @@
     >{book.tags?.join(', ') || ''}</td
   >
   <td>
-    <label class="b-checkbox checkbox is-medium m-1">
+    <label class="b-checkbox checkbox is-regular m-1">
       <input type="checkbox" value="false" checked={!!book.readAt} onchange={(e) => toggleRead(e, book)}>
       <span class="check"></span>
       <!-- <span class="control-label"></span> -->
