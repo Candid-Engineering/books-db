@@ -15,14 +15,9 @@ CREATE TABLE `TEMP_NEW_books` (
 	`coverImages` text,
 	`hasRead` integer,
   `createdAt` integer DEFAULT (unixepoch()) NOT NULL
-); --> statement-breakpoint
-INSERT INTO TEMP_NEW_books SELECT * FROM books; --> statement-breakpoint
-
-BEGIN TRANSACTION; --> statement-breakpoint
+);
+INSERT INTO TEMP_NEW_books SELECT *, unixepoch() FROM books; --> statement-breakpoint
 
 DROP TABLE books; --> statement-breakpoint
 ALTER TABLE TEMP_NEW_books
   RENAME TO books; --> statement-breakpoint
-
-BEGIN TRANSACTION; --> statement-breakpoint
-COMMIT;

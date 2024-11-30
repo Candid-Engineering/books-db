@@ -60,6 +60,6 @@
     <input type="checkbox" checked={book.hasRead} />
   </td>
   <td>
-    {book.createdAt.toLocaleDateString()}
+    {book.createdAt?.toLocaleDateString()}
   </td>
 </tr>
