@@ -47,9 +47,7 @@
     onblur={(e) => handleEdit(book, 'isbn10', e)}
     onkeydown={handleEnter}>{book.isbn10}</td
   >
-  <td contenteditable="true" onblur={(e) => handleEdit(book, 'isbn13', e)}
-    >{book.isbn13}</td
-  >
+  <td contenteditable="true" onblur={(e) => handleEdit(book, 'isbn13', e)}>{book.isbn13}</td>
   <td
     contenteditable="true"
     onblur={(e) => handleEdit(book, 'title', e)}
@@ -70,5 +68,8 @@
       <span class="check"></span>
       <!-- <span class="control-label"></span> -->
     </label>
+  </td>
+  <td>
+    {book.createdAt?.toLocaleDateString()}
   </td>
 </tr>

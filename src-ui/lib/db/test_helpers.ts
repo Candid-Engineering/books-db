@@ -11,7 +11,7 @@ export function createTestDB(): {
 
   // NOTE: this sql schema is a hack to unblock testing in the short term. Longer term,
   // this should be replaced by a schema.sql that is exported from the dev DB
-  // whenever a migration is completed.
+  // whenever a migration is completed -- or by running the migrations themselves.
   const sqlSchema = `CREATE TABLE books (
       id TEXT PRIMARY KEY default(uuid_blob(uuid())) NOT NULL,
       isbn10 TEXT,
@@ -25,7 +25,8 @@ export function createTestDB(): {
       publicationDate TEXT,
       copyrightDate TEXT,
       coverImages TEXT,
-      hasRead INTEGER
+      hasRead INTEGER,
+      createdAt INTEGER DEFAULT(unixepoch()) NOT NULL
     );`
   db.exec(sqlSchema)
 
