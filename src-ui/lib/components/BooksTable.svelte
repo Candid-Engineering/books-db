@@ -37,7 +37,6 @@
 </script>
 
 <svelte:document use:listenForBarcodes on:scan={handleScan} />
-
 {#if !booksStore.initialized}
   ...initial loading of books...
 {:else}

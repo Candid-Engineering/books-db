@@ -4,55 +4,72 @@
 
   import type { NewBook } from '$lib/types/book.js'
 
-  export let isOpen = false
-  export let close
 
-  let isbn10 = ''
-  let isbn13 = ''
-  let bookTitle = ''
-  let subtitle = ''
-  let author = ''
-  let tags = ''
-  let series = ''
-  let pageCount = 0
-  let publicationDate = ''
-  let copyrightDate = ''
-  let hasRead = false
+  interface Props {
+    /**
+     * Is the modal currently open?
+     */
+    isOpen?: boolean
 
-  function createNewBook(): NewBook {
-    return {
-      isbn10: isbn10 || undefined,
-      isbn13: isbn13 || undefined,
-      title: bookTitle,
-      subtitle: subtitle || undefined,
-      authors: author.split(',').map((a) => a.trim()),
-      tags: tags.split(',').map((t) => t.trim()),
-      series: series || undefined,
-      pageCount: pageCount > 0 ? pageCount : undefined,
-      publicationDate: publicationDate || undefined,
-      copyrightDate: copyrightDate || undefined,
-      coverImages: {
-        small: '',
-        medium: '',
-        large: '',
-      },
+    /**
+     * Function that closes this modal
+     */
+    close: () => void
+  }
+
+  let {isOpen = false, close}: Props = $props()
+
+  let book = $state<Partial<NewBook>>({})
+
+  let authors = $state('')
+  let tags = $state('')
+  // let authors = {
+  //   get string() {
+  //     return book.authors?.join(',')
+  //   },
+  //   set string(s) {
+  //     book.authors = s?.split(',')
+  //   },
+  // }
+
+  // let tags = {
+  //   get string() {
+  //     return book.tags?.join(',')
+  //   },
+  //   set string(s) {
+  //     book.tags = s?.split(',').map((a) => a.trim())
+  //   },
+  // }
+
+  let hasRead = {
+    get bool() {
+      return !!book.readAt
+    },
+    set bool(v) {
+      if (v) {
+        book.readAt = new Date()
+      } else {
+        delete book.readAt
+      }
     }
   }
+
   let booksStore = getBooksStore()
 
   const saveBook = async () => {
     // For now, only validate that the title and author fields aren't empty
-    if (!bookTitle.trim()) {
-      alert('Title is required.')
+    if (!book?.title?.trim()) {
+      console.error('Title is required.')
       return
     }
-    if (!author.trim()) {
-      alert('Author is required.')
+    if (!authors.trim()) {
+      console.error('Author is required.')
       return
     }
+    book.authors = authors.split(',').map((v) => v.trim())
+    book.tags = tags.split(',').map((v) => v.trim())
     try {
-      const newBook = createNewBook()
-      await booksStore.add(newBook)
+      await booksStore.add(book as NewBook)
       close()
     } catch (error) {
       console.error('Error saving book:', error)
@@ -62,32 +79,32 @@
 
 {#if isOpen}
   <div class="modal is-active">
-    <div aria-hidden="true" role="presentation" class="modal-background" on:click={close}></div>
+    <div aria-hidden="true" role="presentation" class="modal-background" onclick={close}></div>
     <div class="modal-card">
       <header class="modal-card-head">
         <p class="modal-card-title">Add a New Book</p>
-        <button class="delete" aria-label="close" on:click={close}></button>
+        <button class="delete" aria-label="close" onclick={close}></button>
       </header>
       <section class="modal-card-body">
         <!-- Form Fields -->
         <div class="field">
           <label class="label" for="isbn-10">ISBN-10</label>
           <div class="control">
-            <input class="input" type="text" bind:value={isbn10} placeholder="Enter ISBN-10" />
+            <input class="input" type="text" bind:value={book.isbn10} placeholder="Enter ISBN-10" />
           </div>
         </div>
 
         <div class="field">
           <label class="label" for="isbn-13">ISBN-13</label>
           <div class="control">
-            <input class="input" type="text" bind:value={isbn13} placeholder="Enter ISBN-13" />
+            <input class="input" type="text" bind:value={book.isbn13} placeholder="Enter ISBN-13" />
           </div>
         </div>
 
         <div class="field">
           <label class="label" for="title">Title</label>
           <div class="control">
-            <input class="input" type="text" bind:value={bookTitle} placeholder="Enter Title" />
+            <input class="input" type="text" bind:value={book.title} placeholder="Enter Title" />
           </div>
         </div>
 
@@ -97,7 +114,7 @@
             <input
               class="input"
               type="text"
-              bind:value={author}
+              bind:value={authors}
               placeholder="Enter Author(s), separated by commas"
             />
           </div>
@@ -115,15 +132,15 @@
         </div>
         <div class="field">
           <label class="checkbox">
-            <input type="checkbox" bind:checked={hasRead} />
+            <input type="checkbox" bind:checked={hasRead.bool} />
             Read?
           </label>
         </div>
       </section>
       <footer class="modal-card-foot">
         <div class="buttons">
-          <button class="button is-success" on:click={saveBook}>Save Book</button>
-          <button class="button" on:click={close}>Cancel</button>
+          <button class="button is-success" onclick={saveBook}>Save Book</button>
+          <button class="button" onclick={close}>Cancel</button>
         </div>
       </footer>
     </div>
