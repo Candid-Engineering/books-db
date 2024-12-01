@@ -2,6 +2,7 @@
   import NavBar from '$lib/components/core/NavBar.svelte'
   import 'bulma/css/bulma.css'
   import { Modals } from 'svelte-modals'
+  import 'bulma-checkbox/css/main.css'
 </script>
 
 <Modals>

@@ -1,41 +1,17 @@
 <script lang="ts">
   import { getByISBN } from '$lib/openLibrary.js'
-  import { createBooksStore } from '$lib/state/Books.svelte'
-  import type { NewBook } from '$lib/types/book.js'
+  import { getBooksStore } from '$lib/state/Books.svelte'
   import onScan from 'onscan.js'
   import type { Action } from 'svelte/action'
   import BooksTableRow from './BooksTableRow.svelte'
   import { modals } from 'svelte-modals'
   import AddBookModal from '$lib/components/AddBookModal.svelte'
 
-  let booksStorePromise = createBooksStore()
-  function handleClick() {
-    modals.open(AddBookModal, { title: 'Add Book Manually', message: 'wow a modal' })
-  }
-  $effect(() => {
-    const initialBook: NewBook = {
-      isbn10: '1234567890',
-      title: 'Hunting Prince Dracula',
-      tags: ['Young Adult', 'Fiction'],
-      authors: ['Kerri Maniscalco'],
-      hasRead: true,
-    }
-    void booksStorePromise
-      .then(async (booksStore) => {
-        if (booksStore.value.length === 0) {
-          await booksStore.add(initialBook)
-        }
-      })
-      .catch((err: unknown) => {
-        console.log('Err is: ', err)
-      })
-  })
+  let booksStore = getBooksStore()
 
   const addByISBN = async (isbn: string): Promise<void> => {
-    return booksStorePromise.then(async (booksStore) => {
-      const book = await getByISBN(isbn)
-      await booksStore.add(book)
-    })
+    const book = await getByISBN(isbn)
+    await booksStore.add(book)
   }
 
   type scanEvent = {
@@ -63,11 +39,9 @@
 </script>
 
 <svelte:document use:listenForBarcodes on:scan={handleScan} />
-<button class="button is-primary" onclick={handleClick}>Add Book</button>
-
-{#await booksStorePromise}
+{#if !booksStore.initialized}
   ...initial loading of books...
-{:then booksStore}
+{:else}
   <table class="table is-fullwidth">
     <thead>
       <tr>
@@ -78,6 +52,7 @@
         <th>Author</th>
         <th>Tags</th>
         <th>Read?</th>
+        <th>Scanned</th>
       </tr>
     </thead>
     <tbody>
@@ -85,9 +60,9 @@
         <BooksTableRow {book} />
       {:else}
         <tr>
-          <td colspan="7">
+          <td colspan="8">
             <section class="section">
-              <div class="content has-text-grey has-text-centered">
+              <div class="content has-text-soft has-text-centered">
                 <p><i class="far fa-3x fa-frown"></i></p>
                 <p>No books</p>
               </div>
@@ -97,4 +72,4 @@
       {/each}
     </tbody>
   </table>
-{/await}
+{/if}

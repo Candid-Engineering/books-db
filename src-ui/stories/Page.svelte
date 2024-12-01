@@ -1,7 +1,6 @@
 <script lang="ts">
   import './page.css'
   import NavBar from '$lib/components/core/NavBar.svelte'
-
 </script>
 
 <article>
