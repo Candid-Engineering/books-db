@@ -4,71 +4,73 @@
  *
  * Drizzle's verion relies on node's filesystem library (which is not available
  * to us in a WebView), so this code replaces that library with Tauri's `fs`
- * plugin. All other behavior is meant to be a fully compatible carbon copy.
+ * plugin.
+ *
+ * Our implementation also extends functionality: the original code _only_
+ * checks the **last** migration applied, and only applies _newer_ timestamps.
+ * The new implementation applies _all_ migrations that have not yet been
+ * applied; even if they are older. This allows two independent developers to
+ * commit independent migrations and get cross-applied on each others' machines
+ * without a race condition.
  */
 
 import { readTextFile } from '@tauri-apps/plugin-fs'
 import { resolveResource } from '@tauri-apps/api/path'
 
 import * as fs from '@tauri-apps/plugin-fs'
-import type { SqliteRemoteDatabase, SqliteRemoteResult } from 'drizzle-orm/sqlite-proxy'
+import { SqliteRemoteDatabase, type SqliteRemoteResult } from 'drizzle-orm/sqlite-proxy'
 import { sql } from 'drizzle-orm/sql'
-import type { MigrationMeta } from 'drizzle-orm/migrator'
+import type { MigrationMeta as DrizzleMigrationMeta } from 'drizzle-orm/migrator'
 import type { SQLiteRaw } from 'drizzle-orm/sqlite-core/query-builders/raw'
 
-export async function migrate<TSchema extends Record<string, unknown>>(
-  db: SqliteRemoteDatabase<TSchema>
-) {
-  const migrations = await readMigrationFiles()
-  const migrationsTable = '__drizzle_migrations'
+const MIGRATIONS_TABLE = '__drizzle_migrations'
 
+type MigrationRecord = {
+  id: number
+  hash: string
+  created_at: string
+}
+
+type MigrationRecordMap = Record<string, MigrationRecord> // { created_at: migration_record }
+
+type MigrationMeta = DrizzleMigrationMeta & {
+  tag: string
+}
+
+type DbType = SqliteRemoteDatabase<Record<string, unknown>>
+
+export async function migrate(db: DbType) {
+  await initMigrationTable(db)
+  const appliedMigrations = await getAppliedMigrations(db)
+  const allMigrations = await readMigrationFiles()
+
+  const pendingMigrations = getPendingMigrations(allMigrations, appliedMigrations)
+
+  await runMigrationBatch(db, generateMigrationBatch(db, pendingMigrations))
+}
+
+async function initMigrationTable(db: DbType) {
   const migrationTableCreate = sql`
-    CREATE TABLE IF NOT EXISTS ${sql.identifier(migrationsTable)} (
+    CREATE TABLE IF NOT EXISTS ${sql.identifier(MIGRATIONS_TABLE)} (
       id SERIAL PRIMARY KEY,
       hash text NOT NULL,
       created_at numeric
     )
   `
-  await db.run(migrationTableCreate)
-
-  const dbMigrations = await db.values<[number, string, string]>(
-    sql`SELECT id, hash, created_at FROM ${sql.identifier(migrationsTable)} ORDER BY created_at DESC LIMIT 1`
-  )
-
-  const lastDbMigration = dbMigrations[0] ?? undefined
-
-  const statementToBatch: SQLiteRaw<SqliteRemoteResult<unknown>>[] = []
-
-  for (const migration of migrations) {
-    if (!lastDbMigration || Number(lastDbMigration[2]) < migration.folderMillis) {
-      for (const stmt of migration.sql) {
-        statementToBatch.push(db.run(sql.raw(stmt)))
-      }
-
-      statementToBatch.push(
-        db.run(
-          sql`INSERT INTO ${sql.identifier(
-            migrationsTable
-          )} ("hash", "created_at") VALUES(${migration.hash}, ${migration.folderMillis})`
-        )
-      )
-    }
-  }
-
-  await runMigrations(db, statementToBatch)
+  return await db.run(migrationTableCreate)
 }
 
-async function runMigrations(
-  db: SqliteRemoteDatabase<Record<string, unknown>>,
-  statements: SQLiteRaw<SqliteRemoteResult<unknown>>[] | string[]
-): Promise<void> {
-  await db.transaction(async (tx) => {
-    await tx.run('PRAGMA foreign_keys=OFF;')
-    for (const statement of statements) {
-      await tx.run(statement)
-    }
-    await tx.run('PRAGMA foreign_keys=ON;')
-  })
+async function getAppliedMigrations(db: DbType): Promise<MigrationRecordMap> {
+  return (
+    await db.values<[number, string, string]>(
+      sql`SELECT id, hash, created_at FROM ${sql.identifier(MIGRATIONS_TABLE)}`
+    )
+  )
+    .map(([id, hash, created_at]) => ({ id, hash, created_at }))
+    .reduce<Record<string, MigrationRecord>>((resMap, record) => {
+      resMap[record.created_at] = record
+      return resMap
+    }, {})
 }
 
 async function readMigrationFiles(): Promise<MigrationMeta[]> {
@@ -96,6 +98,7 @@ async function readMigrationFiles(): Promise<MigrationMeta[]> {
       })
 
       migrationQueries.push({
+        tag: journalEntry.tag,
         sql: result,
         bps: journalEntry.breakpoints,
         folderMillis: journalEntry.when,
@@ -107,6 +110,56 @@ async function readMigrationFiles(): Promise<MigrationMeta[]> {
   }
 
   return migrationQueries
+}
+
+function getPendingMigrations(
+  migrations: MigrationMeta[],
+  existingMigrations: MigrationRecordMap
+): MigrationMeta[] {
+  return migrations.filter((migration) => {
+    const timestamp = migration.folderMillis
+    const existing = existingMigrations[timestamp]
+    if (existing && existing.hash !== migration.hash) {
+      // TODO(rkofman): not sure if this is the right approach in prod when encountering inconsistent state.
+      throw new Error(
+        `Migration hash mismatch for ${migration.tag}. Bailing on migrations due to inconsistent DB state.`
+      )
+    }
+    return !existing
+  })
+}
+
+function generateMigrationBatch(
+  db: DbType,
+  migrations: MigrationMeta[]
+): SQLiteRaw<SqliteRemoteResult>[] {
+  const statementToBatch: SQLiteRaw<SqliteRemoteResult<unknown>>[] = []
+  for (const migration of migrations) {
+    for (const stmt of migration.sql) {
+      statementToBatch.push(db.run(sql.raw(stmt)))
+    }
+
+    statementToBatch.push(
+      db.run(
+        sql`INSERT INTO ${sql.identifier(
+          MIGRATIONS_TABLE
+        )} ("hash", "created_at") VALUES(${migration.hash}, ${migration.folderMillis})`
+      )
+    )
+  }
+  return statementToBatch
+}
+async function runMigrationBatch(
+  db: DbType,
+  statements: SQLiteRaw<SqliteRemoteResult<unknown>>[] | string[]
+): Promise<void> {
+  await db.transaction(async (tx) => {
+    await tx.run('PRAGMA foreign_keys=OFF;')
+    for (const statement of statements) {
+      await tx.run(statement)
+    }
+    await tx.run('PRAGMA foreign_keys=ON;')
+  })
 }
 
 /**

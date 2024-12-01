@@ -2,12 +2,13 @@
   import NavBar from '$lib/components/core/NavBar.svelte'
   import 'bulma/css/bulma.css'
   import { Modals } from 'svelte-modals'
+  import 'bulma-checkbox/css/main.css'
 </script>
 
 <Modals>
   <!-- shown when any modal is opened -->
   {#snippet backdrop({ close })}
-    <div class="backdrop" onclick={() => close()} />
+    <div class="backdrop" onclick={() => close()}></div>
   {/snippet}
 </Modals>
 <svelte:head>

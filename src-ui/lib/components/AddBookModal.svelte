@@ -1,6 +1,6 @@
 <script lang="ts">
   import 'bulma/css/bulma.css'
-  import { createBooksStore } from '$lib/state/Books.svelte'
+  import { getBooksStore } from '$lib/state/Books.svelte'
 
   import type { NewBook } from '$lib/types/book.js'
 
@@ -38,7 +38,7 @@
       },
     }
   }
-  let booksStorePromise = createBooksStore()
+  let booksStore = getBooksStore()
 
   const saveBook = async () => {
     // For now, only validate that the title and author fields aren't empty
@@ -52,7 +52,6 @@
     }
     try {
       const newBook = createNewBook()
-      const booksStore = await booksStorePromise
       await booksStore.add(newBook)
       close()
     } catch (error) {

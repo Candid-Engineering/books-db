@@ -6,8 +6,7 @@
     title: 'Components/NavBar',
     component: NavBar,
     tags: ['basic', 'autodocs'],
-    args: {
-    },
+    args: {},
   })
 </script>
 
