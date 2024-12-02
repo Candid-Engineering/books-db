@@ -23,23 +23,6 @@
 
   let authors = $state('')
   let tags = $state('')
-  // let authors = {
-  //   get string() {
-  //     return book.authors?.join(',')
-  //   },
-  //   set string(s) {
-  //     book.authors = s?.split(',')
-  //   },
-  // }
-
-  // let tags = {
-  //   get string() {
-  //     return book.tags?.join(',')
-  //   },
-  //   set string(s) {
-  //     book.tags = s?.split(',').map((a) => a.trim())
-  //   },
-  // }
 
   let hasRead = {
     get bool() {
@@ -66,10 +49,11 @@
       console.error('Author is required.')
       return
     }
-    book.authors = authors.split(',').map((v) => v.trim())
-    book.tags = tags.split(',').map((v) => v.trim())
+    const authorsStr = authors.split(',').map((v) => v.trim())
+    const tagsStr = tags.split(',').map((v) => v.trim())
+    const newBook = {...book, title: book.title, authors: authorsStr, tags: tagsStr}
     try {
-      await booksStore.add(book as NewBook)
+      await booksStore.add(newBook)
       close()
     } catch (error) {
       console.error('Error saving book:', error)
