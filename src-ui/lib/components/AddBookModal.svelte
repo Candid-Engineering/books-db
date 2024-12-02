@@ -115,9 +115,10 @@
           </div>
         </div>
         <div class="field">
-          <label class="checkbox">
-            <input type="checkbox" bind:checked={hasRead.bool} />
-            Read?
+          <label class="b-checkbox checkbox is-regular m-1">
+            <input type="checkbox" value="false" bind:checked={hasRead.bool} />
+            <span class="check"></span>
+            <span class="control-label">Read?</span>
           </label>
         </div>
       </section>
