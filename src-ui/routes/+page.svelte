@@ -3,6 +3,8 @@
   import BooksTable from '$lib/components/BooksTable.svelte'
   import _ from 'lodash'
   import Button from '$lib/components/core/Button.svelte'
+  import { modals } from 'svelte-modals'
+  import AddBookModal from '$lib/components/AddBookModal.svelte'
 
   function simulateScan() {
     const sampleBooks = {
@@ -15,6 +17,10 @@
     const isbn = _(sampleBooks).keys().sample() as string
     onScan.simulate(document, isbn)
   }
+
+  function handleAddBookClick() {
+    modals.open(AddBookModal, { title: 'Add Book Manually', message: 'wow a modal' })
+  }
 </script>
 
 <div class="level">
@@ -25,6 +31,7 @@
     <Button primary onclick={simulateScan}>
       📖 Simulate ISBN
     </Button>
+    <Button primary onclick={handleAddBookClick}>Add Book</Button>
   </div>
 </div>
 
