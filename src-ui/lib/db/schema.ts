@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm'
-import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core'
+import { sqliteTable, text, integer, primaryKey } from 'drizzle-orm/sqlite-core'
 
 export const books = sqliteTable('books', {
   id: text().default('sql`(uuid_blob(uuid()))`').primaryKey().notNull(),
@@ -19,3 +19,18 @@ export const books = sqliteTable('books', {
     .notNull()
     .default(sql`(unixepoch())`),
 })
+
+export const taggings = sqliteTable(
+  'taggings',
+  {
+    bookId: text()
+      .notNull()
+      .references(() => books.id),
+    name: text().notNull(),
+  },
+  (table) => {
+    return {
+      pk: primaryKey({ columns: [table.bookId, table.name] }),
+    }
+  }
+)
