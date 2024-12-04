@@ -7,7 +7,9 @@ import { eq } from 'drizzle-orm/sql/expressions/conditions'
 
 class BooksStore {
   constructor(private db: SqliteRemoteDatabase<typeof schema>) {
-    void this.reload().then(() => { this.#initialized = true })
+    void this.reload().then(() => {
+      this.#initialized = true
+    })
   }
 
   static create(db: SqliteRemoteDatabase<typeof schema>) {
@@ -24,6 +26,7 @@ class BooksStore {
   get value(): Book[] {
     return this.#value
   }
+
   async add(book: NewBook): Promise<string> {
     // NOTE (isummit): we're using a library instead of window.crypto because window.crypto.randomUUID is
     // not available for older versions of macOs webviews, which some of our users may be on (macOs v11.1)
@@ -63,9 +66,7 @@ export function getBooksStore(): BooksStore {
   return booksStore
 }
 
-export function createTestBooksStore(
-  testDb: SqliteRemoteDatabase<typeof schema>
-): BooksStore {
+export function createTestBooksStore(testDb: SqliteRemoteDatabase<typeof schema>): BooksStore {
   return new BooksStore(testDb)
 }
 export type { BooksStore }

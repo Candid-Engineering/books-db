@@ -3,7 +3,7 @@
   import { getBooksStore } from '$lib/state/Books.svelte'
 
   import type { NewBook } from '$lib/types/book.js'
-
+  import Button from './core/Button.svelte'
 
   interface Props {
     /**
@@ -17,7 +17,7 @@
     close: () => void
   }
 
-  let {isOpen = false, close}: Props = $props()
+  let { isOpen = false, close }: Props = $props()
 
   let book = $state<Partial<NewBook>>({})
 
@@ -34,7 +34,7 @@
       } else {
         delete book.readAt
       }
-    }
+    },
   }
 
   let booksStore = getBooksStore()
@@ -51,7 +51,7 @@
     }
     const authorsStr = authors.split(',').map((v) => v.trim())
     const tagsStr = tags.split(',').map((v) => v.trim())
-    const newBook = {...book, title: book.title, authors: authorsStr, tags: tagsStr}
+    const newBook = { ...book, title: book.title, authors: authorsStr, tags: tagsStr }
     try {
       await booksStore.add(newBook)
       close()
@@ -64,7 +64,7 @@
 {#if isOpen}
   <div class="modal is-active">
     <div aria-hidden="true" role="presentation" class="modal-background" onclick={close}></div>
-    <div class="modal-card">
+    <form class="modal-card">
       <header class="modal-card-head">
         <p class="modal-card-title">Add a New Book</p>
         <button class="delete" aria-label="close" onclick={close}></button>
@@ -88,7 +88,13 @@
         <div class="field">
           <label class="label" for="title">Title</label>
           <div class="control">
-            <input class="input" type="text" bind:value={book.title} placeholder="Enter Title" />
+            <input
+              class="input"
+              type="text"
+              bind:value={book.title}
+              placeholder="Enter Title"
+              required
+            />
           </div>
         </div>
 
@@ -100,6 +106,7 @@
               type="text"
               bind:value={authors}
               placeholder="Enter Author(s), separated by commas"
+              required
             />
           </div>
         </div>
@@ -124,11 +131,11 @@
       </section>
       <footer class="modal-card-foot">
         <div class="buttons">
-          <button class="button is-success" onclick={saveBook}>Save Book</button>
-          <button class="button" onclick={close}>Cancel</button>
+          <Button type="submit" primary onclick={saveBook}>Save Book</Button>
+          <Button onclick={close}>Cancel</Button>
         </div>
       </footer>
-    </div>
+    </form>
   </div>
 {/if}
 
