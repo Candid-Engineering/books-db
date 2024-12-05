@@ -14,7 +14,7 @@ export const books = sqliteTable('books', {
   publicationDate: text(),
   copyrightDate: text(),
   coverImages: text({ mode: 'json' }).$type<{ small?: string; medium?: string; large?: string }>(),
-  readAt: integer({mode: 'timestamp'}),
+  readAt: integer({ mode: 'timestamp' }),
   createdAt: integer({ mode: 'timestamp' })
     .notNull()
     .default(sql`(unixepoch())`),
