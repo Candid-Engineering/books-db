@@ -14,7 +14,6 @@ declare global {
     fs: typeof fs
     sqlite: typeof commands
     booksStore: BooksStore
-
   }
 }
 
