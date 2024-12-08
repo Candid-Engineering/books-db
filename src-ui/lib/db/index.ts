@@ -1,6 +1,7 @@
 import { drizzle } from 'drizzle-orm/sqlite-proxy'
 import { commands } from '$lib/generated/sqlite_proxy'
 import * as schema from '$lib/db/schema'
+import * as relations from '$lib/db/relations'
 
 export const db = drizzle(
   async (sql, params, method) => {
@@ -22,7 +23,7 @@ export const db = drizzle(
     }
     return { rows: [] }
   },
-  { schema: schema }
+  { schema: {...schema, ...relations} }
 )
 
 export default db

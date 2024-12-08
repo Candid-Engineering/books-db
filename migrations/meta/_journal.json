@@ -22,6 +22,13 @@
       "when": 1733004548774,
       "tag": "20241130220908_books_replace_hadRead_with_readAt",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1733624762030,
+      "tag": "20241208022602_rework_book_tags_as_table",
+      "breakpoints": true
     }
   ]
 }
