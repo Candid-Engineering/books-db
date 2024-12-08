@@ -3,7 +3,7 @@ import * as orm from 'drizzle-orm'
 import * as schema from '$lib/db/schema'
 import * as fs from '@tauri-apps/plugin-fs'
 import { commands } from '$lib/generated/sqlite_proxy'
-import { migrate } from '$lib/db/migrator'
+import { getJournal, migrate, readMigrationFiles } from '$lib/db/migrator'
 import { getBooksStore, type BooksStore } from '$lib/state/Books.svelte'
 
 declare global {
@@ -22,6 +22,5 @@ window.schema = schema
 window.orm = orm
 window.fs = fs
 window.sqlite = commands
-
-await migrate(db)
+await migrate(db, await getJournal(), await readMigrationFiles())
 window.booksStore = getBooksStore()

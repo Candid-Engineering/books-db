@@ -14,7 +14,7 @@
  * without a race condition.
  */
 
-import { readTextFile } from '@tauri-apps/plugin-fs'
+import { readDir, readTextFile } from '@tauri-apps/plugin-fs'
 import { resolveResource } from '@tauri-apps/api/path'
 
 import * as fs from '@tauri-apps/plugin-fs'
@@ -31,6 +31,13 @@ type MigrationRecord = {
   created_at: string
 }
 
+type JournalEntry = {
+  idx: number
+  when: number
+  tag: string
+  breakpoints: boolean
+}
+
 type MigrationRecordMap = Record<string, MigrationRecord> // { created_at: migration_record }
 
 type MigrationMeta = DrizzleMigrationMeta & {
@@ -39,14 +46,26 @@ type MigrationMeta = DrizzleMigrationMeta & {
 
 type DbType = SqliteRemoteDatabase<Record<string, unknown>>
 
-export async function migrate(db: DbType) {
+type MigrationData = Record<string, string> // { tag: contents }
+
+export async function migrate(db: DbType, journalString: string, migrationData: MigrationData) {
   await initMigrationTable(db)
   const appliedMigrations = await getAppliedMigrations(db)
-  const allMigrations = await readMigrationFiles()
+  const allMigrations = await processMigrationData(
+    parseJournalEntries(journalString),
+    migrationData
+  )
 
   const pendingMigrations = getPendingMigrations(allMigrations, appliedMigrations)
 
   await runMigrationBatch(db, generateMigrationBatch(db, pendingMigrations))
+}
+
+function parseJournalEntries(journalString: string) {
+  const journal = JSON.parse(journalString) as {
+    entries: JournalEntry[]
+  }
+  return journal.entries
 }
 
 async function initMigrationTable(db: DbType) {
@@ -73,43 +92,52 @@ async function getAppliedMigrations(db: DbType): Promise<MigrationRecordMap> {
     }, {})
 }
 
-async function readMigrationFiles(): Promise<MigrationMeta[]> {
-  const migrationQueries: MigrationMeta[] = []
-
+export const getJournal = async () => {
   const journalPath = await resolveResource('migrations/meta/_journal.json')
   if (!(await fs.exists(journalPath))) {
     throw new Error(`Can't find meta/_journal.json file`)
   }
+  return await readTextFile(journalPath)
+}
 
-  const journalAsString = await readTextFile(journalPath)
-
-  const journal = JSON.parse(journalAsString) as {
-    entries: { idx: number; when: number; tag: string; breakpoints: boolean }[]
-  }
-
-  for (const journalEntry of journal.entries) {
-    const migrationPath = await resolveResource(`migrations/${journalEntry.tag}.sql`)
-
-    try {
-      const query = await readTextFile(migrationPath)
-
-      const result = query.split('--> statement-breakpoint').map((it) => {
-        return it
+export async function readMigrationFiles(): Promise<Record<string, string>> {
+  // const migrationFiles: Record<string, string> = {}
+  const migrationFolderPath = await resolveResource(`migrations/`)
+  const dirEntries = await readDir(migrationFolderPath)
+  const migrationFileEntries = await Promise.all(
+    dirEntries
+      .filter((dirEntry) => dirEntry.isFile)
+      .map(async (dirEntry) => {
+        const fileContent = await readTextFile(dirEntry.name)
+        // TODO(rkofman): might be a better way to drop the `.sql` part of the filename
+        const baseFileName = dirEntry.name.split('.')[0]
+        return [baseFileName, fileContent]
       })
+  )
+  return Object.fromEntries(migrationFileEntries)
+}
 
-      migrationQueries.push({
-        tag: journalEntry.tag,
-        sql: result,
-        bps: journalEntry.breakpoints,
-        folderMillis: journalEntry.when,
-        hash: await hashMessage(query),
-      })
-    } catch {
-      throw new Error(`No file ${migrationPath} found in migrations folder`)
-    }
-  }
-
-  return migrationQueries
+/**
+ * Transforms migartion data an array of MigrationMeta objects.
+ */
+async function processMigrationData(
+  journalEntries: JournalEntry[],
+  migrationFiles: Record<string, string>
+): Promise<MigrationMeta[]> {
+  return await Promise.all(
+    journalEntries.map(async (entry) => {
+      const tag = entry.tag
+      const fileContent = migrationFiles[tag]
+      const result = fileContent.split('--> statement-breakpoint')
+      return {
+        tag, // filename
+        sql: result, // list of sql commands that define a migration
+        bps: entry.breakpoints, // boolean that describes whether breakpoints exist
+        folderMillis: entry.when, // timestamp associated with the migration
+        hash: await hashMessage(fileContent), // hash of entire migration file contents
+      }
+    })
+  )
 }
 
 function getPendingMigrations(
@@ -133,21 +161,19 @@ function generateMigrationBatch(
   db: DbType,
   migrations: MigrationMeta[]
 ): SQLiteRaw<SqliteRemoteResult>[] {
-  const statementToBatch: SQLiteRaw<SqliteRemoteResult<unknown>>[] = []
-  for (const migration of migrations) {
-    for (const stmt of migration.sql) {
-      statementToBatch.push(db.run(sql.raw(stmt)))
-    }
+  return migrations.flatMap((migration) => {
+    const toSQLiteRaw = (stmt: string) => db.run(sql.raw(stmt))
+    const statements = migration.sql.map(toSQLiteRaw)
 
-    statementToBatch.push(
+    statements.push(
       db.run(
         sql`INSERT INTO ${sql.identifier(
           MIGRATIONS_TABLE
         )} ("hash", "created_at") VALUES(${migration.hash}, ${migration.folderMillis})`
       )
     )
-  }
-  return statementToBatch
+    return statements
+  })
 }
 async function runMigrationBatch(
   db: DbType,
