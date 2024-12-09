@@ -1,9 +1,10 @@
 import { v4 as uuidv4 } from 'uuid'
-import { type Book, type NewBook } from '$lib/types/book.js'
-import realDb from '$lib/db/index.js'
+import { type Book, type BookTag, type NewBook } from '$lib/types/book.js'
+import realDb, { db } from '$lib/db/index.js'
 import * as schema from '$lib/db/schema'
 import type { SqliteRemoteDatabase } from 'drizzle-orm/sqlite-proxy'
-import { eq } from 'drizzle-orm/sql/expressions/conditions'
+import { and, eq } from 'drizzle-orm/sql/expressions/conditions'
+import _ from 'lodash'
 
 class BooksStore {
   constructor(private db: SqliteRemoteDatabase<typeof schema>) {
@@ -42,6 +43,32 @@ class BooksStore {
     await this.db.update(schema.books).set(updatedBook).where(eq(schema.books.id, updatedBook.id))
     await this.reload()
   }
+
+  async updateTags(book: Book, tags: string[]): Promise<void> {
+    const existingTags = book.tags.map((bookTag) => bookTag.name)
+    for (const tagToRemove of _.difference(existingTags, tags)) {
+      await this.removeTag(book, tagToRemove)
+    }
+    for (const tagToAdd of _.difference(tags, existingTags)) {
+      await this.addTag(book, tagToAdd)
+    }
+    await this.reload()
+  }
+
+  async addTag(book: Book, tagName: string): Promise<void> {
+    const newTag: BookTag = {bookId: book.id, name: tagName}
+    await db.insert(schema.bookTags).values(newTag)
+  }
+
+  async removeTag(book: Book, tag: string): Promise<void> {
+    await db.delete(schema.bookTags).where(
+      and(
+        eq(schema.bookTags.bookId, book.id),
+        eq(schema.bookTags.name, tag)
+      )
+    )
+  }
+
   async remove(id: string): Promise<void> {
     await this.db.delete(schema.books).where(eq(schema.books.id, id))
     await this.reload()
@@ -53,7 +80,7 @@ class BooksStore {
   }
 
   async reload(): Promise<BooksStore> {
-    this.#value = await this.db.select().from(schema.books)
+    this.#value = await this.db.query.books.findMany({with: {tags: true}})
     return this
   }
 }

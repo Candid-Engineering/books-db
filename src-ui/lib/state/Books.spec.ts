@@ -239,16 +239,6 @@ describe('booksStore', () => {
         expect(editedBook?.coverImages?.small).toBe('https://some-new-link.com/new_small.jpg')
       })
 
-      it('should edit the tags of a book', async () => {
-        const updatedBook = {
-          ...duneMessiahWithId,
-          tags: ['Science Fiction', 'Classic'],
-        }
-        await booksStore.edit(updatedBook)
-        const editedBook = booksStore.value.find((book) => book.id === duneMessiahWithId.id)
-        expect(editedBook?.tags).toContain('Science Fiction')
-      })
-
       it('should edit the page count of a book', async () => {
         const updatedBook = {
           ...duneMessiahWithId,
@@ -268,6 +258,15 @@ describe('booksStore', () => {
         const editedBook = booksStore.value.find((book) => book.id === duneMessiahWithId.id)
         expect(editedBook?.series).toBe('Dune Chronicles (Revised)')
       })
+    })
+
+    describe('#updateTags', () => {
+      it('should update the tags of a book', async () => {
+        await booksStore.updateTags(duneMessiahWithId, ['Science Fiction', 'Classic'])
+        const editedBook = booksStore.value.find((book) => book.id === duneMessiahWithId.id)
+        expect(editedBook?.tags).toContain('Science Fiction')
+      })
+
     })
 
     describe('#remove', () => {
