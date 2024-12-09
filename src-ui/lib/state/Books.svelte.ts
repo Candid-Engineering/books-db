@@ -55,12 +55,12 @@ class BooksStore {
     await this.reload()
   }
 
-  async addTag(book: Book, tagName: string): Promise<void> {
+  private async addTag(book: Book, tagName: string): Promise<void> {
     const newTag: BookTag = {bookId: book.id, name: tagName}
     await this.db.insert(schema.bookTags).values(newTag)
   }
 
-  async removeTag(book: Book, tag: string): Promise<void> {
+  private async removeTag(book: Book, tag: string): Promise<void> {
     await this.db.delete(schema.bookTags).where(
       and(
         eq(schema.bookTags.bookId, book.id),
