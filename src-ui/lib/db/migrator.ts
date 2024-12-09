@@ -23,6 +23,7 @@ import { sql } from 'drizzle-orm/sql'
 import type { MigrationMeta as DrizzleMigrationMeta } from 'drizzle-orm/migrator'
 import type { SQLiteRaw } from 'drizzle-orm/sqlite-core/query-builders/raw'
 import { ObjectFromEntries } from '$lib/type_helpers'
+import { path } from '@tauri-apps/api'
 
 const MIGRATIONS_TABLE = '__drizzle_migrations'
 
@@ -114,7 +115,8 @@ async function readMigrationFiles(): Promise<MigrationData> {
     dirEntries
       .filter((dirEntry) => dirEntry.isFile)
       .map(async (dirEntry) => {
-        const fileContent = await readTextFile(dirEntry.name)
+        const filePath = await path.join(migrationFolderPath, dirEntry.name)
+        const fileContent = await readTextFile(filePath)
         // TODO(rkofman): might be a better way to drop the `.sql` part of the filename
         const baseFileName = dirEntry.name.split('.')[0]
         return [baseFileName, fileContent]
