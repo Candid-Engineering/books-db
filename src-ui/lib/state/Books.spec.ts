@@ -34,9 +34,10 @@ let booksStore: BooksStore
 let db: Database
 
 describe('booksStore', () => {
-  beforeEach(() => {
-    const { drizzle, sqlite } = createTestDB()
+  beforeEach(async () => {
+    const { drizzle, sqlite } = await createTestDB()
     db = sqlite
+
     booksStore = createTestBooksStore(drizzle)
     mockServer.use(
       http.get('https://openlibrary.org/isbn/9780441004225.json', () => {
