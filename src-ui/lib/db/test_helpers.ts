@@ -4,6 +4,7 @@ import { drizzle, SqliteRemoteDatabase } from 'drizzle-orm/sqlite-proxy'
 import { migrate } from './migrator'
 import * as fs from 'node:fs'
 import * as path from 'node:path'
+import { ObjectFromEntries } from '$lib/type_helpers'
 
 const sqlite3 = await initSqlJs()
 export async function createTestDB(): Promise<{
@@ -28,16 +29,16 @@ export async function createTestDB(): Promise<{
     },
     { schema }
   )
-  await migrate(drizzleDb, getJournal(), await readMigrationFiles())
+  await migrate(drizzleDb, getJournal(), readMigrationFiles())
 
   return { drizzle: drizzleDb, sqlite: db }
 }
 
-async function readMigrationFiles(): Promise<Record<string, string>> {
+function readMigrationFiles(): Record<string, string> {
   const dirEntries = fs.readdirSync('migrations/', {
     withFileTypes: true,
   })
-  const migrationFileEntries = dirEntries
+  const migrationFileEntries: [tag: string, content: string][] = dirEntries
     .filter((dirEntry) => dirEntry.isFile())
     .map((dirEntry) => {
       const fullPath = path.join(dirEntry.parentPath, dirEntry.name)
@@ -46,7 +47,7 @@ async function readMigrationFiles(): Promise<Record<string, string>> {
       const baseFileName = dirEntry.name.split('.')[0]
       return [baseFileName, fileContent]
     })
-  return Object.fromEntries(migrationFileEntries)
+  return ObjectFromEntries(migrationFileEntries)
 }
 
 const getJournal = () => {

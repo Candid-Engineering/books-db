@@ -22,6 +22,7 @@ import { SqliteRemoteDatabase, type SqliteRemoteResult } from 'drizzle-orm/sqlit
 import { sql } from 'drizzle-orm/sql'
 import type { MigrationMeta as DrizzleMigrationMeta } from 'drizzle-orm/migrator'
 import type { SQLiteRaw } from 'drizzle-orm/sqlite-core/query-builders/raw'
+import { ObjectFromEntries } from '$lib/type_helpers'
 
 const MIGRATIONS_TABLE = '__drizzle_migrations'
 
@@ -38,7 +39,9 @@ type JournalEntry = {
   breakpoints: boolean
 }
 
-type MigrationRecordMap = Record<string, MigrationRecord> // { created_at: migration_record }
+interface MigrationRecordMap {
+  [created_at: string]: MigrationRecord
+}
 
 type MigrationMeta = DrizzleMigrationMeta & {
   tag: string
@@ -46,7 +49,9 @@ type MigrationMeta = DrizzleMigrationMeta & {
 
 type DbType = SqliteRemoteDatabase<Record<string, unknown>>
 
-type MigrationData = Record<string, string> // { tag: contents }
+interface MigrationData {
+  [tag: string]: string
+}
 
 export async function migrate(db: DbType, journalString?: string, migrationData?: MigrationData) {
   journalString ||= await getJournal()
@@ -88,7 +93,7 @@ async function getAppliedMigrations(db: DbType): Promise<MigrationRecordMap> {
     )
   )
     .map(([id, hash, created_at]) => ({ id, hash, created_at }))
-    .reduce<Record<string, MigrationRecord>>((resMap, record) => {
+    .reduce<MigrationRecordMap>((resMap, record) => {
       resMap[record.created_at] = record
       return resMap
     }, {})
@@ -102,10 +107,10 @@ export const getJournal = async () => {
   return await readTextFile(journalPath)
 }
 
-export async function readMigrationFiles(): Promise<Record<string, string>> {
+export async function readMigrationFiles(): Promise<MigrationData> {
   const migrationFolderPath = await resolveResource(`migrations/`)
   const dirEntries = await readDir(migrationFolderPath)
-  const migrationFileEntries = await Promise.all(
+  const migrationFileEntries: [tag: string, content: string][] = await Promise.all(
     dirEntries
       .filter((dirEntry) => dirEntry.isFile)
       .map(async (dirEntry) => {
@@ -115,7 +120,7 @@ export async function readMigrationFiles(): Promise<Record<string, string>> {
         return [baseFileName, fileContent]
       })
   )
-  return Object.fromEntries(migrationFileEntries)
+  return ObjectFromEntries(migrationFileEntries)
 }
 
 /**
@@ -123,7 +128,7 @@ export async function readMigrationFiles(): Promise<Record<string, string>> {
  */
 async function processMigrationData(
   journalEntries: JournalEntry[],
-  migrationFiles: Record<string, string>
+  migrationFiles: MigrationData
 ): Promise<MigrationMeta[]> {
   return await Promise.all(
     journalEntries.map(async (entry) => {

@@ -1,12 +1,10 @@
 import { http, HttpResponse } from 'msw'
-import * as schema from '$lib/db/schema'
 import { expect, describe, it, beforeEach, afterEach } from 'vitest'
 import { createTestBooksStore, type BooksStore } from './Books.svelte.js'
 import { type Book, type NewBook } from '$lib/types/book.js'
 import { createTestDB } from '$lib/db/test_helpers.js'
 import type { Database } from 'sql.js'
 import { mockServer } from '../../testing/msw-setup.js'
-import type { SqliteRemoteDatabase } from 'drizzle-orm/sqlite-proxy'
 
 const duneMessiah: NewBook = {
   isbn10: '0441172695',

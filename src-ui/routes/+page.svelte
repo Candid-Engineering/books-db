@@ -18,8 +18,8 @@
     onScan.simulate(document, isbn)
   }
 
-  function handleAddBookClick() {
-    modals.open(AddBookModal, { title: 'Add Book Manually', message: 'wow a modal' })
+  async function handleAddBookClick() {
+    await modals.open(AddBookModal, { title: 'Add Book Manually', message: 'wow a modal' })
   }
 </script>
 
