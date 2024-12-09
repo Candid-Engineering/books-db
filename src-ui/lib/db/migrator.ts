@@ -48,7 +48,9 @@ type DbType = SqliteRemoteDatabase<Record<string, unknown>>
 
 type MigrationData = Record<string, string> // { tag: contents }
 
-export async function migrate(db: DbType, journalString: string, migrationData: MigrationData) {
+export async function migrate(db: DbType, journalString?: string, migrationData?: MigrationData) {
+  journalString ||= await getJournal()
+  migrationData ||= await readMigrationFiles()
   await initMigrationTable(db)
   const appliedMigrations = await getAppliedMigrations(db)
   const allMigrations = await processMigrationData(
