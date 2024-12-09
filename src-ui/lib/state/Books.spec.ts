@@ -264,7 +264,7 @@ describe('booksStore', () => {
       it('should update the tags of a book', async () => {
         await booksStore.updateTags(duneMessiahWithId, ['Science Fiction', 'Classic'])
         const editedBook = booksStore.value.find((book) => book.id === duneMessiahWithId.id)
-        expect(editedBook?.tags).toContain('Science Fiction')
+        expect(editedBook?.tags.map((t) => t.name)).toContain('Science Fiction')
       })
 
     })

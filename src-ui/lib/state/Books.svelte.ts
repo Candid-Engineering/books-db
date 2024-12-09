@@ -1,6 +1,6 @@
 import { v4 as uuidv4 } from 'uuid'
 import { type Book, type BookTag, type NewBook } from '$lib/types/book.js'
-import realDb, { db } from '$lib/db/index.js'
+import realDb from '$lib/db/index.js'
 import * as schema from '$lib/db/schema'
 import type { SqliteRemoteDatabase } from 'drizzle-orm/sqlite-proxy'
 import { and, eq } from 'drizzle-orm/sql/expressions/conditions'
@@ -57,11 +57,11 @@ class BooksStore {
 
   async addTag(book: Book, tagName: string): Promise<void> {
     const newTag: BookTag = {bookId: book.id, name: tagName}
-    await db.insert(schema.bookTags).values(newTag)
+    await this.db.insert(schema.bookTags).values(newTag)
   }
 
   async removeTag(book: Book, tag: string): Promise<void> {
-    await db.delete(schema.bookTags).where(
+    await this.db.delete(schema.bookTags).where(
       and(
         eq(schema.bookTags.bookId, book.id),
         eq(schema.bookTags.name, tag)
