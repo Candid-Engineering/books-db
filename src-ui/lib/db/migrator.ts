@@ -68,7 +68,7 @@ export async function migrate(db: DbType, journalString?: string, migrationData?
   await runMigrationBatch(db, generateMigrationBatch(db, pendingMigrations))
 }
 
-function parseJournalEntries(journalString: string) {
+function parseJournalEntries(journalString: string): JournalEntry[] {
   const journal = JSON.parse(journalString) as {
     entries: JournalEntry[]
   }
@@ -99,7 +99,7 @@ async function getAppliedMigrations(db: DbType): Promise<MigrationRecordMap> {
     }, {})
 }
 
-export const getJournal = async () => {
+async function getJournal(): Promise<string> {
   const journalPath = await resolveResource('migrations/meta/_journal.json')
   if (!(await fs.exists(journalPath))) {
     throw new Error(`Can't find meta/_journal.json file`)
@@ -107,7 +107,7 @@ export const getJournal = async () => {
   return await readTextFile(journalPath)
 }
 
-export async function readMigrationFiles(): Promise<MigrationData> {
+async function readMigrationFiles(): Promise<MigrationData> {
   const migrationFolderPath = await resolveResource(`migrations/`)
   const dirEntries = await readDir(migrationFolderPath)
   const migrationFileEntries: [tag: string, content: string][] = await Promise.all(
