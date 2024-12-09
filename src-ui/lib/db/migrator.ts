@@ -103,7 +103,6 @@ export const getJournal = async () => {
 }
 
 export async function readMigrationFiles(): Promise<Record<string, string>> {
-  // const migrationFiles: Record<string, string> = {}
   const migrationFolderPath = await resolveResource(`migrations/`)
   const dirEntries = await readDir(migrationFolderPath)
   const migrationFileEntries = await Promise.all(
