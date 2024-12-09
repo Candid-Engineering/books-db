@@ -1,6 +1,6 @@
 <script lang="ts">
   import { getBooksStore } from '$lib/state/Books.svelte'
-  import type { Book, BookTag } from '$lib/types/book.js'
+  import type { Book } from '$lib/types/book.js'
   import { fade } from 'svelte/transition'
   import Button from './core/Button.svelte'
   import { trim } from 'lodash'
@@ -10,20 +10,17 @@
   let booksStore = getBooksStore()
   const handleEdit = async (book: Book, field: keyof Book, e: Event) => {
     const target = e.target as HTMLElement
-    let value: string | string[] | BookTag[] = target.innerText.trim()
-    if (field === 'authors' || field == 'tags') {
+    let value: string | string[] = target.innerText.trim()
+    if (field === 'authors') {
       value = target.innerText.split(',').map(trim)
-      if (field == 'tags') {
-        value = (value as string[]).map((name) => ({bookId: book.id, name }) )
-      }
     }
 
     await booksStore.edit({ ...book, [field]: value })
   }
 
   async function updateTags(book: Book, commaSeparatedTags: string): Promise<void> {
-      const tags = commaSeparatedTags.split(',').map(trim)
-      await booksStore.updateTags(book, tags)
+    const tags = commaSeparatedTags.split(',').map(trim)
+    await booksStore.updateTags(book, tags)
   }
 
   const removeBook = async (id: string): Promise<void> => {
@@ -64,8 +61,10 @@
   <td contenteditable="true" onblur={(e) => handleEdit(book, 'authors', e)} onkeydown={handleEnter}
     >{book.authors?.join(', ') || ''}</td
   >
-  <td contenteditable="true" onblur={(e) => updateTags(book, e.currentTarget.innerHTML)} onkeydown={handleEnter}
-    >{book.tags?.map((bookTag) => bookTag.name).join(', ') || ''}</td
+  <td
+    contenteditable="true"
+    onblur={(e) => updateTags(book, e.currentTarget.innerHTML)}
+    onkeydown={handleEnter}>{book.tags?.map((bookTag) => bookTag.name).join(', ') || ''}</td
   >
   <td>
     <label class="b-checkbox checkbox is-regular m-1">
