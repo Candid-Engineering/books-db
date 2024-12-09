@@ -1,21 +1,31 @@
 <script lang="ts">
   import { getBooksStore } from '$lib/state/Books.svelte'
-  import type { Book } from '$lib/types/book.js'
+  import type { Book, BookTag } from '$lib/types/book.js'
   import { fade } from 'svelte/transition'
   import Button from './core/Button.svelte'
+  import { trim } from 'lodash'
 
   export let book: Book
 
   let booksStore = getBooksStore()
   const handleEdit = async (book: Book, field: keyof Book, e: Event) => {
     const target = e.target as HTMLElement
-    let value: string | string[] = target.innerText.trim()
+    let value: string | string[] | BookTag[] = target.innerText.trim()
     if (field === 'authors' || field == 'tags') {
-      value = target.innerText.split(',').map((author) => author.trim())
+      value = target.innerText.split(',').map(trim)
+      if (field == 'tags') {
+        value = (value as string[]).map((name) => ({bookId: book.id, name }) )
+      }
     }
 
     await booksStore.edit({ ...book, [field]: value })
   }
+
+  async function updateTags(book: Book, commaSeparatedTags: string): Promise<void> {
+      const tags = commaSeparatedTags.split(',').map(trim)
+      await booksStore.updateTags(book, tags)
+  }
+
   const removeBook = async (id: string): Promise<void> => {
     await booksStore.remove(id)
   }
@@ -54,8 +64,8 @@
   <td contenteditable="true" onblur={(e) => handleEdit(book, 'authors', e)} onkeydown={handleEnter}
     >{book.authors?.join(', ') || ''}</td
   >
-  <td contenteditable="true" onblur={(e) => handleEdit(book, 'tags', e)} onkeydown={handleEnter}
-    >{book.tags?.join(', ') || ''}</td
+  <td contenteditable="true" onblur={(e) => updateTags(book, e.currentTarget.innerHTML)} onkeydown={handleEnter}
+    >{book.tags?.map((bookTag) => bookTag.name).join(', ') || ''}</td
   >
   <td>
     <label class="b-checkbox checkbox is-regular m-1">
@@ -66,7 +76,6 @@
         onchange={(e) => toggleRead(e, book)}
       />
       <span class="check"></span>
-      <!-- <span class="control-label"></span> -->
     </label>
   </td>
   <td>
