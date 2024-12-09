@@ -22,5 +22,6 @@ window.schema = schema
 window.orm = orm
 window.fs = fs
 window.sqlite = commands
+
 await migrate(db)
 window.booksStore = getBooksStore()
