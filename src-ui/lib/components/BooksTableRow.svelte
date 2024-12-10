@@ -9,14 +9,8 @@
   export let book: Book
 
   let booksStore = getBooksStore()
-  const handleEdit = async (book: Book, field: keyof Book, e: Event | string) => {
-    let value: string | string[]
-    if (typeof e === 'object') {
-      const target = e.target as HTMLElement
-      value = target.innerText.trim()
-    } else {
-      value = e
-    }
+  const handleEdit = async (book: Book, field: keyof Book, valueStr: string) => {
+    let value: string | string[] = valueStr.trim()
 
     if (field === 'authors') {
       value = value.split(',').map(trim)
@@ -32,13 +26,6 @@
 
   const removeBook = async (id: string): Promise<void> => {
     await booksStore.remove(id)
-  }
-
-  function handleEnter(event: Event) {
-    if (event instanceof KeyboardEvent && event.key === 'Enter') {
-      event.preventDefault?.()
-      ;(event.currentTarget as HTMLTableCellElement).blur?.()
-    }
   }
 
   async function toggleRead(
