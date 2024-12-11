@@ -4,15 +4,16 @@
   import { fade } from 'svelte/transition'
   import Button from './core/Button.svelte'
   import { trim } from 'lodash'
+  import EditableTd from './core/EditableTd.svelte'
 
   export let book: Book
 
   let booksStore = getBooksStore()
-  const handleEdit = async (book: Book, field: keyof Book, e: Event) => {
-    const target = e.target as HTMLElement
-    let value: string | string[] = target.innerText.trim()
+  const handleEdit = async (book: Book, field: keyof Book, valueStr: string) => {
+    let value: string | string[] = valueStr.trim()
+
     if (field === 'authors') {
-      value = target.innerText.split(',').map(trim)
+      value = value.split(',').map(trim)
     }
 
     await booksStore.edit({ ...book, [field]: value })
@@ -25,13 +26,6 @@
 
   const removeBook = async (id: string): Promise<void> => {
     await booksStore.remove(id)
-  }
-
-  function handleEnter(event: Event) {
-    if (event instanceof KeyboardEvent && event.key === 'Enter') {
-      event.preventDefault?.()
-      ;(event.currentTarget as HTMLTableCellElement).blur?.()
-    }
   }
 
   async function toggleRead(
@@ -51,21 +45,26 @@
     ><Button aria-label="delete book" class="delete" onclick={() => removeBook(book.id)}
     ></Button></td
   >
-  <td contenteditable="true" onblur={(e) => handleEdit(book, 'isbn10', e)} onkeydown={handleEnter}
-    >{book.isbn10}</td
-  >
-  <td contenteditable="true" onblur={(e) => handleEdit(book, 'isbn13', e)}>{book.isbn13}</td>
-  <td contenteditable="true" onblur={(e) => handleEdit(book, 'title', e)} onkeydown={handleEnter}
-    >{book?.title || ''}
-  </td>
-  <td contenteditable="true" onblur={(e) => handleEdit(book, 'authors', e)} onkeydown={handleEnter}
-    >{book.authors?.join(', ') || ''}</td
-  >
-  <td
-    contenteditable="true"
-    onblur={(e) => updateTags(book, e.currentTarget.innerHTML)}
-    onkeydown={handleEnter}>{book.tags?.map((bookTag) => bookTag.name).join(', ') || ''}</td
-  >
+  <EditableTd
+    value={book.isbn10}
+    onChange={(newValue: string) => handleEdit(book, 'isbn10', newValue)}
+  />
+  <EditableTd
+    value={book.isbn13}
+    onChange={(newValue: string) => handleEdit(book, 'isbn13', newValue)}
+  />
+  <EditableTd
+    value={book.title}
+    onChange={(newValue: string) => handleEdit(book, 'title', newValue)}
+  />
+  <EditableTd
+    value={book.authors?.join(', ')}
+    onChange={(newValue: string) => handleEdit(book, 'authors', newValue)}
+  />
+  <EditableTd
+    value={book.tags.map((bookTag) => bookTag.name).join(', ')}
+    onChange={(newValue: string) => updateTags(book, newValue)}
+  />
   <td>
     <label class="b-checkbox checkbox is-regular m-1">
       <input
