@@ -29,6 +29,13 @@
       "when": 1733624762030,
       "tag": "20241208022602_rework_book_tags_as_table",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1733960332810,
+      "tag": "20241211233852_rework_book_authors_as_table",
+      "breakpoints": true
     }
   ]
 }

@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid'
-import { type Book, type BookTag, type NewBook } from '$lib/types/book.js'
+import { type Book, type BookAuthor, type BookTag, type NewBook } from '$lib/types/book.js'
 import realDb from '$lib/db/index.js'
 import * as schema from '$lib/db/schema'
 import type { SqliteRemoteDatabase } from 'drizzle-orm/sqlite-proxy'
@@ -45,28 +45,45 @@ class BooksStore {
   }
 
   async updateTags(book: Book, tags: string[]): Promise<void> {
-    const existingTags = book.tags.map((bookTag) => bookTag.name)
-    for (const tagToRemove of _.difference(existingTags, tags)) {
-      await this.removeTag(book, tagToRemove)
+    const existing = book.tags.map((bookTag) => bookTag.name)
+    for (const toRemove of _.difference(existing, tags)) {
+      await this.removeTag(book, toRemove)
     }
-    for (const tagToAdd of _.difference(tags, existingTags)) {
-      await this.addTag(book, tagToAdd)
+    for (const toAdd of _.difference(tags, existing)) {
+      await this.addTag(book, toAdd)
+    }
+    await this.reload()
+  }
+  async updateAuthors(book: Book, authors: string[]): Promise<void> {
+    const existing = book.authors.map((bookAuthors) => bookAuthors.name)
+    for (const toRemove of _.difference(existing, authors)) {
+      await this.removeAuthor(book, toRemove)
+    }
+    for (const toAdd of _.difference(authors, existing)) {
+      await this.addAuthor(book, toAdd)
     }
     await this.reload()
   }
 
   private async addTag(book: Book, tagName: string): Promise<void> {
-    const newTag: BookTag = {bookId: book.id, name: tagName}
+    const newTag: BookTag = { bookId: book.id, name: tagName }
     await this.db.insert(schema.bookTags).values(newTag)
   }
 
   private async removeTag(book: Book, tag: string): Promise<void> {
-    await this.db.delete(schema.bookTags).where(
-      and(
-        eq(schema.bookTags.bookId, book.id),
-        eq(schema.bookTags.name, tag)
-      )
-    )
+    await this.db
+      .delete(schema.bookTags)
+      .where(and(eq(schema.bookTags.bookId, book.id), eq(schema.bookTags.name, tag)))
+  }
+  private async addAuthor(book: Book, authorName: string): Promise<void> {
+    const newAuthor: BookAuthor = { bookId: book.id, name: authorName }
+    await this.db.insert(schema.bookAuthors).values(newAuthor)
+  }
+
+  private async removeAuthor(book: Book, author: string): Promise<void> {
+    await this.db
+      .delete(schema.bookAuthors)
+      .where(and(eq(schema.bookAuthors.bookId, book.id), eq(schema.bookAuthors.name, author)))
   }
 
   async remove(id: string): Promise<void> {
@@ -80,7 +97,7 @@ class BooksStore {
   }
 
   async reload(): Promise<BooksStore> {
-    this.#value = await this.db.query.books.findMany({with: {tags: true}})
+    this.#value = await this.db.query.books.findMany({ with: { tags: true, authors: true } })
     return this
   }
 }

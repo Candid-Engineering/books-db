@@ -7,7 +7,6 @@ export const books = sqliteTable('books', {
   isbn13: text(),
   title: text().notNull(),
   subtitle: text(),
-  authors: text({ mode: 'json' }).notNull().$type<string[]>(),
   series: text(),
   pageCount: integer(),
   publicationDate: text(),
@@ -19,11 +18,32 @@ export const books = sqliteTable('books', {
     .default(sql`(unixepoch())`),
 })
 
-export const bookTags = sqliteTable('book_tags', {
-  bookId: text().notNull().references(() => books.id, {onDelete: 'cascade'}), // automatically deletes tags when a book is deleted
-  name: text().notNull(),
-}, (table) => {
-  return {
-    pk: primaryKey({ columns: [table.bookId, table.name] }),
+export const bookTags = sqliteTable(
+  'book_tags',
+  {
+    bookId: text()
+      .notNull()
+      .references(() => books.id, { onDelete: 'cascade' }), // automatically deletes tags when a book is deleted
+    name: text().notNull(),
+  },
+  (table) => {
+    return {
+      pk: primaryKey({ columns: [table.bookId, table.name] }),
+    }
   }
-})
+)
+
+export const bookAuthors = sqliteTable(
+  'book_authors',
+  {
+    bookId: text()
+      .notNull()
+      .references(() => books.id, { onDelete: 'cascade' }), // automatically deletes authors when a book is deleted
+    name: text().notNull(),
+  },
+  (table) => {
+    return {
+      pk: primaryKey({ columns: [table.bookId, table.name] }),
+    }
+  }
+)
