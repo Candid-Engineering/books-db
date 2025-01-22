@@ -11,9 +11,7 @@ const duneMessiah: NewBook = {
   isbn13: '9780441172696',
   title: 'Dune Messiah',
   subtitle: 'Dune Chronicles, Book 2',
-  tags: [],
   series: 'Dune (2)', // or 'Dune Chronicles, Book 2'
-  authors: ['Frank Herbert'],
   copyrightDate: '1969',
   publicationDate: 'July 15, 1987',
   coverImages: {
@@ -27,7 +25,6 @@ const duneMessiah: NewBook = {
 const princessAndGrilledCheese: NewBook = {
   isbn13: '9780316538725',
   title: 'Princess and the Grilled Cheese Sandwich (a Graphic Novel)',
-  authors: ['Deya Muniz'],
 }
 
 let booksStore: BooksStore
@@ -203,16 +200,6 @@ describe('booksStore', () => {
         expect(editedBook?.subtitle).toBe('Revised Subtitle')
       })
 
-      it('should edit the authors of a book', async () => {
-        const updatedBook = {
-          ...duneMessiahWithId,
-          authors: ['Frank Herbert', 'New Co-Author'],
-        }
-        await booksStore.edit(updatedBook)
-        const editedBook = booksStore.value.find((book) => book.id === duneMessiahWithId.id)
-        expect(editedBook?.authors).toContain('New Co-Author')
-      })
-
       it('should edit the publication date', async () => {
         const updatedBook = {
           ...duneMessiahWithId,
@@ -266,7 +253,13 @@ describe('booksStore', () => {
         const editedBook = booksStore.value.find((book) => book.id === duneMessiahWithId.id)
         expect(editedBook?.tags.map((t) => t.name)).toContain('Science Fiction')
       })
-
+    })
+    describe('#updateAuthors', () => {
+      it('should update the authors of a book', async () => {
+        await booksStore.updateAuthors(duneMessiahWithId, ['John Smith', 'Jane Doe'])
+        const editedBook = booksStore.value.find((book) => book.id === duneMessiahWithId.id)
+        expect(editedBook?.authors.map((t) => t.name)).toContain('John Smith')
+      })
     })
 
     describe('#remove', () => {
