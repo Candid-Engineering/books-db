@@ -1,16 +1,16 @@
 <script lang="ts">
   import NavBar from '$lib/components/core/NavBar.svelte'
   import 'bulma/css/bulma.css'
-  import { Modals } from 'svelte-modals'
+  import { Modals, type ModalStack } from 'svelte-modals'
   import 'bulma-checkbox/css/main.css'
 </script>
 
 <Modals>
   <!-- shown when any modal is opened -->
-  {#snippet backdrop({ close })}
+  {#snippet backdrop(modals: ModalStack)}
     <!-- svelte-ignore a11y_click_events_have_key_events -->
     <!-- svelte-ignore a11y_no_static_element_interactions -->
-    <div class="backdrop" onclick={() => close()}></div>
+    <div class="backdrop" onclick={() => modals.close()}></div>
   {/snippet}
 </Modals>
 <svelte:head>
