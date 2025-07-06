@@ -2,6 +2,11 @@ import type { components, paths } from 'open-library-api'
 import createClient from 'openapi-fetch'
 import { type NewBook } from './types/book.js'
 
+export type OpenLibraryBookData = {
+  book: NewBook
+  tags: string[]
+}
+
 const fetchWithTimeout = async (request: Request | string, timeout = 3000): Promise<Response> => {
   const controller = new AbortController()
   const timeoutId = setTimeout(() => {
@@ -27,7 +32,7 @@ const client = createClient<paths>({
   fetch: (request: Request) => fetchWithTimeout(request),
 })
 
-export async function getByISBN(isbn: string): Promise<NewBook> {
+export async function getByISBN(isbn: string): Promise<OpenLibraryBookData> {
   const { data, error } = await client.GET('/isbn/{isbn}.json', {
     params: { path: { isbn } },
   })
@@ -40,25 +45,27 @@ export async function getByISBN(isbn: string): Promise<NewBook> {
   return await normalizeOpenLibraryBook(data)
 }
 
-async function normalizeOpenLibraryBook(data: components['schemas']['Edition']): Promise<NewBook> {
+async function normalizeOpenLibraryBook(data: components['schemas']['Edition']): Promise<OpenLibraryBookData> {
   const id = data.key.split('/').pop()
   const authorIds = data.authors?.map((v) => v.key.split('/').pop() || '').filter(Boolean) || []
   return {
-    isbn10: data.isbn_10?.[0],
-    isbn13: data.isbn_13?.[0],
-    title: data.title,
-    subtitle: data.subtitle,
-    authors: await Promise.all(authorIds?.map(getAuthorName)),
-    tags: data.subjects ?? [],
-    series: data.series?.[0],
-    pageCount: normalizePages(data.number_of_pages),
-    publicationDate: data.publish_date, // 1883 or October 1996 or Apr 15, 2019
-    copyrightDate: data.copyright_date, // YYYY-MM-DD
-    coverImages: {
-      small: `https://covers.openlibrary.org/b/olid/${id}-S.jpg`,
-      medium: `https://covers.openlibrary.org/b/olid/${id}-M.jpg`,
-      large: `https://covers.openlibrary.org/b/olid/${id}-L.jpg`,
+    book: {
+      isbn10: data.isbn_10?.[0],
+      isbn13: data.isbn_13?.[0],
+      title: data.title,
+      subtitle: data.subtitle,
+      authors: await Promise.all(authorIds?.map(getAuthorName)),
+      series: data.series?.[0],
+      pageCount: normalizePages(data.number_of_pages),
+      publicationDate: data.publish_date, // 1883 or October 1996 or Apr 15, 2019
+      copyrightDate: data.copyright_date, // YYYY-MM-DD
+      coverImages: {
+        small: `https://covers.openlibrary.org/b/olid/${id}-S.jpg`,
+        medium: `https://covers.openlibrary.org/b/olid/${id}-M.jpg`,
+        large: `https://covers.openlibrary.org/b/olid/${id}-L.jpg`,
+      },
     },
+    tags: data.subjects ?? [],
   }
 }
 

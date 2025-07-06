@@ -162,29 +162,31 @@ describe('book', () => {
   describe('#getByISBN', () => {
     const isbn = '9780441004225'
     it('should be able to retrieve The Stainless Steel Rat (9780441004225)', async () => {
-      const book = await getByISBN(isbn)
+      const result = await getByISBN(isbn)
       const expected = {
-        authors: ['Harry Harrison'],
-        // copyrightDate: undefined,
-        coverImages: {
-          large: 'https://covers.openlibrary.org/b/olid/OL7524009M-L.jpg',
-          medium: 'https://covers.openlibrary.org/b/olid/OL7524009M-M.jpg',
-          small: 'https://covers.openlibrary.org/b/olid/OL7524009M-S.jpg',
+        book: {
+          authors: ['Harry Harrison'],
+          // copyrightDate: undefined,
+          coverImages: {
+            large: 'https://covers.openlibrary.org/b/olid/OL7524009M-L.jpg',
+            medium: 'https://covers.openlibrary.org/b/olid/OL7524009M-M.jpg',
+            small: 'https://covers.openlibrary.org/b/olid/OL7524009M-S.jpg',
+          },
+          isbn10: '0441004229',
+          isbn13: '9780441004225',
+          pageCount: 402,
+          publicationDate: 'October 1996',
+          series: 'The Stainless Steel Rat',
+          // subtitle: undefined,
+          title: 'Adventures of the Stainless Steel Rat',
         },
-        isbn10: '0441004229',
-        isbn13: '9780441004225',
-        pageCount: 402,
-        publicationDate: 'October 1996',
-        series: 'The Stainless Steel Rat',
-        // subtitle: undefined,
         tags: [],
-        title: 'Adventures of the Stainless Steel Rat',
       }
-      expect(book).toEqual(expected)
+      expect(result).toEqual(expected)
     })
     it('should throw a timeout error when Open Library is down and request times out', async () => {
       global.fetch = vi.fn(
-        (_: Request, { signal }: RequestInit) =>
+        (_, { signal }: RequestInit = {}) =>
           new Promise<Response>((_resolve, reject) => {
             // Simulate the request being aborted
             signal?.addEventListener('abort', () => {

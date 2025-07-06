@@ -11,7 +11,6 @@ const duneMessiah: NewBook = {
   isbn13: '9780441172696',
   title: 'Dune Messiah',
   subtitle: 'Dune Chronicles, Book 2',
-  tags: [],
   series: 'Dune (2)', // or 'Dune Chronicles, Book 2'
   authors: ['Frank Herbert'],
   copyrightDate: '1969',
