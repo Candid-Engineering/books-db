@@ -26,6 +26,7 @@
     "js:fix": "prettier --write . && eslint . --fix",
     "js:typecheck": "tsc --noEmit -p tsconfig.json --composite false",
     "js:test": "vitest",
+    "check": "pnpm js:typecheck && pnpm js:lint && pnpm js:test run",
     "rust:test": "cargo test --manifest-path src-tauri/Cargo.toml",
     "rust:cargo": "cargo --manifest-path src-tauri/Cargo.toml",
     "rust:format": "cargo fmt --manifest-path src-tauri/Cargo.toml",
