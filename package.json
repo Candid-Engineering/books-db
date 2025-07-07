@@ -26,7 +26,9 @@
     "js:fix": "prettier --write . && eslint . --fix",
     "js:typecheck": "tsc --noEmit -p tsconfig.json --composite false",
     "js:test": "vitest",
-    "check": "pnpm js:typecheck && pnpm js:lint && pnpm js:test run",
+    "check": "pnpm check:js && pnpm check:rust",
+    "check:js": "pnpm js:typecheck && pnpm js:lint && pnpm js:test run",
+    "check:rust": "pnpm rust:test && pnpm tauri build --no-bundle",
     "rust:test": "cargo test --manifest-path src-tauri/Cargo.toml",
     "rust:cargo": "cargo --manifest-path src-tauri/Cargo.toml",
     "rust:format": "cargo fmt --manifest-path src-tauri/Cargo.toml",
@@ -40,7 +42,7 @@
     "storybook:build": "storybook build"
   },
   "dependencies": {
-    "@tauri-apps/api": "^2.1.1",
+    "@tauri-apps/api": "^2.7.0",
     "@tauri-apps/plugin-fs": "^2.0.2",
     "better-sqlite3": "^11.5.0",
     "bulma": "^1.0.2",
@@ -51,6 +53,7 @@
     "open-library-api": "^0.1.2",
     "openapi-fetch": "^0.12.5",
     "svelte-modals": "^2.0.0",
+    "tauri-plugin-keyring-api": "^0.1.1",
     "uuid": "^10.0.0"
   },
   "devDependencies": {
