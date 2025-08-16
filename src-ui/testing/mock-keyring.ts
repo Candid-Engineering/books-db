@@ -25,6 +25,4 @@ export function setupMockKeyring() {
         return Promise.reject(new Error(`Unknown command: ${cmd}`))
     }
   })
-  
-  return storedTokens
 }
