@@ -84,7 +84,40 @@ class AuthStoreImpl implements AuthStore {
   }
 
   async getAuthToken(): Promise<string | null> {
-    throw new Error('getAuthToken not implemented yet')
+    const storedAuth = await this.tokenStorage.getToken('auth')
+    if (storedAuth) {
+      try {
+        const authData = JSON.parse(storedAuth)
+        const { token, expiresAt } = authData
+        
+        // Check if token expires within 5 minutes (refresh buffer)
+        const refreshBuffer = 5 * 60 * 1000
+        if (Date.now() + refreshBuffer < expiresAt) {
+          return token
+        }
+        
+        // Token expired or expiring soon, try to refresh
+        const refreshToken = await this.tokenStorage.getToken('refresh')
+        if (refreshToken) {
+          return await this.refreshAuthToken()
+        }
+        
+        // No refresh token, clear expired auth token
+        await this.tokenStorage.clearToken('auth')
+        return null
+      } catch {
+        // Invalid JSON format, treat as expired
+        await this.tokenStorage.clearToken('auth')
+      }
+    }
+
+    // No auth token, try to refresh if we have a refresh token
+    const refreshToken = await this.tokenStorage.getToken('refresh')
+    if (refreshToken) {
+      return await this.refreshAuthToken()
+    }
+
+    return null
   }
 
   async refreshAuthToken(): Promise<string> {

@@ -23,19 +23,65 @@ describe('AuthStore', () => {
   describe('when checking for existing auth', () => {
     describe('with no stored tokens', () => {
       it('should return null for auth token', async () => {
-        // TODO: implement authStore.getAuthToken()
-        // expect(await authStore.getAuthToken()).toBeNull()
+        expect(await authStore.getAuthToken()).toBeNull()
       })
     })
 
-    describe('with stored refresh token', () => {
+    describe('with valid stored auth token', () => {
+      beforeEach(async () => {
+        const futureExpiry = Date.now() + 10 * 60 * 1000 // 10 minutes from now
+        const authData = JSON.stringify({
+          token: 'auth-token-456',
+          expiresAt: futureExpiry
+        })
+        await tokenStorage.setToken(authData, 'auth')
+      })
+
+      it('should return the stored auth token', async () => {
+        expect(await authStore.getAuthToken()).toBe('auth-token-456')
+      })
+    })
+
+    describe('with expired stored auth token', () => {
+      beforeEach(async () => {
+        const pastExpiry = Date.now() - 60 * 1000 // 1 minute ago
+        const authData = JSON.stringify({
+          token: 'expired-auth-token',
+          expiresAt: pastExpiry
+        })
+        await tokenStorage.setToken(authData, 'auth')
+        await tokenStorage.setToken('refresh-token-123', 'refresh')
+      })
+
+      it('should attempt to refresh the expired token', async () => {
+        await expect(authStore.getAuthToken()).rejects.toThrow('refreshAuthToken not implemented yet')
+      })
+    })
+
+    describe('with auth token expiring soon', () => {
+      beforeEach(async () => {
+        const soonExpiry = Date.now() + 2 * 60 * 1000 // 2 minutes from now
+        const authData = JSON.stringify({
+          token: 'expiring-soon-token',
+          expiresAt: soonExpiry
+        })
+        await tokenStorage.setToken(authData, 'auth')
+        await tokenStorage.setToken('refresh-token-123', 'refresh')
+      })
+
+      it('should attempt to refresh the token preemptively', async () => {
+        await expect(authStore.getAuthToken()).rejects.toThrow('refreshAuthToken not implemented yet')
+      })
+    })
+
+    describe('with stored refresh token but no auth token', () => {
       beforeEach(async () => {
         await tokenStorage.setToken('refresh-token-123', 'refresh')
       })
 
       it('should attempt to refresh auth token', async () => {
-        // TODO: implement authStore.getAuthToken() that calls refresh
         // This will fail until we have API layer - that's expected
+        await expect(authStore.getAuthToken()).rejects.toThrow('refreshAuthToken not implemented yet')
       })
     })
   })
