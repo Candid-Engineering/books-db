@@ -1,36 +1,13 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { mockIPC } from '@tauri-apps/api/mocks'
 import { KeychainTokenStorage, type TokenStorage } from './token-storage'
+import { setupMockKeyring } from '../../testing/mock-keyring'
 
 describe('KeychainTokenStorage', () => {
   const storage: TokenStorage = new KeychainTokenStorage()
-  let storedTokens: Record<string, string> = {}
+  let storedTokens: Record<string, string>
 
   beforeEach(() => {
-    storedTokens = {}
-    
-    mockIPC((cmd, payload) => {
-      const args = payload as Record<string, string>
-      
-      switch (cmd) {
-        case 'plugin:keyring|get_password': {
-          const key = `${args.service}:${args.user}`
-          return storedTokens[key] || null
-        }
-        case 'plugin:keyring|set_password': {
-          const key = `${args.service}:${args.user}`
-          storedTokens[key] = args.password
-          return undefined
-        }
-        case 'plugin:keyring|delete_password': {
-          const key = `${args.service}:${args.user}`
-          delete storedTokens[key]
-          return undefined
-        }
-        default:
-          return Promise.reject(new Error(`Unknown command: ${cmd}`))
-      }
-    })
+    storedTokens = setupMockKeyring()
   })
 
   describe('when no token is stored', () => {
