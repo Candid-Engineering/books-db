@@ -72,6 +72,7 @@ class AuthStoreImpl implements AuthStore {
   async logout(): Promise<void> {
     await this.tokenStorage.clearToken('refresh')
     await this.tokenStorage.clearToken('auth')
+    await this.localUserStore.clear()
     this.authState.isAuthenticated = false
     this.authState.user = null
     this.authState.error = null

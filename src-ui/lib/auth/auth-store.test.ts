@@ -263,10 +263,14 @@ describe('AuthStore', () => {
   })
 
   describe('when logging out', () => {
+    let localUserStore: DrizzleLocalUserStore
+
     beforeEach(async () => {
-      // Setup: user has tokens stored
+      // Setup: user has tokens and a cached user stored
       await tokenStorage.setToken('refresh-token-123', 'refresh')
       await tokenStorage.setToken('auth-token-456', 'auth')
+      localUserStore = new DrizzleLocalUserStore(testDb.drizzle)
+      await localUserStore.set({ id: 'user-1', name: 'Ada Reader', email: 'reader@example.com' })
     })
 
     it('should clear all stored tokens and reset auth state', async () => {
@@ -281,6 +285,11 @@ describe('AuthStore', () => {
       expect(authStore.state.isAuthenticated).toBe(false)
       expect(authStore.state.user).toBeNull()
       expect(authStore.state.error).toBeNull()
+    })
+
+    it('should clear the cached local user', async () => {
+      await authStore.logout()
+      expect(await localUserStore.get()).toBeNull()
     })
   })
 })
