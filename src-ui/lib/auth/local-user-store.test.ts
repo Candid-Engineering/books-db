@@ -1,19 +1,15 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import type { SqliteRemoteDatabase } from 'drizzle-orm/sqlite-proxy'
-import * as schema from '$lib/db/schema'
-import { createTestDB } from '$lib/db/test_helpers.js'
+import { testDb } from '../../testing/db-setup'
 import { DrizzleLocalUserStore, type LocalUserStore } from './local-user-store'
 import type { User } from './auth-store.svelte'
 
 describe('DrizzleLocalUserStore', () => {
-  let db: SqliteRemoteDatabase<typeof schema>
   let store: LocalUserStore
 
   const user: User = { id: 'user-1', email: 'reader@example.com', name: 'Ada Reader' }
 
-  beforeEach(async () => {
-    ;({ drizzle: db } = await createTestDB())
-    store = new DrizzleLocalUserStore(db)
+  beforeEach(() => {
+    store = new DrizzleLocalUserStore(testDb.drizzle)
   })
 
   describe('when no user is cached', () => {

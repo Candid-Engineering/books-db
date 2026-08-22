@@ -1,10 +1,9 @@
 import { http, HttpResponse } from 'msw'
-import { expect, describe, it, beforeEach, afterEach } from 'vitest'
+import { expect, describe, it, beforeEach } from 'vitest'
 import { createTestBooksStore, type BooksStore } from './Books.svelte.js'
 import { type Book, type NewBook } from '$lib/types/book.js'
-import { createTestDB } from '$lib/db/test_helpers.js'
-import type { Database } from 'sql.js'
 import { mockServer } from '../../testing/msw-setup.js'
+import { testDb } from '../../testing/db-setup.js'
 
 const duneMessiah: NewBook = {
   isbn10: '0441172695',
@@ -30,14 +29,10 @@ const princessAndGrilledCheese: NewBook = {
 }
 
 let booksStore: BooksStore
-let db: Database
 
 describe('booksStore', () => {
-  beforeEach(async () => {
-    const { drizzle, sqlite } = await createTestDB()
-    db = sqlite
-
-    booksStore = createTestBooksStore(drizzle)
+  beforeEach(() => {
+    booksStore = createTestBooksStore(testDb.drizzle)
     mockServer.use(
       http.get('https://openlibrary.org/isbn/9780441004225.json', () => {
         return HttpResponse.json({
@@ -148,10 +143,6 @@ describe('booksStore', () => {
         })
       })
     )
-  })
-
-  afterEach(() => {
-    db.close()
   })
 
   it('should be initialized to an empty array', () => {
