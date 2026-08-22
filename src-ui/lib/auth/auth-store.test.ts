@@ -30,6 +30,21 @@ function mockAuthTokenSuccess(overrides: { token?: string; user?: Record<string,
   )
 }
 
+function mockRefreshTokenSuccess(overrides: { token?: string } = {}) {
+  mockServer.use(
+    http.post(`${BASE_URL}/tokens/refresh`, () => {
+      return HttpResponse.json(
+        {
+          token: overrides.token ?? 'refresh-token-abc',
+          token_type: 'refresh',
+          expires_in: 31536000,
+        },
+        { status: 201 }
+      )
+    })
+  )
+}
+
 describe('AuthStore', () => {
   let tokenStorage: KeychainTokenStorage
   let authStore: AuthStore
@@ -149,6 +164,64 @@ describe('AuthStore', () => {
         expect(await tokenStorage.getToken('refresh')).toBeNull()
         expect(await tokenStorage.getToken('auth')).toBeNull()
         expect(authStore.state.isAuthenticated).toBe(false)
+      })
+    })
+  })
+
+  describe('when exchanging a login token', () => {
+    describe('with a valid login token', () => {
+      beforeEach(() => {
+        mockRefreshTokenSuccess()
+        mockAuthTokenSuccess()
+      })
+
+      it('should store the refresh token', async () => {
+        await authStore.exchangeLoginToken('login-token-123')
+        expect(await tokenStorage.getToken('refresh')).toBe('refresh-token-abc')
+      })
+
+      it('should store the auth token', async () => {
+        await authStore.exchangeLoginToken('login-token-123')
+        const storedAuth = await tokenStorage.getToken('auth')
+        expect(storedAuth && JSON.parse(storedAuth)).toMatchObject({ token: 'new-auth-token-789' })
+      })
+
+      it('should authenticate with the returned user', async () => {
+        await authStore.exchangeLoginToken('login-token-123')
+        expect(authStore.state.isAuthenticated).toBe(true)
+        expect(authStore.state.user).toEqual({
+          id: 'user-1',
+          name: 'Ada Reader',
+          email: 'reader@example.com',
+        })
+      })
+    })
+
+    describe('with an invalid or expired login token', () => {
+      beforeEach(() => {
+        mockServer.use(
+          http.post(`${BASE_URL}/tokens/refresh`, () => {
+            return HttpResponse.json(
+              { errors: [{ code: 'token_invalid', message: 'Token is invalid or malformed' }] },
+              { status: 400 }
+            )
+          })
+        )
+      })
+
+      it('should not throw', async () => {
+        await expect(authStore.exchangeLoginToken('garbage')).resolves.toBeUndefined()
+      })
+
+      it('should set an error and remain unauthenticated', async () => {
+        await authStore.exchangeLoginToken('garbage')
+        expect(authStore.state.error).toBe('Token is invalid or malformed')
+        expect(authStore.state.isAuthenticated).toBe(false)
+      })
+
+      it('should not persist a refresh token', async () => {
+        await authStore.exchangeLoginToken('garbage')
+        expect(await tokenStorage.getToken('refresh')).toBeNull()
       })
     })
   })

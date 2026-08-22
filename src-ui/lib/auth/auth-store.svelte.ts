@@ -82,7 +82,24 @@ class AuthStoreImpl implements AuthStore {
   }
 
   async exchangeLoginToken(loginToken: string): Promise<void> {
-    throw new Error('exchangeLoginToken not implemented yet')
+    this.authState.isLoading = true
+    this.authState.error = null
+
+    try {
+      const { refreshToken } = await authApi.exchangeLoginTokenForRefreshToken(loginToken)
+      await this.tokenStorage.setToken(refreshToken, 'refresh')
+
+      const authResult = await authApi.exchangeRefreshTokenForAuthToken(refreshToken)
+      await this.applyAuthTokenResult(authResult)
+    } catch (error) {
+      if (error instanceof AuthApiError) {
+        this.authState.error = error.message
+      } else {
+        throw error
+      }
+    } finally {
+      this.authState.isLoading = false
+    }
   }
 
   async getAuthToken(): Promise<string | null> {
