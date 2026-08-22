@@ -1,4 +1,7 @@
 import { KeychainTokenStorage, type TokenStorage } from './token-storage'
+import { getLocalUserStore, type LocalUserStore } from './local-user-store'
+import * as authApi from './auth-api'
+import { AuthApiError, type AuthTokenResult } from './auth-api'
 
 export interface User {
   id: string
@@ -11,6 +14,20 @@ export interface AuthState {
   user: User | null
   isLoading: boolean
   error: string | null
+}
+
+interface StoredAuthToken {
+  token: string
+  expiresAt: number
+}
+
+function isStoredAuthToken(value: unknown): value is StoredAuthToken {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    typeof (value as StoredAuthToken).token === 'string' &&
+    typeof (value as StoredAuthToken).expiresAt === 'number'
+  )
 }
 
 export interface AuthStore {
@@ -30,28 +47,9 @@ export interface AuthStore {
   initialize(): Promise<void>
 }
 
-export interface AuthTokens {
-  refreshToken: string
-  authToken: string
-  authTokenExpiresAt: number
-}
-
-export interface LoginLinkResponse {
-  message: string
-}
-
-export interface TokenExchangeResponse {
-  refreshToken: string
-  user: User
-}
-
-export interface AuthTokenResponse {
-  authToken: string
-  expiresAt: number
-}
-
 class AuthStoreImpl implements AuthStore {
   private tokenStorage: TokenStorage
+  private localUserStore: LocalUserStore
   private authState = $state<AuthState>({
     isAuthenticated: false,
     user: null,
@@ -59,8 +57,12 @@ class AuthStoreImpl implements AuthStore {
     error: null
   })
 
-  constructor(tokenStorage: TokenStorage = new KeychainTokenStorage()) {
+  constructor(
+    tokenStorage: TokenStorage = new KeychainTokenStorage(),
+    localUserStore: LocalUserStore = getLocalUserStore()
+  ) {
     this.tokenStorage = tokenStorage
+    this.localUserStore = localUserStore
   }
 
   get state(): AuthState {
@@ -87,26 +89,32 @@ class AuthStoreImpl implements AuthStore {
     const storedAuth = await this.tokenStorage.getToken('auth')
     if (storedAuth) {
       try {
-        const authData = JSON.parse(storedAuth)
-        const { token, expiresAt } = authData
-        
+        const parsed: unknown = JSON.parse(storedAuth)
+        if (!isStoredAuthToken(parsed)) {
+          throw new SyntaxError('Stored auth token has an unexpected shape')
+        }
+        const { token, expiresAt } = parsed
+
         // Check if token expires within 5 minutes (refresh buffer)
         const refreshBuffer = 5 * 60 * 1000
         if (Date.now() + refreshBuffer < expiresAt) {
           return token
         }
-        
+
         // Token expired or expiring soon, try to refresh
         const refreshToken = await this.tokenStorage.getToken('refresh')
         if (refreshToken) {
           return await this.refreshAuthToken()
         }
-        
+
         // No refresh token, clear expired auth token
         await this.tokenStorage.clearToken('auth')
         return null
-      } catch {
-        // Invalid JSON format, treat as expired
+      } catch (error) {
+        if (!(error instanceof SyntaxError)) {
+          throw error
+        }
+        // Invalid JSON or unexpected shape, treat as expired
         await this.tokenStorage.clearToken('auth')
       }
     }
@@ -121,7 +129,35 @@ class AuthStoreImpl implements AuthStore {
   }
 
   async refreshAuthToken(): Promise<string> {
-    throw new Error('refreshAuthToken not implemented yet')
+    const refreshToken = await this.tokenStorage.getToken('refresh')
+    if (!refreshToken) {
+      throw new Error('No refresh token available')
+    }
+
+    try {
+      const result = await authApi.exchangeRefreshTokenForAuthToken(refreshToken)
+      return await this.applyAuthTokenResult(result)
+    } catch (error) {
+      if (error instanceof AuthApiError) {
+        // The refresh token itself is invalid/expired/wrong type/not found — force a full logout.
+        await this.logout()
+      }
+      throw error
+    }
+  }
+
+  private async applyAuthTokenResult(result: AuthTokenResult): Promise<string> {
+    const storedAuthToken: StoredAuthToken = {
+      token: result.authToken,
+      expiresAt: Date.now() + result.expiresIn * 1000
+    }
+    await this.tokenStorage.setToken(JSON.stringify(storedAuthToken), 'auth')
+    await this.localUserStore.set(result.user)
+
+    this.authState.isAuthenticated = true
+    this.authState.user = result.user
+
+    return result.authToken
   }
 
   async initialize(): Promise<void> {
@@ -130,3 +166,7 @@ class AuthStoreImpl implements AuthStore {
 }
 
 export const authStore: AuthStore = new AuthStoreImpl()
+
+export function createTestAuthStore(tokenStorage: TokenStorage, localUserStore: LocalUserStore): AuthStore {
+  return new AuthStoreImpl(tokenStorage, localUserStore)
+}

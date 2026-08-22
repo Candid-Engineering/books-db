@@ -1,20 +1,49 @@
 import { describe, it, expect, beforeEach } from 'vitest'
+import { http, HttpResponse } from 'msw'
+import { mockServer } from '../../testing/msw-setup'
 import { setupMockKeyring } from '../../testing/mock-keyring'
 import { KeychainTokenStorage } from './token-storage'
-import { authStore } from './auth-store.svelte'
+import { DrizzleLocalUserStore } from './local-user-store'
+import { createTestAuthStore, type AuthStore } from './auth-store.svelte'
+import { testDb } from '../../testing/db-setup'
+
+const BASE_URL = 'http://localhost:3000'
+
+function mockAuthTokenSuccess(overrides: { token?: string; user?: Record<string, string> } = {}) {
+  mockServer.use(
+    http.post(`${BASE_URL}/tokens/auth`, () => {
+      return HttpResponse.json(
+        {
+          token: overrides.token ?? 'new-auth-token-789',
+          token_type: 'auth',
+          expires_in: 900,
+          user: {
+            id: 'user-1',
+            name: 'Ada Reader',
+            email: 'reader@example.com',
+            ...overrides.user,
+          },
+        },
+        { status: 201 }
+      )
+    })
+  )
+}
 
 describe('AuthStore', () => {
   let tokenStorage: KeychainTokenStorage
+  let authStore: AuthStore
 
   beforeEach(() => {
     setupMockKeyring()
     tokenStorage = new KeychainTokenStorage()
+    authStore = createTestAuthStore(tokenStorage, new DrizzleLocalUserStore(testDb.drizzle))
   })
 
   describe('when created', () => {
     it('should have unauthenticated initial state', () => {
       expect(authStore.state.isAuthenticated).toBe(false)
-      expect(authStore.state.user).toBeNull() 
+      expect(authStore.state.user).toBeNull()
       expect(authStore.state.isLoading).toBe(false)
       expect(authStore.state.error).toBeNull()
     })
@@ -51,10 +80,21 @@ describe('AuthStore', () => {
         })
         await tokenStorage.setToken(authData, 'auth')
         await tokenStorage.setToken('refresh-token-123', 'refresh')
+        mockAuthTokenSuccess()
       })
 
-      it('should attempt to refresh the expired token', async () => {
-        await expect(authStore.getAuthToken()).rejects.toThrow('refreshAuthToken not implemented yet')
+      it('should refresh the expired token', async () => {
+        expect(await authStore.getAuthToken()).toBe('new-auth-token-789')
+      })
+
+      it('should update the auth state with the refreshed user', async () => {
+        await authStore.getAuthToken()
+        expect(authStore.state.isAuthenticated).toBe(true)
+        expect(authStore.state.user).toEqual({
+          id: 'user-1',
+          name: 'Ada Reader',
+          email: 'reader@example.com',
+        })
       })
     })
 
@@ -67,21 +107,48 @@ describe('AuthStore', () => {
         })
         await tokenStorage.setToken(authData, 'auth')
         await tokenStorage.setToken('refresh-token-123', 'refresh')
+        mockAuthTokenSuccess()
       })
 
-      it('should attempt to refresh the token preemptively', async () => {
-        await expect(authStore.getAuthToken()).rejects.toThrow('refreshAuthToken not implemented yet')
+      it('should refresh the token preemptively', async () => {
+        expect(await authStore.getAuthToken()).toBe('new-auth-token-789')
       })
     })
 
     describe('with stored refresh token but no auth token', () => {
       beforeEach(async () => {
         await tokenStorage.setToken('refresh-token-123', 'refresh')
+        mockAuthTokenSuccess()
       })
 
-      it('should attempt to refresh auth token', async () => {
-        // This will fail until we have API layer - that's expected
-        await expect(authStore.getAuthToken()).rejects.toThrow('refreshAuthToken not implemented yet')
+      it('should fetch a fresh auth token', async () => {
+        expect(await authStore.getAuthToken()).toBe('new-auth-token-789')
+      })
+    })
+
+    describe('with an invalid or expired refresh token', () => {
+      beforeEach(async () => {
+        await tokenStorage.setToken('refresh-token-123', 'refresh')
+        mockServer.use(
+          http.post(`${BASE_URL}/tokens/auth`, () => {
+            return HttpResponse.json(
+              { errors: [{ code: 'token_expired', message: 'Token has expired' }] },
+              { status: 400 }
+            )
+          })
+        )
+      })
+
+      it('should reject', async () => {
+        await expect(authStore.getAuthToken()).rejects.toMatchObject({ code: 'token_expired' })
+      })
+
+      it('should log the user out as a side effect', async () => {
+        await authStore.getAuthToken().catch(() => undefined)
+
+        expect(await tokenStorage.getToken('refresh')).toBeNull()
+        expect(await tokenStorage.getToken('auth')).toBeNull()
+        expect(authStore.state.isAuthenticated).toBe(false)
       })
     })
   })
@@ -96,11 +163,11 @@ describe('AuthStore', () => {
     it('should clear all stored tokens and reset auth state', async () => {
       // When: user logs out
       await authStore.logout()
-      
+
       // Then: tokens should be cleared
       expect(await tokenStorage.getToken('refresh')).toBeNull()
       expect(await tokenStorage.getToken('auth')).toBeNull()
-      
+
       // And: auth state should be reset
       expect(authStore.state.isAuthenticated).toBe(false)
       expect(authStore.state.user).toBeNull()
