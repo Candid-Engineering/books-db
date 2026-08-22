@@ -292,4 +292,70 @@ describe('AuthStore', () => {
       expect(await localUserStore.get()).toBeNull()
     })
   })
+
+  describe('when initializing', () => {
+    describe('with no stored refresh token', () => {
+      it('should remain unauthenticated', async () => {
+        await authStore.initialize()
+        expect(authStore.state.isAuthenticated).toBe(false)
+        expect(authStore.state.user).toBeNull()
+      })
+
+      it('should leave isLoading false once done', async () => {
+        await authStore.initialize()
+        expect(authStore.state.isLoading).toBe(false)
+      })
+    })
+
+    describe('with a stored refresh token and a cached user', () => {
+      beforeEach(async () => {
+        await tokenStorage.setToken('refresh-token-123', 'refresh')
+        await new DrizzleLocalUserStore(testDb.drizzle).set({
+          id: 'cached-user',
+          name: 'Cached Reader',
+          email: 'cached@example.com',
+        })
+      })
+
+      describe('when the refresh token is still valid', () => {
+        beforeEach(() => {
+          mockAuthTokenSuccess()
+        })
+
+        it('should end authenticated with the revalidated user', async () => {
+          await authStore.initialize()
+          expect(authStore.state.isAuthenticated).toBe(true)
+          expect(authStore.state.user).toEqual({
+            id: 'user-1',
+            name: 'Ada Reader',
+            email: 'reader@example.com',
+          })
+        })
+      })
+
+      describe('when the refresh token has been revoked', () => {
+        beforeEach(() => {
+          mockServer.use(
+            http.post(`${BASE_URL}/tokens/auth`, () => {
+              return HttpResponse.json(
+                { errors: [{ code: 'token_not_found', message: 'Token user not found' }] },
+                { status: 400 }
+              )
+            })
+          )
+        })
+
+        it('should end logged out', async () => {
+          await authStore.initialize()
+          expect(authStore.state.isAuthenticated).toBe(false)
+          expect(await tokenStorage.getToken('refresh')).toBeNull()
+        })
+
+        it('should clear the stale cached user', async () => {
+          await authStore.initialize()
+          expect(await new DrizzleLocalUserStore(testDb.drizzle).get()).toBeNull()
+        })
+      })
+    })
+  })
 })

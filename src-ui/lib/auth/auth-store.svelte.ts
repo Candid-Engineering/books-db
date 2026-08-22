@@ -192,7 +192,32 @@ class AuthStoreImpl implements AuthStore {
   }
 
   async initialize(): Promise<void> {
-    throw new Error('initialize not implemented yet')
+    this.authState.isLoading = true
+    try {
+      const refreshToken = await this.tokenStorage.getToken('refresh')
+      if (!refreshToken) {
+        this.authState.isAuthenticated = false
+        return
+      }
+
+      // Hydrate instantly from the local cache, if there is one, so reactive
+      // UI has something to show before the revalidation round-trip below
+      // resolves. refreshAuthToken() overwrites this with fresh data next.
+      const cachedUser = await this.localUserStore.get()
+      if (cachedUser) {
+        this.authState.user = cachedUser
+        this.authState.isAuthenticated = true
+      }
+
+      await this.refreshAuthToken()
+    } catch (error) {
+      if (!(error instanceof AuthApiError)) {
+        throw error
+      }
+      // refreshAuthToken() already logged out on an invalid refresh token.
+    } finally {
+      this.authState.isLoading = false
+    }
   }
 }
 
