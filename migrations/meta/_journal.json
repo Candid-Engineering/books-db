@@ -29,6 +29,13 @@
       "when": 1733624762030,
       "tag": "20241208022602_rework_book_tags_as_table",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1787364376059,
+      "tag": "20260822020616_add_local_user_table",
+      "breakpoints": true
     }
   ]
 }
