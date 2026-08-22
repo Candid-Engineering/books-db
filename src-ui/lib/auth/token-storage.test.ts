@@ -4,10 +4,9 @@ import { setupMockKeyring } from '../../testing/mock-keyring'
 
 describe('KeychainTokenStorage', () => {
   const storage: TokenStorage = new KeychainTokenStorage()
-  let storedTokens: Record<string, string>
 
   beforeEach(() => {
-    storedTokens = setupMockKeyring()
+    setupMockKeyring()
   })
 
   describe('when no token is stored', () => {
