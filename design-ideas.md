@@ -1,8 +1,22 @@
-# Design Ideas (Deferred)
+# Design Ideas
+
+## Do Next
+
+### Merge books-db-rails into this repo as a monorepo
+
+Currently `books-db` (Tauri/Svelte) and `books-db-rails` are separate sibling repos under `~/code`, coordinated only by convention (matching wire contracts, hardcoded relative paths like `../books-db-rails` in tooling). The two are tightly coupled — the auth flow alone spans both, and any API contract change ideally lands as one atomic, reviewed change rather than two independently-timed commits in separate repos. The `test:integration` tier (real Rails server + real HTTP, see below) already has to assume the sibling checkout exists at a fixed relative path — a monorepo would remove that fragility rather than working around it.
+
+For a solo project with no team/access-control boundary between the two halves, the usual monorepo downsides (independent release cadences, org boundaries) don't really apply. The real cost is a one-time git-history migration (`git subtree`/`git filter-repo` to preserve history) plus CI restructuring — path-based triggers so a Rails-only change doesn't rebuild the Tauri app and vice versa, and keeping the Ruby and JS/Rust toolchains from interfering within one repo.
+
+**Status:** not started — deliberately not folded into the current auth work. Needs its own design pass covering the migration mechanics and CI layout before starting.
+
+**Trigger:** the next time cross-repo coordination causes real friction (this integration test is arguably already a mild instance of that, but we're proceeding with the two-repo assumption for now rather than blocking on the migration).
+
+## Deferred
 
 Ideas considered and deliberately deferred rather than built. Revisit if their triggering conditions show up.
 
-## 1. Typed API client via rswag-generated OpenAPI spec
+### 1. Typed API client via rswag-generated OpenAPI spec
 
 The books-db-rails API layer is consumed via hand-rolled `fetch` wrappers with TS types written by hand to match controller responses. This is fine for a small endpoint surface, but doesn't scale well and can silently drift from the Rails response shapes.
 
@@ -12,7 +26,7 @@ From there, run `openapi-typescript` against the generated JSON to produce `path
 
 **Trigger to revisit:** once the Rails API surface grows meaningfully beyond auth (book sync, multi-device, etc.), or once response-shape drift between Rails and the frontend has actually caused a bug.
 
-## 2. Move token custody into Rust (Tauri backend)
+### 2. Move token custody into Rust (Tauri backend)
 
 Auth tokens are stored/retrieved via `tauri-plugin-keyring-api` invoke calls, but the JS/webview layer handles the actual HTTP calls (`fetch`) and therefore has the raw token value in memory to set `Authorization: Bearer ...`. That means an XSS/JS-injection in the webview could read live token values.
 
