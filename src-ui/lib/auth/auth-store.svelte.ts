@@ -78,7 +78,20 @@ class AuthStoreImpl implements AuthStore {
   }
 
   async requestLoginLink(email: string): Promise<void> {
-    throw new Error('requestLoginLink not implemented yet')
+    this.authState.isLoading = true
+    this.authState.error = null
+
+    try {
+      await authApi.requestLoginLink(email)
+    } catch (error) {
+      if (error instanceof AuthApiError) {
+        this.authState.error = error.message
+      } else {
+        throw error
+      }
+    } finally {
+      this.authState.isLoading = false
+    }
   }
 
   async exchangeLoginToken(loginToken: string): Promise<void> {

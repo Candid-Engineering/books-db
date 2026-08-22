@@ -168,6 +168,42 @@ describe('AuthStore', () => {
     })
   })
 
+  describe('when requesting a login link', () => {
+    describe('with a registered email', () => {
+      beforeEach(() => {
+        mockServer.use(
+          http.post(`${BASE_URL}/tokens/request_login_link`, () => {
+            return HttpResponse.json({}, { status: 201 })
+          })
+        )
+      })
+
+      it('should resolve without error', async () => {
+        await authStore.requestLoginLink('reader@example.com')
+        expect(authStore.state.error).toBeNull()
+      })
+    })
+
+    describe('with an unregistered email', () => {
+      beforeEach(() => {
+        mockServer.use(
+          http.post(`${BASE_URL}/tokens/request_login_link`, () => {
+            return HttpResponse.json({ error: 'No such user' }, { status: 422 })
+          })
+        )
+      })
+
+      it('should not throw', async () => {
+        await expect(authStore.requestLoginLink('nobody@example.com')).resolves.toBeUndefined()
+      })
+
+      it('should set an error', async () => {
+        await authStore.requestLoginLink('nobody@example.com')
+        expect(authStore.state.error).toBe('No such user')
+      })
+    })
+  })
+
   describe('when exchanging a login token', () => {
     describe('with a valid login token', () => {
       beforeEach(() => {
