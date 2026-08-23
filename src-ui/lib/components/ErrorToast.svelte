@@ -22,7 +22,8 @@
 
   .notification.error-toast .delete {
     position: absolute;
-    top: 1rem;
+    top: 50%;
     right: 1rem;
+    transform: translateY(-50%);
   }
 </style>
