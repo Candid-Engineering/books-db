@@ -59,83 +59,90 @@
       console.error('Error saving book:', error)
     }
   }
+
+  async function handleSubmit(event: SubmitEvent) {
+    event.preventDefault()
+    await saveBook()
+  }
 </script>
 
 {#if isOpen}
   <div class="modal is-active">
     <div aria-hidden="true" role="presentation" class="modal-background" onclick={close}></div>
-    <form class="modal-card">
+    <div class="modal-card">
       <header class="modal-card-head">
         <p class="modal-card-title">Add a New Book</p>
-        <button class="delete" aria-label="close" onclick={close}></button>
+        <button type="button" class="delete" aria-label="close" onclick={close}></button>
       </header>
-      <section class="modal-card-body">
-        <!-- Form Fields -->
-        <div class="field">
-          <label class="label" for="isbn-10">ISBN-10</label>
-          <div class="control">
-            <input class="input" type="text" bind:value={book.isbn10} placeholder="Enter ISBN-10" />
+      <form onsubmit={handleSubmit}>
+        <section class="modal-card-body">
+          <!-- Form Fields -->
+          <div class="field">
+            <label class="label" for="isbn-10">ISBN-10</label>
+            <div class="control">
+              <input class="input" type="text" bind:value={book.isbn10} placeholder="Enter ISBN-10" />
+            </div>
           </div>
-        </div>
 
-        <div class="field">
-          <label class="label" for="isbn-13">ISBN-13</label>
-          <div class="control">
-            <input class="input" type="text" bind:value={book.isbn13} placeholder="Enter ISBN-13" />
+          <div class="field">
+            <label class="label" for="isbn-13">ISBN-13</label>
+            <div class="control">
+              <input class="input" type="text" bind:value={book.isbn13} placeholder="Enter ISBN-13" />
+            </div>
           </div>
-        </div>
 
-        <div class="field">
-          <label class="label" for="title">Title</label>
-          <div class="control">
-            <input
-              class="input"
-              type="text"
-              bind:value={book.title}
-              placeholder="Enter Title"
-              required
-            />
+          <div class="field">
+            <label class="label" for="title">Title</label>
+            <div class="control">
+              <input
+                class="input"
+                type="text"
+                bind:value={book.title}
+                placeholder="Enter Title"
+                required
+              />
+            </div>
           </div>
-        </div>
 
-        <div class="field">
-          <label class="label" for="author">Author(s)</label>
-          <div class="control">
-            <input
-              class="input"
-              type="text"
-              bind:value={authors}
-              placeholder="Enter Author(s), separated by commas"
-              required
-            />
+          <div class="field">
+            <label class="label" for="author">Author(s)</label>
+            <div class="control">
+              <input
+                class="input"
+                type="text"
+                bind:value={authors}
+                placeholder="Enter Author(s), separated by commas"
+                required
+              />
+            </div>
           </div>
-        </div>
-        <div class="field">
-          <label class="label" for="tags">Tags</label>
-          <div class="control">
-            <input
-              class="input"
-              type="text"
-              bind:value={tags}
-              placeholder="Enter Tags, separated by commas"
-            />
+          <div class="field">
+            <label class="label" for="tags">Tags</label>
+            <div class="control">
+              <input
+                class="input"
+                type="text"
+                bind:value={tags}
+                placeholder="Enter Tags, separated by commas"
+              />
+            </div>
           </div>
-        </div>
-        <div class="field">
-          <label class="b-checkbox checkbox is-regular m-1">
-            <input type="checkbox" value="false" bind:checked={hasRead.bool} />
-            <span class="check"></span>
-            <span class="control-label">Read?</span>
-          </label>
-        </div>
-      </section>
-      <footer class="modal-card-foot">
-        <div class="buttons">
-          <Button type="submit" primary onclick={saveBook}>Save Book</Button>
-          <Button onclick={close}>Cancel</Button>
-        </div>
-      </footer>
-    </form>
+          <div class="field">
+            <label class="b-checkbox checkbox is-regular m-1">
+              <input type="checkbox" value="false" bind:checked={hasRead.bool} />
+              <span class="check"></span>
+              <span class="control-label">Read?</span>
+            </label>
+          </div>
+        </section>
+        <footer class="modal-card-foot">
+          <div class="buttons">
+            <Button type="submit" primary>Save Book</Button>
+            <Button type="button" onclick={close}>Cancel</Button>
+          </div>
+        </footer>
+      </form>
+    </div>
   </div>
 {/if}
 
