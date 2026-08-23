@@ -20,18 +20,18 @@
 
   const form = new LoginForm(authStore)
 
-  async function handleSubmitEmail() {
-    await form.submitEmail()
-  }
+  async function handleSubmit(event: SubmitEvent) {
+    event.preventDefault()
 
-  async function handleSubmitRegistration() {
-    await form.submitRegistration()
-  }
-
-  async function handleSubmitToken() {
-    await form.submitToken()
-    if (authStore.state.isAuthenticated) {
-      close()
+    if (form.step === 'email') {
+      await form.submitEmail()
+    } else if (form.step === 'register') {
+      await form.submitRegistration()
+    } else {
+      await form.submitToken()
+      if (authStore.state.isAuthenticated) {
+        close()
+      }
     }
   }
 </script>
@@ -39,7 +39,7 @@
 {#if isOpen}
   <div class="modal is-active">
     <div aria-hidden="true" role="presentation" class="modal-background" onclick={close}></div>
-    <form class="modal-card">
+    <form class="modal-card" onsubmit={handleSubmit}>
       <header class="modal-card-head">
         <p class="modal-card-title">
           {#if form.step === 'email'}
@@ -106,17 +106,11 @@
       <footer class="modal-card-foot">
         <div class="buttons">
           {#if form.step === 'email'}
-            <Button type="submit" primary disabled={form.isLoading} onclick={handleSubmitEmail}>
-              Continue
-            </Button>
+            <Button type="submit" primary disabled={form.isLoading}>Continue</Button>
           {:else if form.step === 'register'}
-            <Button type="submit" primary disabled={form.isLoading} onclick={handleSubmitRegistration}>
-              Create account
-            </Button>
+            <Button type="submit" primary disabled={form.isLoading}>Create account</Button>
           {:else}
-            <Button type="submit" primary disabled={form.isLoading} onclick={handleSubmitToken}>
-              Sign in
-            </Button>
+            <Button type="submit" primary disabled={form.isLoading}>Sign in</Button>
           {/if}
           <Button onclick={close}>Cancel</Button>
         </div>
