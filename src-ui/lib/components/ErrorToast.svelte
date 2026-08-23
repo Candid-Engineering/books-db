@@ -11,7 +11,7 @@
 {/if}
 
 <style>
-  .error-toast {
+  .notification.error-toast {
     position: fixed;
     bottom: 1rem;
     right: 1rem;
