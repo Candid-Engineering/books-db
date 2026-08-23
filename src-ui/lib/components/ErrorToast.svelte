@@ -17,7 +17,7 @@
     right: 1rem;
     z-index: 1000;
     max-width: 24rem;
-    padding-right: 2.5rem;
+    padding-right: 3.25rem;
   }
 
   .notification.error-toast .delete {
