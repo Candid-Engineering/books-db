@@ -3,10 +3,10 @@ import { fileURLToPath } from 'node:url'
 import kill from 'tree-kill'
 import path from 'node:path'
 import { isServerUp, waitForServer } from './wait-for-server'
+import { TAURI_INTEGRATION_PORT, TAURI_INTEGRATION_HEALTH_URL } from './config'
 
 const RAILS_REPO_PATH = path.resolve(fileURLToPath(new URL('.', import.meta.url)), '../../books-db-rails')
-const PORT = 3099
-const HEALTH_URL = `http://localhost:${PORT}/up`
+const HEALTH_URL = TAURI_INTEGRATION_HEALTH_URL
 
 export default async function setup(): Promise<() => Promise<void>> {
   if (await isServerUp(HEALTH_URL)) {
@@ -26,8 +26,8 @@ export default async function setup(): Promise<() => Promise<void>> {
     throw new Error(`Failed to prepare the tauri_integration database:\n${prepare.stderr?.toString() ?? ''}`)
   }
 
-  console.log(`[integration] Booting Rails server on port ${PORT}...`)
-  const server: ChildProcess = spawn(railsBin, ['server', '-p', String(PORT)], {
+  console.log(`[integration] Booting Rails server on port ${TAURI_INTEGRATION_PORT}...`)
+  const server: ChildProcess = spawn(railsBin, ['server', '-p', String(TAURI_INTEGRATION_PORT)], {
     cwd: RAILS_REPO_PATH,
     env: { ...process.env, RAILS_ENV: 'tauri_integration' },
     stdio: [null, process.stdout, process.stderr],

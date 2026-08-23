@@ -1,4 +1,4 @@
-const BASE_URL = 'http://localhost:3099'
+import { TAURI_INTEGRATION_BASE_URL as BASE_URL } from './config'
 
 export async function createFactory<T>(name: string, attrs: Record<string, unknown> = {}): Promise<T> {
   const response = await fetch(`${BASE_URL}/tauri_integration/factories/${name}`, {
