@@ -39,7 +39,7 @@
 {#if isOpen}
   <div class="modal is-active">
     <div aria-hidden="true" role="presentation" class="modal-background" onclick={close}></div>
-    <form class="modal-card" onsubmit={handleSubmit}>
+    <div class="modal-card">
       <header class="modal-card-head">
         <p class="modal-card-title">
           {#if form.step === 'email'}
@@ -52,70 +52,72 @@
         </p>
         <button type="button" class="delete" aria-label="close" onclick={close}></button>
       </header>
-      <section class="modal-card-body">
-        {#if form.error}
-          <div class="notification is-danger">{form.error}</div>
-        {/if}
-
-        {#if form.step === 'email'}
-          <div class="field">
-            <label class="label" for="login-email">Email</label>
-            <div class="control">
-              <input
-                id="login-email"
-                class="input"
-                type="email"
-                bind:value={form.email}
-                placeholder="you@example.com"
-                required
-              />
-            </div>
-          </div>
-        {:else if form.step === 'register'}
-          <p class="mb-4">We don't recognize that email yet — what's your name?</p>
-          <div class="field">
-            <label class="label" for="login-name">Name</label>
-            <div class="control">
-              <input
-                id="login-name"
-                class="input"
-                type="text"
-                bind:value={form.name}
-                placeholder="Ada Reader"
-                required
-              />
-            </div>
-          </div>
-        {:else}
-          <p class="mb-4">Check your email for a login link, and paste the token here.</p>
-          <div class="field">
-            <label class="label" for="login-token">Login token</label>
-            <div class="control">
-              <input
-                id="login-token"
-                class="input"
-                type="text"
-                bind:value={form.token}
-                placeholder="Paste your login token"
-                required
-              />
-            </div>
-          </div>
-        {/if}
-      </section>
-      <footer class="modal-card-foot">
-        <div class="buttons">
-          {#if form.step === 'email'}
-            <Button type="submit" primary disabled={form.isLoading}>Continue</Button>
-          {:else if form.step === 'register'}
-            <Button type="submit" primary disabled={form.isLoading}>Create account</Button>
-          {:else}
-            <Button type="submit" primary disabled={form.isLoading}>Sign in</Button>
+      <form onsubmit={handleSubmit}>
+        <section class="modal-card-body">
+          {#if form.error}
+            <div class="notification is-danger">{form.error}</div>
           {/if}
-          <Button onclick={close}>Cancel</Button>
-        </div>
-      </footer>
-    </form>
+
+          {#if form.step === 'email'}
+            <div class="field">
+              <label class="label" for="login-email">Email</label>
+              <div class="control">
+                <input
+                  id="login-email"
+                  class="input"
+                  type="email"
+                  bind:value={form.email}
+                  placeholder="you@example.com"
+                  required
+                />
+              </div>
+            </div>
+          {:else if form.step === 'register'}
+            <p class="mb-4">We don't recognize that email yet — what's your name?</p>
+            <div class="field">
+              <label class="label" for="login-name">Name</label>
+              <div class="control">
+                <input
+                  id="login-name"
+                  class="input"
+                  type="text"
+                  bind:value={form.name}
+                  placeholder="Ada Reader"
+                  required
+                />
+              </div>
+            </div>
+          {:else}
+            <p class="mb-4">Check your email for a login link, and paste the token here.</p>
+            <div class="field">
+              <label class="label" for="login-token">Login token</label>
+              <div class="control">
+                <input
+                  id="login-token"
+                  class="input"
+                  type="text"
+                  bind:value={form.token}
+                  placeholder="Paste your login token"
+                  required
+                />
+              </div>
+            </div>
+          {/if}
+        </section>
+        <footer class="modal-card-foot">
+          <div class="buttons">
+            {#if form.step === 'email'}
+              <Button type="submit" primary disabled={form.isLoading}>Continue</Button>
+            {:else if form.step === 'register'}
+              <Button type="submit" primary disabled={form.isLoading}>Create account</Button>
+            {:else}
+              <Button type="submit" primary disabled={form.isLoading}>Sign in</Button>
+            {/if}
+            <Button type="button" onclick={close}>Cancel</Button>
+          </div>
+        </footer>
+      </form>
+    </div>
   </div>
 {/if}
 
