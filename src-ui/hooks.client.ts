@@ -6,6 +6,8 @@ import { commands } from '$lib/generated/sqlite_proxy'
 import { migrate } from '$lib/db/migrator'
 import { getBooksStore, type BooksStore } from '$lib/state/Books.svelte'
 import { authStore, type AuthStore } from '$lib/auth/auth-store.svelte'
+import { reportError } from '$lib/error-reporting'
+import { errorToast } from '$lib/error-toast.svelte'
 
 declare global {
   interface Window {
@@ -30,3 +32,13 @@ window.booksStore = getBooksStore()
 
 await authStore.initialize()
 window.authStore = authStore
+
+window.addEventListener('error', (event) => {
+  reportError(event.error, 'window.onerror')
+  errorToast.show('Something went wrong')
+})
+
+window.addEventListener('unhandledrejection', (event) => {
+  reportError(event.reason, 'unhandledrejection')
+  errorToast.show('Something went wrong')
+})
