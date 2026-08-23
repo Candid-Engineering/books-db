@@ -17,5 +17,12 @@
     right: 1rem;
     z-index: 1000;
     max-width: 24rem;
+    padding-right: 2.5rem;
+  }
+
+  .notification.error-toast .delete {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
   }
 </style>
