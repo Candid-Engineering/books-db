@@ -50,7 +50,7 @@
             Enter your login code
           {/if}
         </p>
-        <button class="delete" aria-label="close" onclick={close}></button>
+        <button type="button" class="delete" aria-label="close" onclick={close}></button>
       </header>
       <section class="modal-card-body">
         {#if form.error}
