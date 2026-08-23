@@ -35,3 +35,11 @@ Auth tokens are stored/retrieved via `tauri-plugin-keyring-api` invoke calls, bu
 This isn't needed to make CORS/CSP work — `tauri.conf.json` already has `"csp": null` and Rails' `config/initializers/cors.rb` already allows `origins "*"` with `credentials: false`, so plain JS `fetch` from the webview already works today. This is purely a token-exposure hardening step.
 
 **Trigger to revisit:** if the app ever renders untrusted/remote content in the webview (increasing XSS surface), or before a security-sensitive release/audit.
+
+### 3. Real browser-driven E2E (WebdriverIO + Capybara)
+
+The `test:integration` tier (`integration/`, backed by the `tauri_integration` Rails environment) verifies the wire contract between `auth-api.ts`/`AuthStore` and a real Rails server over real HTTP — but nothing drives an actual UI. It's an integration test, not end-to-end: no login/registration page exists yet to click through, and the `books-db://authenticate/?login_token=...` deep link is an OS-level custom URL scheme that automation tools can't make macOS actually dispatch — even a "real browser" test would need to synthesize that entry point some other way.
+
+**Option:** once a login UI exists, extend `e2e/wdio.conf.ts` (which already spawns/kills `tauri-driver` around a real Tauri app instance) to drive the actual login flow through the UI. On the Rails side, this could reuse the *same* `tauri_integration` environment rather than needing a new one — the underlying need (a real, isolated, externally-driven Rails server) doesn't change, only the driving harness does (WebdriverIO/`tauri-driver` through a real app instead of Vitest hitting HTTP directly). Capybara/system-specs are the equivalent concept purely on the Rails side, if ever needed independently of the Tauri app.
+
+**Trigger to revisit:** once login/registration pages and the deep-link utility library exist (both currently not-started per this project's roadmap).
