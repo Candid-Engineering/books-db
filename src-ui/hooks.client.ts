@@ -5,6 +5,7 @@ import * as fs from '@tauri-apps/plugin-fs'
 import { commands } from '$lib/generated/sqlite_proxy'
 import { migrate } from '$lib/db/migrator'
 import { getBooksStore, type BooksStore } from '$lib/state/Books.svelte'
+import { authStore, type AuthStore } from '$lib/auth/auth-store.svelte'
 
 declare global {
   interface Window {
@@ -14,6 +15,7 @@ declare global {
     fs: typeof fs
     sqlite: typeof commands
     booksStore: BooksStore
+    authStore: AuthStore
   }
 }
 
@@ -25,3 +27,6 @@ window.sqlite = commands
 
 await migrate(db)
 window.booksStore = getBooksStore()
+
+await authStore.initialize()
+window.authStore = authStore
