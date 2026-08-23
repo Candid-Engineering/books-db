@@ -9,7 +9,15 @@
   async function handleLoginClick() {
     await modals.open(LoginModal, {})
   }
+
+  function handleKeydown(event: KeyboardEvent) {
+    if (event.key === 'Escape') {
+      modals.close()
+    }
+  }
 </script>
+
+<svelte:window onkeydown={handleKeydown} />
 
 <Modals>
   <!-- shown when any modal is opened -->
