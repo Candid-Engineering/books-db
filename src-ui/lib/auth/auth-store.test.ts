@@ -204,6 +204,45 @@ describe('AuthStore', () => {
     })
   })
 
+  describe('when registering', () => {
+    describe('with a new email', () => {
+      beforeEach(() => {
+        mockServer.use(
+          http.post(`${BASE_URL}/users`, () => {
+            return HttpResponse.json(
+              { user: { id: 'user-1', name: 'Ada Reader', email: 'reader@example.com' } },
+              { status: 201 }
+            )
+          })
+        )
+      })
+
+      it('should resolve without error', async () => {
+        await authStore.register('reader@example.com', 'Ada Reader')
+        expect(authStore.state.error).toBeNull()
+      })
+    })
+
+    describe('with an already-registered email', () => {
+      beforeEach(() => {
+        mockServer.use(
+          http.post(`${BASE_URL}/users`, () => {
+            return HttpResponse.json({ email: ['has already been taken'] }, { status: 422 })
+          })
+        )
+      })
+
+      it('should not throw', async () => {
+        await expect(authStore.register('reader@example.com', 'Ada Reader')).resolves.toBeUndefined()
+      })
+
+      it('should set an error', async () => {
+        await authStore.register('reader@example.com', 'Ada Reader')
+        expect(authStore.state.error).toBe('Email has already been taken')
+      })
+    })
+  })
+
   describe('when exchanging a login token', () => {
     describe('with a valid login token', () => {
       beforeEach(() => {
