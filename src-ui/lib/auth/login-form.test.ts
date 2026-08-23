@@ -26,6 +26,51 @@ describe('LoginForm', () => {
     })
   })
 
+  describe('submitRegistration', () => {
+    describe('with a new email and name', () => {
+      beforeEach(() => {
+        mockServer.use(
+          http.post(`${BASE_URL}/users`, () => {
+            return HttpResponse.json(
+              { user: { id: 'user-1', name: 'Ada Reader', email: 'reader@example.com' } },
+              { status: 201 }
+            )
+          })
+        )
+        form.email = 'reader@example.com'
+        form.name = 'Ada Reader'
+      })
+
+      it('should advance to the enter-token step', async () => {
+        await form.submitRegistration()
+        expect(form.step).toBe('enter-token')
+      })
+    })
+
+    describe('with an already-registered email', () => {
+      beforeEach(() => {
+        mockServer.use(
+          http.post(`${BASE_URL}/users`, () => {
+            return HttpResponse.json({ email: ['has already been taken'] }, { status: 422 })
+          })
+        )
+        form.step = 'register'
+        form.email = 'reader@example.com'
+        form.name = 'Ada Reader'
+      })
+
+      it('should stay on the register step', async () => {
+        await form.submitRegistration()
+        expect(form.step).toBe('register')
+      })
+
+      it('should surface the error', async () => {
+        await form.submitRegistration()
+        expect(form.error).toBe('Email has already been taken')
+      })
+    })
+  })
+
   describe('submitEmail', () => {
     describe('with a registered email', () => {
       beforeEach(() => {
