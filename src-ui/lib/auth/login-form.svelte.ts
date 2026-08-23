@@ -6,6 +6,7 @@ export class LoginForm {
   step = $state<LoginFormStep>('email')
   email = $state('')
   name = $state('')
+  token = $state('')
 
   constructor(private authStore: AuthStore) {}
 
@@ -15,6 +16,10 @@ export class LoginForm {
 
   get error(): string | null {
     return this.authStore.state.error
+  }
+
+  async submitToken(): Promise<void> {
+    await this.authStore.exchangeLoginToken(this.token)
   }
 
   async submitRegistration(): Promise<void> {

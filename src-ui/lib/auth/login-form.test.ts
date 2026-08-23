@@ -71,6 +71,62 @@ describe('LoginForm', () => {
     })
   })
 
+  describe('submitToken', () => {
+    describe('with a valid token', () => {
+      beforeEach(() => {
+        mockServer.use(
+          http.post(`${BASE_URL}/tokens/refresh`, () => {
+            return HttpResponse.json(
+              { token: 'refresh-token-abc', token_type: 'refresh', expires_in: 31536000 },
+              { status: 201 }
+            )
+          }),
+          http.post(`${BASE_URL}/tokens/auth`, () => {
+            return HttpResponse.json(
+              {
+                token: 'auth-token-xyz',
+                token_type: 'auth',
+                expires_in: 900,
+                user: { id: 'user-1', name: 'Ada Reader', email: 'reader@example.com' },
+              },
+              { status: 201 }
+            )
+          })
+        )
+        form.token = 'login-token-123'
+      })
+
+      it('should authenticate', async () => {
+        await form.submitToken()
+        expect(authStore.state.isAuthenticated).toBe(true)
+      })
+    })
+
+    describe('with an invalid token', () => {
+      beforeEach(() => {
+        mockServer.use(
+          http.post(`${BASE_URL}/tokens/refresh`, () => {
+            return HttpResponse.json(
+              { errors: [{ code: 'token_invalid', message: 'Token is invalid or malformed' }] },
+              { status: 400 }
+            )
+          })
+        )
+        form.token = 'garbage'
+      })
+
+      it('should not authenticate', async () => {
+        await form.submitToken()
+        expect(authStore.state.isAuthenticated).toBe(false)
+      })
+
+      it('should surface the error', async () => {
+        await form.submitToken()
+        expect(form.error).toBe('Token is invalid or malformed')
+      })
+    })
+  })
+
   describe('submitEmail', () => {
     describe('with a registered email', () => {
       beforeEach(() => {
