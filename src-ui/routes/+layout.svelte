@@ -5,6 +5,7 @@
   import 'bulma-checkbox/css/main.css'
   import { authStore } from '$lib/auth/auth-store.svelte'
   import LoginModal from '$lib/components/LoginModal.svelte'
+  import ErrorToast from '$lib/components/ErrorToast.svelte'
 
   async function handleLoginClick() {
     await modals.open(LoginModal, {})
@@ -18,6 +19,8 @@
 </script>
 
 <svelte:window onkeydown={handleKeydown} />
+
+<ErrorToast />
 
 <Modals>
   <!-- shown when any modal is opened -->
