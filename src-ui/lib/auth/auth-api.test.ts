@@ -6,6 +6,7 @@ import {
   requestLoginLink,
   exchangeLoginTokenForRefreshToken,
   exchangeRefreshTokenForAuthToken,
+  registerUser,
 } from './auth-api'
 
 const BASE_URL = 'http://localhost:3000'
@@ -116,6 +117,34 @@ describe('exchangeRefreshTokenForAuthToken', () => {
     const error = await exchangeRefreshTokenForAuthToken('garbage').catch((e: unknown) => e)
     expect(error).toBeInstanceOf(AuthApiError)
     expect(error).toMatchObject({ code: 'token_invalid', message: 'Token is invalid or malformed' })
+  })
+})
+
+describe('registerUser', () => {
+  it('should resolve on success, sending the nested user params Rails expects', async () => {
+    mockServer.use(
+      http.post(`${BASE_URL}/users`, async ({ request }) => {
+        expect(await request.json()).toEqual({ user: { email: 'reader@example.com', name: 'Ada Reader' } })
+        return HttpResponse.json(
+          { user: { id: 'user-1', name: 'Ada Reader', email: 'reader@example.com' } },
+          { status: 201 }
+        )
+      })
+    )
+
+    await expect(registerUser('reader@example.com', 'Ada Reader')).resolves.toBeUndefined()
+  })
+
+  it('should throw AuthApiError with the first validation message on failure', async () => {
+    mockServer.use(
+      http.post(`${BASE_URL}/users`, () => {
+        return HttpResponse.json({ email: ['has already been taken'] }, { status: 422 })
+      })
+    )
+
+    const error = await registerUser('reader@example.com', 'Ada Reader').catch((e: unknown) => e)
+    expect(error).toBeInstanceOf(AuthApiError)
+    expect(error).toMatchObject({ message: 'Email has already been taken' })
   })
 })
 

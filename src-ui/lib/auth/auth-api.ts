@@ -17,6 +17,10 @@ interface RailsGenericErrorBody {
   error: string
 }
 
+interface RailsValidationErrorsBody {
+  [field: string]: string[]
+}
+
 export class AuthApiError extends Error {
   constructor(
     message: string,
@@ -64,6 +68,11 @@ function toAuthApiError(body: unknown): AuthApiError {
   if (isRailsGenericErrorBody(body)) {
     return new AuthApiError(body.error, 'unknown')
   }
+  if (isValidationErrorsBody(body)) {
+    const [field, messages] = Object.entries(body)[0]
+    const capitalizedField = field.charAt(0).toUpperCase() + field.slice(1)
+    return new AuthApiError(`${capitalizedField} ${messages[0]}`, 'validation_error')
+  }
   return new AuthApiError('Request failed', 'unknown')
 }
 
@@ -75,8 +84,21 @@ function isRailsGenericErrorBody(body: unknown): body is RailsGenericErrorBody {
   return typeof body === 'object' && body !== null && typeof (body as RailsGenericErrorBody).error === 'string'
 }
 
+function isValidationErrorsBody(body: unknown): body is RailsValidationErrorsBody {
+  return (
+    typeof body === 'object' &&
+    body !== null &&
+    Object.entries(body).length > 0 &&
+    Object.values(body).every((value) => Array.isArray(value))
+  )
+}
+
 export async function requestLoginLink(email: string): Promise<void> {
   await postJson('/tokens/request_login_link', { email })
+}
+
+export async function registerUser(email: string, name: string): Promise<void> {
+  await postJson('/users', { user: { email, name } })
 }
 
 export async function exchangeLoginTokenForRefreshToken(loginToken: string): Promise<RefreshTokenResult> {
