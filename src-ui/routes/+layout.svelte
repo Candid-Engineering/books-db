@@ -1,8 +1,14 @@
 <script lang="ts">
   import NavBar from '$lib/components/core/NavBar.svelte'
   import 'bulma/css/bulma.css'
-  import { Modals, type ModalStack } from 'svelte-modals'
+  import { Modals, modals, type ModalStack } from 'svelte-modals'
   import 'bulma-checkbox/css/main.css'
+  import { authStore } from '$lib/auth/auth-store.svelte'
+  import LoginModal from '$lib/components/LoginModal.svelte'
+
+  async function handleLoginClick() {
+    await modals.open(LoginModal, {})
+  }
 </script>
 
 <Modals>
@@ -21,6 +27,16 @@
   <NavBar>
     <a class="navbar-item" href="/">Home</a>
     <a class="navbar-item" href="/about">About</a>
+    {#snippet end()}
+      {#if authStore.state.isAuthenticated}
+        <span class="navbar-item">Signed in as {authStore.state.user?.name}</span>
+        <a class="navbar-item" href="#placeholder" role="button" onclick={() => authStore.logout()}>
+          Logout
+        </a>
+      {:else}
+        <a class="navbar-item" href="#placeholder" role="button" onclick={handleLoginClick}>Login</a>
+      {/if}
+    {/snippet}
   </NavBar>
 </header>
 <main>
