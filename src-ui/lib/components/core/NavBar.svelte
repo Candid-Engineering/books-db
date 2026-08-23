@@ -3,8 +3,9 @@
 
   interface Props {
     children: Snippet | undefined
+    end?: Snippet
   }
-  let { children }: Props = $props()
+  let { children, end }: Props = $props()
   let isOpen = $state(false)
   function handleHamburgerClick() {
     isOpen = !isOpen
@@ -36,6 +37,9 @@
   <div class="navbar-menu" class:is-active={isOpen}>
     <div class="navbar-start">
       {@render children?.()}
+    </div>
+    <div class="navbar-end">
+      {@render end?.()}
     </div>
   </div>
 </nav>
