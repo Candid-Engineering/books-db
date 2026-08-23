@@ -58,6 +58,15 @@ fn main() {
                 error!("Failed to generate migration!");
             }
         }
+        "test:integration" => {
+            let command = cmd!("pnpm", "test:integration");
+
+            let result = command.stderr_to_stdout().run().unwrap();
+
+            if !result.status.success() {
+                error!("Integration tests failed!");
+            }
+        }
         _ => {
             error!("Unknown command: {}", command);
         }
