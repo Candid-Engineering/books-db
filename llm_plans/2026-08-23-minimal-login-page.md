@@ -1,56 +1,50 @@
-# Minimal login page
+# Login/register modal (no route, no guard)
 
 _Point-in-time plan, agreed 2026-08-23. Preserved as-approved; the actual implementation may have evolved since — check current code/design-ideas.md for present state._
 
+_Revision note: this document originally described a dedicated `/login` route with a route guard forcing sign-in. That design was reconsidered before implementation started — see below for why — and this file was updated in place to reflect the revised design that was actually built, rather than keeping a stale doc around._
+
 ## Context
 
-`AuthStore` (`src-ui/lib/auth/auth-store.svelte.ts`) is fully built and tested, but there's no UI to actually drive it — no route, no form, no guard, no session bootstrapping on app start. The user wants to manually sign in through a real page rather than devtools console calls, and wants the app to actually behave like an authenticated app: redirect to `/login` when signed out, redirect back to `/` after signing in, and show who's signed in (with a logout link) in the header once authenticated. Deep-link handling (OS custom-URL-scheme dispatch) isn't built yet and is out of scope here — so instead of relying on clicking the emailed link, the page includes a manual "paste your login token" step as its second stage, which is both a reasonable permanent fallback UX and exactly what's needed to test the full flow today.
+This app's core function (local book cataloging) doesn't need an account — auth is only for a future optional cloud-sync up-sell. So there's no guard, no forced redirect, and no dedicated `/login` route: login is opened as a small modal overlay from a nav link, exactly like `AddBookModal.svelte` already works (`svelte-modals`, already wired up in `+layout.svelte`/`+page.svelte`). Also: login and registration are functionally the same action from the user's perspective — submit an email, get a link — so they're merged into one flow, with a name prompt only appearing as a fallback step when the email turns out to be unregistered, rather than two separate flows/pages.
 
 ## Design
 
-### Two-step flow, one route
+### One modal, three steps, no new route
 
-`src-ui/routes/login/+page.svelte` (new — no `/login` route exists yet):
-1. **Request-link step**: email input → `authStore.requestLoginLink(email)`. On success, advance to step 2.
-2. **Enter-token step**: token input (pasted from the dev email, viewable via `letter_opener` in Rails dev) → `authStore.exchangeLoginToken(token)`. On success, `authStore.state.isAuthenticated` flips true and the page shows a signed-in confirmation inline.
+`LoginModal.svelte` (new, `src-ui/lib/components/`), following `AddBookModal.svelte`'s exact contract (`isOpen`/`close` props, opened via `await modals.open(LoginModal, {})`):
 
-### Session bootstrap: `hooks.client.ts`
+1. **`email` step**: email field → `authStore.requestLoginLink(email)`.
+   - Success → advance to `enter-token`.
+   - Fails with "No such user" → advance to `register` (the email is already known to be unregistered; carry it forward).
+   - Any other failure → show the error, stay put.
+2. **`register` step**: name field (email already captured) → new `authStore.register(email, name)` → `POST /users` (existing endpoint, already sends its own login-link welcome email — confirmed via `UsersController#create` → `UserMailer#welcome_email`, same `?login_token=` link format).
+   - Success → advance to `enter-token`.
+3. **`enter-token` step**: token field (pasted from the dev email) → `authStore.exchangeLoginToken(token)` → on success, `authStore.state.isAuthenticated` flips true; the modal closes (`close()`) and the header updates reactively.
 
-`src-ui/hooks.client.ts` already does exactly the "boot client-only runtime dependencies before the app renders" thing this needs — it currently does `await migrate(db)` then `window.booksStore = getBooksStore()` (both blocking, top-level-await, before SvelteKit mounts anything — this is *why* `await migrate(db)` already works without a race: SvelteKit awaits client hook module evaluation before starting the router). Add `await authStore.initialize()` here the same way, plus `window.authStore = authStore` (matching the existing `window.booksStore` devtools-console convenience — genuinely useful given how this whole thread started).
+No Rails changes needed — both `POST /tokens/request_login_link` and `POST /users` already exist and already behave exactly as this flow needs.
 
-Because this resolves before any route/layout ever renders, `authStore.state.isAuthenticated` is already settled by the time the guard below runs — no loading-flicker/race handling needed.
+**Known simplification, called out deliberately**: detecting "should fall back to registration" is done by string-matching `authStore.state.error === 'No such user'` — the exact message Rails hardcodes in `tokens_controller.rb`. `AuthApiError` already carries a machine-readable `.code`, but `AuthState.error` (the already-shipped, tested public interface) only exposes a plain string, and widening it now would ripple through already-committed code for a "minimal" pass. Fragile-but-scoped; worth threading a real code through later if this string ever needs to change.
 
-### Guard + redirect: `+layout.svelte`
+### New: `AuthStore#register` + `auth-api.ts#registerUser`
 
-A single reactive `$effect`, symmetric in both directions:
+`AuthStore`'s interface currently has no registration method at all. Add one, mirroring `requestLoginLink`'s exact shape (`isLoading`/`error` handling, `AuthApiError` → `authState.error`, non-`AuthApiError` rethrown):
 ```ts
-$effect(() => {
-  if (!authStore.state.isAuthenticated && $page.url.pathname !== '/login') {
-    goto('/login')
-  } else if (authStore.state.isAuthenticated && $page.url.pathname === '/login') {
-    goto('/')
-  }
-})
+// AuthStore interface addition
+register(email: string, name: string): Promise<void>
 ```
-Uses `$page` from `$app/stores` (not `$app/state` — confirmed the installed `@sveltejs/kit` is `2.8.1`, and `$app/state` needs 2.12+; `$app/stores`' `$page` is what's actually available, and works fine auto-subscribed inside a rune-based `$effect`) and `goto` from `$app/navigation`. Logout doesn't need its own redirect call — calling `authStore.logout()` flips `isAuthenticated` false, which this same effect already reacts to.
+Backed by a new `auth-api.ts` function `registerUser(email, name)`: `POST /users` with body `{ user: { email, name } }` (note: unlike the token endpoints, `UsersController` does *not* disable `wrap_parameters`, so this nested shape is required — confirmed via `UsersController#create`'s `params.permit(user: [:name, :email]).require(:user)`). Failure response shape here is different too — Rails' default `render json: @user.errors` is a validation-errors hash (`{"email": ["has already been taken"]}`), not either of the two shapes `auth-api.ts` already normalizes (`{error}` / `{errors: [...]}`) — needs its own small extraction (first message found, generic fallback otherwise).
 
-### Header: current user + logout, `NavBar.svelte` + `+layout.svelte`
+### `LoginForm` (`.svelte.ts` view-model, unchanged pattern from before)
 
-`NavBar.svelte` today only renders a single `children` snippet into `navbar-menu > navbar-start` (confirmed, full file read) — there's no right-aligned `navbar-end` section yet. Extend it with a second, optional snippet prop (e.g. `end`) rendered into a new `navbar-end` div — keeps `NavBar` itself generic/reusable (no auth-specific knowledge baked into it), while `+layout.svelte` decides what goes in each slot: existing `Home`/`About` links in `start`, and either a `Login` link (unauthenticated) or `Signed in as {user.name}` + a `Logout` link (authenticated, calling `authStore.logout()`) in `end` — styled as plain `<a class="navbar-item">` to match the existing `Home`/`About` markup, not the `Button` component (that's for form actions, not nav items).
-
-### Logic lives in a plain `.svelte.ts` class, not the template
-
-This repo already has an established pattern for this: `BooksStore` (`src-ui/lib/state/Books.svelte.ts`) is a plain runes-based class, fully unit-tested (`Books.spec.ts`), completely separate from any `.svelte` template. `AuthStoreImpl` follows the same shape. There is **no existing `.svelte` component test anywhere in this repo** (confirmed — no `@testing-library/svelte` or equivalent installed, no component test files exist), so introducing one now would mean pulling in a whole new testing dependency/setup as its own decision, not something to fold in silently.
-
-Instead: a new `LoginForm` class in `src-ui/lib/auth/login-form.svelte.ts` holds all the actual logic (`step`/`email`/`token` as `$state`, `submitEmail()`/`submitToken()` wrapping `authStore` calls, `error`/`isLoading` getters delegating to `authStore.state`) and gets full TDD coverage using the exact same test infrastructure already built for `auth-store.test.ts` (MSW for the Rails calls, `setupMockKeyring()`, `createTestAuthStore`). The `+page.svelte` file itself is a thin template — `const form = new LoginForm(authStore)`, then Bulma markup bound to `form`'s fields — matching how thin `.svelte` files already are elsewhere (e.g. `AddBookModal.svelte` delegates to `booksStore`/props rather than holding its own business logic). It's verified manually by actually clicking through the running app, same as every other `.svelte` template in this repo today.
-
-**Design shape of `LoginForm`:**
+Same "logic in a plain runes class, thin template, no component-test infra introduced" reasoning as the prior plan — still the right call here, nothing about the modal pivot changes that reasoning.
 ```ts
-export type LoginFormStep = 'request-link' | 'enter-token'
+export type LoginFormStep = 'email' | 'register' | 'enter-token'
 
 export class LoginForm {
-  step = $state<LoginFormStep>('request-link')
+  step = $state<LoginFormStep>('email')
   email = $state('')
+  name = $state('')
   token = $state('')
 
   constructor(private authStore: AuthStore) {}
@@ -61,6 +55,12 @@ export class LoginForm {
   async submitEmail(): Promise<void> {
     await this.authStore.requestLoginLink(this.email)
     if (!this.authStore.state.error) this.step = 'enter-token'
+    else if (this.authStore.state.error === 'No such user') this.step = 'register'
+  }
+
+  async submitRegistration(): Promise<void> {
+    await this.authStore.register(this.email, this.name)
+    if (!this.authStore.state.error) this.step = 'enter-token'
   }
 
   async submitToken(): Promise<void> {
@@ -69,41 +69,48 @@ export class LoginForm {
 }
 ```
 
-### Template conventions to follow (confirmed from `AddBookModal.svelte`, `Button.svelte`, `NavBar.svelte`)
+### Header: current user + logout, `NavBar.svelte` + `+layout.svelte` (unchanged from prior plan)
 
-- Bulma `field`/`control`/`input`/`label` markup (e.g. `AddBookModal.svelte:88-99`).
-- Reuse `Button.svelte` (`$lib/components/core/Button.svelte`) for the submit button (`primary`, `label`, spreads `type="submit"` via `restProps`).
-- Svelte 5 event-handler property syntax throughout this repo (`onsubmit={...}`, not `on:submit`) — confirmed zero uses of legacy `on:` directives anywhere in `src-ui/**/*.svelte`.
-- No existing error-notification convention in this codebase (grep for `is-danger`/`notification` returned nothing) — this page establishes it: `<div class="notification is-danger">{form.error}</div>`, a plain, standard Bulma pattern, not inventing anything novel.
+Same as before: extend `NavBar.svelte` with an optional `end` snippet prop rendered into a new `navbar-end` div (today it only has `navbar-start`). `+layout.svelte` puts either a `Login` nav-item (`onclick` → `modals.open(LoginModal, {})`, mirroring `+page.svelte:21-23`'s exact `handleAddBookClick` pattern) or `Signed in as {user.name}` + `Logout` (`authStore.logout()`) into that slot, depending on `authStore.state.isAuthenticated`.
+
+### Session bootstrap: `hooks.client.ts` (unchanged from prior plan)
+
+Still add `await authStore.initialize()` + `window.authStore = authStore` alongside the existing `await migrate(db)` — restoring an existing session on boot is still wanted, it's just no longer *required* to use the app.
+
+### Explicitly removed from the prior plan
+
+No `/login` route, no `+layout.svelte` guard `$effect`, no `$page`/`goto` redirect logic — the app is fully usable unauthenticated, so none of that applies anymore.
 
 ## Commit discipline & TDD
 
-**Step 0** (first, standalone commit): archive this plan document into `llm_plans/2026-08-23-minimal-login-page.md`, same as the `tauri_integration` plan before it — before any implementation starts.
+**Also, standalone** (already landed as its own commit): append a new entry to `design-ideas.md`'s Deferred section — *"Add a component test framework (e.g. `@testing-library/svelte`) and backfill tests for existing components."* This work deliberately keeps `.svelte` templates untested (per the reasoning above — no such framework exists in this repo yet, and introducing one is its own decision), so the gap should be written down as a real, named deferred item rather than silently left implicit.
 
-**Also, standalone**: append a new entry to `design-ideas.md`'s Deferred section — *"Add a component test framework (e.g. `@testing-library/svelte`) and backfill tests for existing components."* This work deliberately keeps `.svelte` templates untested (per the reasoning above — no such framework exists in this repo yet, and introducing one is its own decision), so the gap should be written down as a real, named deferred item rather than silently left implicit.
-
-Small, separate commits, tests first wherever there's real logic to test:
-1. `LoginForm.submitEmail()` — write `login-form.test.ts` first (success advances to `enter-token`; failure sets `error`, stays on `request-link`), then implement just that method and the `step`/`email` state.
-2. `LoginForm.submitToken()` — same pattern (success → `authStore.state.isAuthenticated` true; failure → `error` set), then implement.
-3. `src-ui/routes/login/+page.svelte` — the template wiring. Not automatically tested (matches this repo's existing convention — no `.svelte` files are unit-tested today); verified by running the app and clicking through manually.
-4. `hooks.client.ts` — `await authStore.initialize()` + `window.authStore`. Small, standalone; not unit-tested (same reasoning as the existing `await migrate(db)` line — it's app-boot wiring, not logic), verified manually.
-5. `NavBar.svelte` — add the `end` snippet prop + `navbar-end` div. Small, standalone, no behavior change for existing callers (optional prop).
-6. `+layout.svelte` — the guard `$effect` + wiring the user-info/logout content into `NavBar`'s new `end` slot. Verified manually (this is exactly the kind of cross-cutting, runtime-state-dependent behavior that's genuinely hard to unit test meaningfully without component-rendering infra this repo doesn't have yet).
+Small commits, tests first wherever there's real logic:
+1. `auth-api.ts#registerUser` — test first (success; validation-error shape extraction), then implement.
+2. `AuthStoreImpl#register` + `AuthStore` interface — test first (success sets nothing wrong; `AuthApiError` → `authState.error`), then implement.
+3. `LoginForm#submitEmail` (including the register-fallback branch) — test first, then implement.
+4. `LoginForm#submitRegistration` — test first, then implement.
+5. `LoginForm#submitToken` — test first, then implement.
+6. `LoginModal.svelte` — the three-step template. Not automatically tested (matches this repo's existing convention, same as before); verified manually.
+7. `NavBar.svelte` — add the `end` snippet prop + `navbar-end` div. Small, standalone, no behavior change for existing callers.
+8. `+layout.svelte` — wire the `Login`/`Signed-in-as+Logout` content into `NavBar`'s new `end` slot. Verified manually.
+9. `hooks.client.ts` — `await authStore.initialize()` + `window.authStore`. Verified manually.
 
 ## Critical files
 
-- `src-ui/lib/auth/login-form.svelte.ts` (new)
-- `src-ui/lib/auth/login-form.test.ts` (new)
-- `src-ui/routes/login/+page.svelte` (new)
-- `src-ui/hooks.client.ts`
+- `src-ui/lib/auth/auth-api.ts`, `auth-api.test.ts`
+- `src-ui/lib/auth/auth-store.svelte.ts`, `auth-store.test.ts`
+- `src-ui/lib/auth/login-form.svelte.ts` (new), `login-form.test.ts` (new)
+- `src-ui/lib/components/LoginModal.svelte` (new)
 - `src-ui/lib/components/core/NavBar.svelte`
 - `src-ui/routes/+layout.svelte`
+- `src-ui/hooks.client.ts`
 
 ## Verification
 
-- `pnpm check:js` green after each logic-bearing commit (1, 2, and after 4/5/6 to confirm no typecheck/lint regressions).
-- Manual, end to end: start Rails dev (`rails server`, real dev DB + `letter_opener` for email preview) and the Tauri app (`pnpm tauri dev`).
-  - Load the app signed out → confirm it auto-redirects to `/login` (guard direction 1).
-  - Request a link for a real seeded user, pull the token from the `letter_opener` preview, paste it in → confirm redirect to `/` (guard direction 2) and the header shows the signed-in user.
-  - Click Logout → confirm redirect back to `/login` and the header reverts to showing a Login link.
-  - Confirm real tokens land in the real (not mocked) OS keychain throughout.
+- `pnpm check:js` green after each of steps 1-5 and after 7/8/9.
+- Manual, end to end: start Rails dev (`rails server`, real dev DB + `letter_opener`) and the Tauri app (`pnpm tauri dev`).
+  - Confirm the app loads and is fully usable signed out (no redirect, book catalog works).
+  - Click Login → email step → for an existing seeded user, confirm it advances straight to enter-token; pull the token from `letter_opener`, paste it, confirm the modal closes and the header shows the signed-in user.
+  - Repeat with a brand-new email → confirm it falls to the register step, submit a name, confirm a *welcome* email appears in `letter_opener` with its own token, paste it, confirm sign-in.
+  - Click Logout → confirm the header reverts to showing Login, app remains usable.
