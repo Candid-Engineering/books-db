@@ -1,0 +1,83 @@
+import { describe, it, expect, beforeEach } from 'vitest'
+import { http, HttpResponse } from 'msw'
+import { mockServer } from '../../testing/msw-setup'
+import { setupMockKeyring } from '../../testing/mock-keyring'
+import { KeychainTokenStorage } from './token-storage'
+import { DrizzleLocalUserStore } from './local-user-store'
+import { createTestAuthStore, type AuthStore } from './auth-store.svelte'
+import { testDb } from '../../testing/db-setup'
+import { LoginForm } from './login-form.svelte'
+
+const BASE_URL = 'http://localhost:3000'
+
+describe('LoginForm', () => {
+  let authStore: AuthStore
+  let form: LoginForm
+
+  beforeEach(() => {
+    setupMockKeyring()
+    authStore = createTestAuthStore(new KeychainTokenStorage(), new DrizzleLocalUserStore(testDb.drizzle))
+    form = new LoginForm(authStore)
+  })
+
+  describe('when created', () => {
+    it('should start on the email step', () => {
+      expect(form.step).toBe('email')
+    })
+  })
+
+  describe('submitEmail', () => {
+    describe('with a registered email', () => {
+      beforeEach(() => {
+        mockServer.use(
+          http.post(`${BASE_URL}/tokens/request_login_link`, () => {
+            return HttpResponse.json({}, { status: 201 })
+          })
+        )
+        form.email = 'reader@example.com'
+      })
+
+      it('should advance to the enter-token step', async () => {
+        await form.submitEmail()
+        expect(form.step).toBe('enter-token')
+      })
+    })
+
+    describe('with an unregistered email', () => {
+      beforeEach(() => {
+        mockServer.use(
+          http.post(`${BASE_URL}/tokens/request_login_link`, () => {
+            return HttpResponse.json({ error: 'No such user' }, { status: 422 })
+          })
+        )
+        form.email = 'nobody@example.com'
+      })
+
+      it('should fall back to the register step', async () => {
+        await form.submitEmail()
+        expect(form.step).toBe('register')
+      })
+    })
+
+    describe('with an unexpected failure', () => {
+      beforeEach(() => {
+        mockServer.use(
+          http.post(`${BASE_URL}/tokens/request_login_link`, () => {
+            return HttpResponse.json({ error: 'Something went wrong' }, { status: 500 })
+          })
+        )
+        form.email = 'reader@example.com'
+      })
+
+      it('should stay on the email step', async () => {
+        await form.submitEmail()
+        expect(form.step).toBe('email')
+      })
+
+      it('should surface the error', async () => {
+        await form.submitEmail()
+        expect(form.error).toBe('Something went wrong')
+      })
+    })
+  })
+})
