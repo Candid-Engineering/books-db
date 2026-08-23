@@ -43,3 +43,11 @@ The `test:integration` tier (`integration/`, backed by the `tauri_integration` R
 **Option:** once a login UI exists, extend `e2e/wdio.conf.ts` (which already spawns/kills `tauri-driver` around a real Tauri app instance) to drive the actual login flow through the UI. On the Rails side, this could reuse the *same* `tauri_integration` environment rather than needing a new one — the underlying need (a real, isolated, externally-driven Rails server) doesn't change, only the driving harness does (WebdriverIO/`tauri-driver` through a real app instead of Vitest hitting HTTP directly). Capybara/system-specs are the equivalent concept purely on the Rails side, if ever needed independently of the Tauri app.
 
 **Trigger to revisit:** once login/registration pages and the deep-link utility library exist (both currently not-started per this project's roadmap).
+
+### 4. Add a component test framework and backfill tests for existing components
+
+There is no `.svelte` component test anywhere in this repo — no `@testing-library/svelte` or equivalent installed, no component-rendering test setup. All existing coverage tests plain `.svelte.ts` classes (`BooksStore`, `AuthStoreImpl`) kept deliberately separate from their thin `.svelte` templates, which are only ever verified by hand. The login page (`src-ui/routes/login/+page.svelte`) follows this same pattern rather than introducing new test infra unprompted.
+
+**Option:** add `@testing-library/svelte` (or the vitest-browser-svelte equivalent, if that becomes the more standard choice by the time this is picked up), wire up a jest-dom-equivalent matcher setup, and write real render/interaction tests for templates — starting with the newer, less-trivial ones (`login/+page.svelte`, `AddBookModal.svelte`) rather than trying to backfill everything at once.
+
+**Trigger to revisit:** the next time a `.svelte` template bug ships that a render test would have caught, or when template logic grows complex enough that "verified by hand" stops being sufficient.
