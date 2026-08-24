@@ -1,14 +1,18 @@
 <script lang="ts">
-  import { save, open } from '@tauri-apps/plugin-dialog'
-  import { writeTextFile, readTextFile } from '@tauri-apps/plugin-fs'
+  import { save, open, confirm, message } from '@tauri-apps/plugin-dialog'
+  import { writeTextFile, readTextFile, exists, remove, BaseDirectory } from '@tauri-apps/plugin-fs'
   import { getBooksStore } from '$lib/state/Books.svelte'
   import { booksToCsv } from '$lib/csv/csv-export'
   import { csvToBooks } from '$lib/csv/csv-import'
   import { errorToast } from '$lib/error-toast.svelte'
   import { reportError } from '$lib/error-reporting'
+  import { authStore } from '$lib/auth/auth-store.svelte'
   import Button from '$lib/components/core/Button.svelte'
 
   const booksStore = getBooksStore()
+
+  // Must match the filename `main.rs` passes to `sqlite_proxy::init(...)`.
+  const DB_FILENAME = 'books-dev.db'
 
   async function handleExport() {
     const path = await save({ defaultPath: 'books.csv', filters: [ { name: 'CSV', extensions: [ 'csv' ] } ] })
@@ -45,6 +49,38 @@
       await booksStore.add(book)
     }
   }
+
+  async function removeIfExists(filename: string) {
+    if (await exists(filename, { baseDir: BaseDirectory.AppConfig })) {
+      await remove(filename, { baseDir: BaseDirectory.AppConfig })
+    }
+  }
+
+  async function handleReset() {
+    const confirmed = await confirm(
+      'This deletes your entire catalog and signs you out. This cannot be undone.',
+      { title: 'Reset app data', kind: 'warning' }
+    )
+    if (!confirmed) return
+
+    try {
+      await authStore.logout()
+      await removeIfExists(DB_FILENAME)
+      // Rollback-journal mode (this app's default; no WAL pragma is set)
+      // only leaves a sidecar file mid-write, but check rather than assume.
+      await removeIfExists(`${DB_FILENAME}-journal`)
+      await removeIfExists(`${DB_FILENAME}-wal`)
+      await removeIfExists(`${DB_FILENAME}-shm`)
+    } catch (error) {
+      reportError(error, 'reset-app-data')
+      errorToast.show('Could not fully reset app data. Please try again.')
+      return
+    }
+
+    await message('Your data has been reset. Please quit and reopen BooksDB.', {
+      title: 'Reset complete',
+    })
+  }
 </script>
 
 <div class="container">
@@ -55,6 +91,13 @@
     <div class="buttons">
       <Button primary onclick={handleExport}>Export CSV</Button>
       <Button onclick={handleImport}>Import CSV</Button>
+    </div>
+  </div>
+
+  <div class="field">
+    <h2 class="title is-4">Danger Zone</h2>
+    <div class="buttons">
+      <Button class="is-danger" onclick={handleReset}>Reset App Data</Button>
     </div>
   </div>
 </div>
