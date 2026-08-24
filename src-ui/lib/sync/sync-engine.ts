@@ -81,4 +81,9 @@ export class SyncEngine {
 
     await this.booksStore.reload()
   }
+
+  async sync(): Promise<void> {
+    await this.push()
+    await this.pull()
+  }
 }

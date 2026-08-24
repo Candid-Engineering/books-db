@@ -261,3 +261,22 @@ describe('SyncEngine#pull', () => {
     expect(fetchSpy).not.toHaveBeenCalled()
   })
 })
+
+describe('SyncEngine#sync', () => {
+  it('pushes before pulling', async () => {
+    const engine = createSyncEngine()
+    const order: string[] = []
+    vi.spyOn(engine, 'push').mockImplementation(() => {
+      order.push('push')
+      return Promise.resolve()
+    })
+    vi.spyOn(engine, 'pull').mockImplementation(() => {
+      order.push('pull')
+      return Promise.resolve()
+    })
+
+    await engine.sync()
+
+    expect(order).toEqual([ 'push', 'pull' ])
+  })
+})
