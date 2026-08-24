@@ -286,6 +286,23 @@ describe('booksStore', () => {
           .where(eq(schema.books.id, duneMessiahWithId.id))
         expect(rawRow.syncedAt).toBeNull()
       })
+
+      it('should tombstone the book\'s active tags too', async () => {
+        await booksStore.updateTags(duneMessiahWithId, ['Science Fiction'])
+        await booksStore.remove(duneMessiahWithId.id)
+
+        const [rawTagRow] = await testDb.drizzle
+          .select()
+          .from(schema.bookTags)
+          .where(
+            and(
+              eq(schema.bookTags.bookId, duneMessiahWithId.id),
+              eq(schema.bookTags.name, 'Science Fiction')
+            )
+          )
+        expect(rawTagRow.deletedAt).not.toBeNull()
+        expect(rawTagRow.syncedAt).toBeNull()
+      })
     })
 
     describe('tag lifecycle', () => {

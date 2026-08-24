@@ -81,10 +81,15 @@ class BooksStore {
   }
 
   async remove(id: string): Promise<void> {
+    const now = new Date()
     await this.db
       .update(schema.books)
-      .set({ deletedAt: new Date(), updatedAt: new Date(), syncedAt: null })
+      .set({ deletedAt: now, updatedAt: now, syncedAt: null })
       .where(eq(schema.books.id, id))
+    await this.db
+      .update(schema.bookTags)
+      .set({ deletedAt: now, updatedAt: now, syncedAt: null })
+      .where(and(eq(schema.bookTags.bookId, id), isNull(schema.bookTags.deletedAt)))
     await this.reload()
   }
 

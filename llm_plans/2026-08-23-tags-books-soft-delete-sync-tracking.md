@@ -24,7 +24,7 @@ syncedAt: integer({ mode: 'timestamp' }),  // null = pending push to server
 
 - **`reload()`**: filter to `deletedAt IS NULL` at both the book level and the nested tags level (drizzle relational `where` on the top-level query and inside the `tags` `with` clause).
 - **`edit()`**: bump `updatedAt = now()`, reset `syncedAt = null`, alongside the existing field updates.
-- **`remove()`**: becomes an `UPDATE ... SET deletedAt = now()`, not a `DELETE`. **Known simplification**: this does not cascade-tombstone the book's tags (the old `onDelete: 'cascade'` FK becomes dormant, since hard deletes no longer happen). Harmless today since a deleted book's tags are already unreachable through `reload()`'s book-level filter — but worth a real fix (explicitly tombstone child tags, or a real op log) before this feeds an actual server sync, since an untouched tag row would otherwise sync as "still active" independently of its parent book's deleted state.
+- **`remove()`**: becomes an `UPDATE ... SET deletedAt = now()`, not a `DELETE` — and also tombstones the book's still-active tags in the same call (the old `onDelete: 'cascade'` FK is dormant now that hard deletes no longer happen, so this is done explicitly instead). Implemented.
 - **`addTag()`**: needs to become an upsert (`insert ... onConflictDoUpdate`) keyed on `(bookId, name)` — a plain insert would throw on a UNIQUE violation when reviving a previously-removed tag, since the tombstoned row still physically exists.
 - **`removeTag()`**: becomes an `UPDATE ... SET deletedAt = now()` on the matching row, not a `DELETE`.
 - **`reset()`**: left as a hard delete — this is an unused-in-app, dev-only wipe utility (no callers found in the codebase today), not part of the normal synced-mutation surface. Not in scope.
@@ -33,7 +33,6 @@ syncedAt: integer({ mode: 'timestamp' }),  // null = pending push to server
 
 - No Rails/Postgres changes, no push/pull endpoints, no actual network sync round-trip. This only produces the local shape a later sync loop would consume (`WHERE syncedAt IS NULL` as the push query).
 - No periodic/triggered pull loop (see `eventually/` doc's "Open questions" — sync transport still needs its own concrete plan once the Rails side is designed).
-- Book-delete-cascades-to-tags gap noted above, deliberately deferred rather than solved now.
 
 ## Commit discipline & TDD
 
