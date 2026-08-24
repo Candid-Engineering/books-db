@@ -11,8 +11,8 @@ export class SyncEngine {
     private getAuthToken: () => Promise<string | null>
   ) {}
 
-  async push(): Promise<void> {
-    const authToken = await this.getAuthToken()
+  async push(knownAuthToken?: string): Promise<void> {
+    const authToken = knownAuthToken ?? (await this.getAuthToken())
     if (!authToken) return
 
     const pendingBooks = await this.db.select().from(schema.books).where(isNull(schema.books.syncedAt))
@@ -43,8 +43,8 @@ export class SyncEngine {
     }
   }
 
-  async pull(): Promise<void> {
-    const authToken = await this.getAuthToken()
+  async pull(knownAuthToken?: string): Promise<void> {
+    const authToken = knownAuthToken ?? (await this.getAuthToken())
     if (!authToken) return
 
     const [state] = await this.db.select().from(schema.syncState)
@@ -83,7 +83,9 @@ export class SyncEngine {
   }
 
   async sync(): Promise<void> {
-    await this.push()
-    await this.pull()
+    const authToken = await this.getAuthToken()
+    if (!authToken) return
+    await this.push(authToken)
+    await this.pull(authToken)
   }
 }

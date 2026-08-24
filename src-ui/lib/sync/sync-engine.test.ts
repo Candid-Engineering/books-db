@@ -279,4 +279,19 @@ describe('SyncEngine#sync', () => {
 
     expect(order).toEqual([ 'push', 'pull' ])
   })
+
+  it('fetches the auth token once and reuses it for both push and pull', async () => {
+    mockServer.use(
+      http.post(`${BASE_URL}/sync/push`, () => HttpResponse.json({ rejected: [] })),
+      http.get(`${BASE_URL}/sync/pull`, () =>
+        HttpResponse.json({ entities: { books: [], book_tags: [] }, cursors: { books: 0, book_tags: 0 } })
+      )
+    )
+    const getAuthToken = vi.fn(() => Promise.resolve(AUTH_TOKEN))
+    const engine = createSyncEngine(getAuthToken)
+
+    await engine.sync()
+
+    expect(getAuthToken).toHaveBeenCalledTimes(1)
+  })
 })
