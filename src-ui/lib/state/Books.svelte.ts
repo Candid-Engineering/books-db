@@ -34,7 +34,7 @@ class BooksStore {
     const id = uuidv4()
     const book_with_id: Book = { ...book, id } as Book
 
-    await this.db.insert(schema.books).values({ ...book_with_id })
+    await this.db.insert(schema.books).values({ ...book_with_id, updatedAt: new Date() })
     await this.reload()
     return id
   }
