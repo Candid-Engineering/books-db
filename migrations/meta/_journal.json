@@ -36,6 +36,13 @@
       "when": 1787364376059,
       "tag": "20260822020616_add_local_user_table",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1787532272746,
+      "tag": "20260824004432_add_soft_delete_and_sync_tracking",
+      "breakpoints": true
     }
   ]
 }
