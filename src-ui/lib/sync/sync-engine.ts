@@ -2,7 +2,7 @@ import type { SqliteRemoteDatabase } from 'drizzle-orm/sqlite-proxy'
 import { and, eq, isNull } from 'drizzle-orm/sql/expressions/conditions'
 import * as schema from '$lib/db/schema'
 import type { BooksStore } from '$lib/state/Books.svelte'
-import { pushEntities } from './sync-api'
+import { pushEntities, pullEntities } from './sync-api'
 
 export class SyncEngine {
   constructor(
@@ -41,5 +41,44 @@ export class SyncEngine {
         .set({ syncedAt })
         .where(and(eq(schema.bookTags.bookId, tag.bookId), eq(schema.bookTags.name, tag.name)))
     }
+  }
+
+  async pull(): Promise<void> {
+    const authToken = await this.getAuthToken()
+    if (!authToken) return
+
+    const [state] = await this.db.select().from(schema.syncState)
+    const since = { books: state?.booksSince ?? 0, bookTags: state?.bookTagsSince ?? 0 }
+
+    const { entities, cursors } = await pullEntities(authToken, since)
+
+    const syncedAt = new Date()
+
+    for (const book of entities.books) {
+      await this.db
+        .insert(schema.books)
+        .values({ ...book, syncedAt })
+        .onConflictDoUpdate({ target: schema.books.id, set: { ...book, syncedAt } })
+    }
+
+    for (const tag of entities.bookTags) {
+      await this.db
+        .insert(schema.bookTags)
+        .values({ ...tag, syncedAt })
+        .onConflictDoUpdate({
+          target: [schema.bookTags.bookId, schema.bookTags.name],
+          set: { ...tag, syncedAt },
+        })
+    }
+
+    await this.db
+      .insert(schema.syncState)
+      .values({ singleton: 1, booksSince: cursors.books, bookTagsSince: cursors.bookTags })
+      .onConflictDoUpdate({
+        target: schema.syncState.singleton,
+        set: { booksSince: cursors.books, bookTagsSince: cursors.bookTags },
+      })
+
+    await this.booksStore.reload()
   }
 }
