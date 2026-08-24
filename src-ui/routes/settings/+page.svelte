@@ -1,6 +1,7 @@
 <script lang="ts">
   import { save, open, confirm, message } from '@tauri-apps/plugin-dialog'
-  import { writeTextFile, readTextFile, exists, remove, BaseDirectory } from '@tauri-apps/plugin-fs'
+  import { writeTextFile, readTextFile } from '@tauri-apps/plugin-fs'
+  import { commands as sqliteProxy } from '$lib/generated/sqlite_proxy'
   import { getBooksStore } from '$lib/state/Books.svelte'
   import { booksToCsv } from '$lib/csv/csv-export'
   import { csvToBooks } from '$lib/csv/csv-import'
@@ -10,9 +11,6 @@
   import Button from '$lib/components/core/Button.svelte'
 
   const booksStore = getBooksStore()
-
-  // Must match the filename `main.rs` passes to `sqlite_proxy::init(...)`.
-  const DB_FILENAME = 'books-dev.db'
 
   async function handleExport() {
     const path = await save({ defaultPath: 'books.csv', filters: [ { name: 'CSV', extensions: [ 'csv' ] } ] })
@@ -50,12 +48,6 @@
     }
   }
 
-  async function removeIfExists(filename: string) {
-    if (await exists(filename, { baseDir: BaseDirectory.AppConfig })) {
-      await remove(filename, { baseDir: BaseDirectory.AppConfig })
-    }
-  }
-
   async function handleReset() {
     const confirmed = await confirm(
       'This deletes your entire catalog and signs you out. This cannot be undone.',
@@ -65,12 +57,10 @@
 
     try {
       await authStore.logout()
-      await removeIfExists(DB_FILENAME)
-      // Rollback-journal mode (this app's default; no WAL pragma is set)
-      // only leaves a sidecar file mid-write, but check rather than assume.
-      await removeIfExists(`${DB_FILENAME}-journal`)
-      await removeIfExists(`${DB_FILENAME}-wal`)
-      await removeIfExists(`${DB_FILENAME}-shm`)
+      const result = await sqliteProxy.factoryReset()
+      if (result.status === 'error') {
+        throw new Error(result.error.toString())
+      }
     } catch (error) {
       reportError(error, 'reset-app-data')
       errorToast.show('Could not fully reset app data. Please try again.')

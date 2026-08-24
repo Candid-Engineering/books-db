@@ -37,6 +37,22 @@ async execute(sql: string, params: JsonValue[] | null) : Promise<Result<number, 
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
 }
+},
+/**
+ * Deletes the local database file (and any sidecar files) for a full data wipe.
+ * Accessible with `invoke('plugin:sqlite-proxy|factory_reset')`.
+ *
+ * Replaces the managed connection with a throwaway in-memory one first: any command
+ * invoked before the app restarts operates on that empty in-memory db instead of the
+ * now-deleted file's still-open handle, so nothing lingers on disk past this call.
+ */
+async factoryReset() : Promise<Result<null, Error>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("plugin:sqlite-proxy|factory_reset") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
 }
 }
 

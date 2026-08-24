@@ -2,7 +2,7 @@ use tauri_build::DefaultPermissionRule;
 
 fn main() {
     let inline = tauri_build::InlinedPlugin::new()
-        .commands(&["query", "query_row", "execute"])
+        .commands(&["query", "query_row", "execute", "factory_reset"])
         .default_permission(DefaultPermissionRule::AllowAllCommands);
     let attrs = tauri_build::Attributes::new().plugin(
         "sqlite-proxy", // NOTE: plugin names cannot include underscore
