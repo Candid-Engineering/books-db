@@ -8,6 +8,7 @@
   import { errorToast } from '$lib/error-toast.svelte'
   import { reportError } from '$lib/error-reporting'
   import { authStore } from '$lib/auth/auth-store.svelte'
+  import { checkForUpdatesAndPrompt } from '$lib/updater'
   import Button from '$lib/components/core/Button.svelte'
 
   const booksStore = getBooksStore()
@@ -71,6 +72,10 @@
       title: 'Reset complete',
     })
   }
+
+  async function handleCheckForUpdates() {
+    await checkForUpdatesAndPrompt({ notifyIfUpToDate: true })
+  }
 </script>
 
 <div class="container">
@@ -81,6 +86,13 @@
     <div class="buttons">
       <Button primary onclick={handleExport}>Export CSV</Button>
       <Button onclick={handleImport}>Import CSV</Button>
+    </div>
+  </div>
+
+  <div class="field">
+    <h2 class="title is-4">App</h2>
+    <div class="buttons">
+      <Button onclick={handleCheckForUpdates}>Check for Updates</Button>
     </div>
   </div>
 
