@@ -46,6 +46,8 @@
     "@tauri-apps/api": "^2.7.0",
     "@tauri-apps/plugin-dialog": "^2.7.2",
     "@tauri-apps/plugin-fs": "^2.0.2",
+    "@tauri-apps/plugin-process": "^2.3.1",
+    "@tauri-apps/plugin-updater": "^2.10.1",
     "better-sqlite3": "^11.5.0",
     "bulma": "^1.0.2",
     "bulma-checkbox": "^1.2.1",
