@@ -54,3 +54,12 @@ export const syncState = sqliteTable('sync_state', {
   booksSince: integer().notNull().default(0),
   bookTagsSince: integer().notNull().default(0),
 })
+
+// Dev-only backing store for SqliteTokenStorage (see token-storage.ts) - an
+// unencrypted alternative to the OS keychain, used only when running via
+// `pnpm tauri dev`, to avoid keychain access-control prompts on unsigned,
+// frequently-rebuilt dev binaries. Never used in a real build.
+export const devTokens = sqliteTable('dev_tokens', {
+  namespace: text().primaryKey(),
+  value: text().notNull(),
+})

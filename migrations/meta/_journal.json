@@ -43,6 +43,13 @@
       "when": 1787551771056,
       "tag": "20260824060931_add_soft_delete_sync_tracking_and_sync_state",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1787586405006,
+      "tag": "20260824154645_add_dev_tokens_table",
+      "breakpoints": true
     }
   ]
 }

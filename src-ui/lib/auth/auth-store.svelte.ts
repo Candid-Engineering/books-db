@@ -1,7 +1,8 @@
-import { KeychainTokenStorage, type TokenStorage } from './token-storage'
+import { KeychainTokenStorage, SqliteTokenStorage, type TokenStorage } from './token-storage'
 import { getLocalUserStore, type LocalUserStore } from './local-user-store'
 import * as authApi from './auth-api'
 import { AuthApiError, type AuthTokenResult } from './auth-api'
+import realDb from '$lib/db/index.js'
 
 export interface User {
   id: string
@@ -218,7 +219,13 @@ class AuthStoreImpl implements AuthStore {
   }
 }
 
-export const authStore: AuthStore = new AuthStoreImpl()
+// SqliteTokenStorage only in dev (see its own doc comment for why) - a real
+// build always uses the keychain.
+const defaultTokenStorage: TokenStorage = import.meta.env.DEV
+  ? new SqliteTokenStorage(realDb)
+  : new KeychainTokenStorage()
+
+export const authStore: AuthStore = new AuthStoreImpl(defaultTokenStorage)
 
 export function createTestAuthStore(tokenStorage: TokenStorage, localUserStore: LocalUserStore): AuthStore {
   return new AuthStoreImpl(tokenStorage, localUserStore)
