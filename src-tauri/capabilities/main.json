@@ -3,5 +3,13 @@
   "description": "The main app permissions",
   "local": true,
   "windows": ["main"],
-  "permissions": ["core:default", "sqlite-proxy:default", "fs:allow-resource-read-recursive", "keyring:default"]
+  "permissions": [
+    "core:default",
+    "sqlite-proxy:default",
+    "fs:allow-resource-read-recursive",
+    "keyring:default",
+    "dialog:default",
+    "fs:allow-write-text-file",
+    "fs:allow-read-text-file"
+  ]
 }
