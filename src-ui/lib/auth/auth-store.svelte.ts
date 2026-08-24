@@ -21,15 +21,6 @@ interface StoredAuthToken {
   expiresAt: number
 }
 
-function isStoredAuthToken(value: unknown): value is StoredAuthToken {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    typeof (value as StoredAuthToken).token === 'string' &&
-    typeof (value as StoredAuthToken).expiresAt === 'number'
-  )
-}
-
 export interface AuthStore {
   // Reactive state (Svelte 5 runes)
   readonly state: AuthState
@@ -51,6 +42,11 @@ export interface AuthStore {
 class AuthStoreImpl implements AuthStore {
   private tokenStorage: TokenStorage
   private localUserStore: LocalUserStore
+  // The auth token (15min TTL) is deliberately kept in memory only, never
+  // persisted - it's always freshly re-derived from the refresh token on
+  // every boot regardless, so a persisted copy is never actually reused
+  // across a restart. Only the long-lived refresh token needs the keychain.
+  private inMemoryAuthToken: StoredAuthToken | null = null
   private authState = $state<AuthState>({
     isAuthenticated: false,
     user: null,
@@ -72,7 +68,8 @@ class AuthStoreImpl implements AuthStore {
 
   async logout(): Promise<void> {
     await this.tokenStorage.clearToken('refresh')
-    await this.tokenStorage.clearToken('auth')
+    await this.tokenStorage.clearToken('auth') // clears any legacy stored auth token from before it moved in-memory
+    this.inMemoryAuthToken = null
     await this.localUserStore.clear()
     this.authState.isAuthenticated = false
     this.authState.user = null
@@ -135,43 +132,20 @@ class AuthStoreImpl implements AuthStore {
   }
 
   async getAuthToken(): Promise<string | null> {
-    const storedAuth = await this.tokenStorage.getToken('auth')
-    if (storedAuth) {
-      try {
-        const parsed: unknown = JSON.parse(storedAuth)
-        if (!isStoredAuthToken(parsed)) {
-          throw new SyntaxError('Stored auth token has an unexpected shape')
-        }
-        const { token, expiresAt } = parsed
-
-        // Check if token expires within 5 minutes (refresh buffer)
-        const refreshBuffer = 5 * 60 * 1000
-        if (Date.now() + refreshBuffer < expiresAt) {
-          return token
-        }
-
-        // Token expired or expiring soon, try to refresh
-        const refreshToken = await this.tokenStorage.getToken('refresh')
-        if (refreshToken) {
-          return await this.refreshAuthToken()
-        }
-
-        // No refresh token, clear expired auth token
-        await this.tokenStorage.clearToken('auth')
-        return null
-      } catch (error) {
-        if (!(error instanceof SyntaxError)) {
-          throw error
-        }
-        // Invalid JSON or unexpected shape, treat as expired
-        await this.tokenStorage.clearToken('auth')
+    if (this.inMemoryAuthToken) {
+      const { token, expiresAt } = this.inMemoryAuthToken
+      // Check if token expires within 5 minutes (refresh buffer)
+      const refreshBuffer = 5 * 60 * 1000
+      if (Date.now() + refreshBuffer < expiresAt) {
+        return token
       }
+      this.inMemoryAuthToken = null
     }
 
-    // No auth token, try to refresh if we have a refresh token
+    // No auth token, or it's expired/expiring soon - refresh if we can.
     const refreshToken = await this.tokenStorage.getToken('refresh')
     if (refreshToken) {
-      return await this.refreshAuthToken()
+      return await this.refreshAuthToken(refreshToken)
     }
 
     return null
@@ -196,11 +170,10 @@ class AuthStoreImpl implements AuthStore {
   }
 
   private async applyAuthTokenResult(result: AuthTokenResult): Promise<string> {
-    const storedAuthToken: StoredAuthToken = {
+    this.inMemoryAuthToken = {
       token: result.authToken,
       expiresAt: Date.now() + result.expiresIn * 1000
     }
-    await this.tokenStorage.setToken(JSON.stringify(storedAuthToken), 'auth')
     await this.localUserStore.set(result.user)
 
     this.authState.isAuthenticated = true
@@ -212,19 +185,25 @@ class AuthStoreImpl implements AuthStore {
   async initialize(): Promise<void> {
     this.authState.isLoading = true
     try {
-      const refreshToken = await this.tokenStorage.getToken('refresh')
-      if (!refreshToken) {
+      // The local cache (plain SQLite, no OS prompt) is checked first so a
+      // device that's never signed in - or has cleanly logged out, which
+      // clears this alongside the keychain - never touches the keychain at
+      // all. Hydrate instantly from it too, so reactive UI has something to
+      // show before the revalidation round-trip below resolves;
+      // refreshAuthToken() overwrites this with fresh data next.
+      const cachedUser = await this.localUserStore.get()
+      if (!cachedUser) {
         this.authState.isAuthenticated = false
         return
       }
+      this.authState.user = cachedUser
+      this.authState.isAuthenticated = true
 
-      // Hydrate instantly from the local cache, if there is one, so reactive
-      // UI has something to show before the revalidation round-trip below
-      // resolves. refreshAuthToken() overwrites this with fresh data next.
-      const cachedUser = await this.localUserStore.get()
-      if (cachedUser) {
-        this.authState.user = cachedUser
-        this.authState.isAuthenticated = true
+      const refreshToken = await this.tokenStorage.getToken('refresh')
+      if (!refreshToken) {
+        this.authState.isAuthenticated = false
+        this.authState.user = null
+        return
       }
 
       await this.refreshAuthToken(refreshToken)

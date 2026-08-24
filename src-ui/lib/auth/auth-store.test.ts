@@ -9,14 +9,14 @@ import { testDb } from '../../testing/db-setup'
 
 const BASE_URL = 'http://localhost:3000'
 
-function mockAuthTokenSuccess(overrides: { token?: string; user?: Record<string, string> } = {}) {
+function mockAuthTokenSuccess(overrides: { token?: string; expiresIn?: number; user?: Record<string, string> } = {}) {
   mockServer.use(
     http.post(`${BASE_URL}/tokens/auth`, () => {
       return HttpResponse.json(
         {
           token: overrides.token ?? 'new-auth-token-789',
           token_type: 'auth',
-          expires_in: 900,
+          expires_in: overrides.expiresIn ?? 900,
           user: {
             id: 'user-1',
             name: 'Ada Reader',
@@ -71,35 +71,45 @@ describe('AuthStore', () => {
       })
     })
 
-    describe('with valid stored auth token', () => {
+    describe('with a freshly-issued auth token, not expiring soon', () => {
+      let authRequestCount: number
+
       beforeEach(async () => {
-        const futureExpiry = Date.now() + 10 * 60 * 1000 // 10 minutes from now
-        const authData = JSON.stringify({
-          token: 'auth-token-456',
-          expiresAt: futureExpiry
-        })
-        await tokenStorage.setToken(authData, 'auth')
+        authRequestCount = 0
+        mockRefreshTokenSuccess()
+        mockServer.use(
+          http.post(`${BASE_URL}/tokens/auth`, () => {
+            authRequestCount++
+            return HttpResponse.json(
+              {
+                token: 'new-auth-token-789',
+                token_type: 'auth',
+                expires_in: 900,
+                user: { id: 'user-1', name: 'Ada Reader', email: 'reader@example.com' },
+              },
+              { status: 201 }
+            )
+          })
+        )
+        await authStore.exchangeLoginToken('login-token-123')
       })
 
-      it('should return the stored auth token', async () => {
-        expect(await authStore.getAuthToken()).toBe('auth-token-456')
+      it('should return it from memory, without a fresh network round-trip', async () => {
+        expect(await authStore.getAuthToken()).toBe('new-auth-token-789')
+        expect(authRequestCount).toBe(1) // only the one from exchangeLoginToken above
       })
     })
 
-    describe('with expired stored auth token', () => {
+    describe('with an auth token already past its refresh buffer', () => {
       beforeEach(async () => {
-        const pastExpiry = Date.now() - 60 * 1000 // 1 minute ago
-        const authData = JSON.stringify({
-          token: 'expired-auth-token',
-          expiresAt: pastExpiry
-        })
-        await tokenStorage.setToken(authData, 'auth')
-        await tokenStorage.setToken('refresh-token-123', 'refresh')
-        mockAuthTokenSuccess()
+        mockRefreshTokenSuccess()
+        mockAuthTokenSuccess({ expiresIn: -60 }) // already expired by the time it's received
+        await authStore.exchangeLoginToken('login-token-123')
+        mockAuthTokenSuccess({ token: 'refreshed-token-789' }) // what the follow-up refresh should return
       })
 
-      it('should refresh the expired token', async () => {
-        expect(await authStore.getAuthToken()).toBe('new-auth-token-789')
+      it('should refresh the token', async () => {
+        expect(await authStore.getAuthToken()).toBe('refreshed-token-789')
       })
 
       it('should update the auth state with the refreshed user', async () => {
@@ -113,20 +123,16 @@ describe('AuthStore', () => {
       })
     })
 
-    describe('with auth token expiring soon', () => {
+    describe('with an auth token expiring soon (inside the refresh buffer)', () => {
       beforeEach(async () => {
-        const soonExpiry = Date.now() + 2 * 60 * 1000 // 2 minutes from now
-        const authData = JSON.stringify({
-          token: 'expiring-soon-token',
-          expiresAt: soonExpiry
-        })
-        await tokenStorage.setToken(authData, 'auth')
-        await tokenStorage.setToken('refresh-token-123', 'refresh')
-        mockAuthTokenSuccess()
+        mockRefreshTokenSuccess()
+        mockAuthTokenSuccess({ expiresIn: 120 }) // 2 minutes - inside the 5-minute refresh buffer
+        await authStore.exchangeLoginToken('login-token-123')
+        mockAuthTokenSuccess({ token: 'refreshed-token-789' })
       })
 
       it('should refresh the token preemptively', async () => {
-        expect(await authStore.getAuthToken()).toBe('new-auth-token-789')
+        expect(await authStore.getAuthToken()).toBe('refreshed-token-789')
       })
     })
 
@@ -255,10 +261,9 @@ describe('AuthStore', () => {
         expect(await tokenStorage.getToken('refresh')).toBe('refresh-token-abc')
       })
 
-      it('should store the auth token', async () => {
+      it('should make the auth token available via getAuthToken', async () => {
         await authStore.exchangeLoginToken('login-token-123')
-        const storedAuth = await tokenStorage.getToken('auth')
-        expect(storedAuth && JSON.parse(storedAuth)).toMatchObject({ token: 'new-auth-token-789' })
+        expect(await authStore.getAuthToken()).toBe('new-auth-token-789')
       })
 
       it('should authenticate with the returned user', async () => {
@@ -343,6 +348,12 @@ describe('AuthStore', () => {
       it('should leave isLoading false once done', async () => {
         await authStore.initialize()
         expect(authStore.state.isLoading).toBe(false)
+      })
+
+      it('should never touch the keychain (no local cache to justify checking it)', async () => {
+        const getTokenSpy = vi.spyOn(tokenStorage, 'getToken')
+        await authStore.initialize()
+        expect(getTokenSpy).not.toHaveBeenCalled()
       })
     })
 
