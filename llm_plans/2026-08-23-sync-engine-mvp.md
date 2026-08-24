@@ -104,9 +104,15 @@ post "/sync/push", to: "sync#push"
 get  "/sync/pull", to: "sync#pull"
 ```
 
-**`POST /sync/push`** — body `{ books: [...], book_tags: [...] }` (snake_case field names matching the DB columns above, e.g. `page_count`, `cover_images`, `discarded_at`). For each row: find by PK; if found under a different `user_id`, collect into `rejected` and skip; otherwise upsert all fields (`user_id` set only on create) — plain overwrite, no comparison, matching "last write to server wins." Saving bumps `updated_at` and `server_seq` automatically. Response: `{ rejected: [{ type: "book", id: }, { type: "book_tag", book_id:, name: }] }`, status 200 (this is a batch — per-item rejection isn't a request-level failure).
+**Wire shape, revised during implementation**: rather than hardcoded top-level fields per entity type, both endpoints key on a type name so a future entity (e.g. `authors`) is just another map key, not a new top-level field/param name to invent (a genuine wire-breaking change, worth generalizing slightly now while no client exists against it yet — see below for the boundary this stopped short of).
 
-**`GET /sync/pull?books_since=0&tags_since=0`** — `Book.where(user_id: current_user.id).where("server_seq > ?", books_since).order(:server_seq)`, similarly for `BookTag.joins(:book).where(books: { user_id: current_user.id }).where("book_tags.server_seq > ?", tags_since)`. Response: `{ books: [...], book_tags: [...], books_cursor:, tags_cursor: }` where the cursors are the max `server_seq` seen (or the incoming `since` value unchanged if nothing new). Tombstoned rows are included (not filtered out) — the client needs them to apply the delete locally.
+**`POST /sync/push`** — body `{ entities: { books: [...], book_tags: [...] } }` (snake_case field names matching the DB columns above, e.g. `page_count`, `cover_images`, `discarded_at`). For each row: find by PK; if found under a different `user_id`, collect into `rejected` and skip; otherwise upsert all fields (`user_id` set only on create) — plain overwrite, no comparison, matching "last write to server wins." Saving bumps `updated_at` and `server_seq` automatically. Response: `{ rejected: [{ type: "books", id: }, { type: "book_tags", book_id:, name: }] }` (`type` matches the entities map key), status 200 (this is a batch — per-item rejection isn't a request-level failure).
+
+**`GET /sync/pull?since[books]=0&since[book_tags]=0`** — `Book.where(user_id: current_user.id).where("server_seq > ?", since).order(:server_seq)`, and (after the server_seq fix below made `user_id` a direct column on `book_tags`) the equivalent query directly on `BookTag`, no join needed. Response: `{ entities: { books: [...], book_tags: [...] }, cursors: { books:, book_tags: } }` where the cursors are the max `server_seq` seen (or the incoming cursor unchanged if nothing new). Tombstoned rows are included (not filtered out) — the client needs them to apply the delete locally.
+
+**Explicitly not generalized further**: the per-type *server-side handling* (ownership check, model lookup, upsert) stays as plain repeated code per type, not a registry/dispatcher keyed off the entity map. With only two concrete types, building that abstraction now would mean guessing its shape rather than seeing it — the same reasoning `eventually/` already applies to bigger deferred mechanisms. Revisit once a third real type shows up.
+
+**Bug caught by the pull tests, fixed as its own commit**: `server_seq` is only unique within a user's own stream (`SyncCounter` is keyed per `(table_name, user_id)`), not globally — the original migration indexed it as globally unique, so two different users' first book (both `server_seq = 1`) collided. Fixed with a follow-up migration scoping both unique indexes to `(user_id, server_seq)`, denormalizing `user_id` onto `book_tags` (safe — a tag's owning book never changes user) so that index is expressible there directly.
 
 ### Rails tests
 
@@ -128,17 +134,21 @@ New migration via `pnpm gen:migration`.
 
 Mirrors `auth-api.ts`'s `postJson` pattern, but authenticated (`Authorization: Bearer <token>` from `authStore.getAuthToken()`) and adds a `getJson` for the pull's query-string GET. Owns the snake_case↔camelCase field translation (`discarded_at`⟷`deletedAt`, `page_count`⟷`pageCount`, `publication_date`⟷`publicationDate`, `copyright_date`⟷`copyrightDate`, `cover_images`⟷`coverImages`, `read_at`⟷`readAt`, `updated_at`⟷`updatedAt`, `book_id`⟷`bookId`) — same kind of boundary translation `auth-api.ts` already does for its own fields.
 
+Request/response shapes match the revised Rails contract (a keyed entities map, see above) rather than hardcoded fields per type:
 ```ts
-export async function pushBooks(books: LocalBookRow[], tags: LocalTagRow[]): Promise<{ rejected: Rejection[] }>
-export async function pullBooks(booksSince: number, tagsSince: number): Promise<{ books: RemoteBookRow[]; bookTags: RemoteTagRow[]; booksCursor: number; tagsCursor: number }>
+export async function pushEntities(entities: { books: LocalBookRow[]; bookTags: LocalTagRow[] }): Promise<{ rejected: Rejection[] }>
+export async function pullEntities(since: { books: number; bookTags: number }): Promise<{
+  entities: { books: RemoteBookRow[]; bookTags: RemoteTagRow[] }
+  cursors: { books: number; bookTags: number }
+}>
 ```
 
 ### Tauri client: `SyncEngine` (new, `src-ui/lib/sync/sync-engine.ts`)
 
 Takes `db` (same constructor-injection pattern as `BooksStore`, for `testDb` in tests) and a `BooksStore` instance (to trigger `reload()` after applying pulled rows — keeps pull-application logic out of `BooksStore`'s public API, which stays focused on user-driven mutations).
 
-- `push()`: select `books`/`bookTags` rows where `syncedAt IS NULL`, call `sync-api.pushBooks`, mark everything **not** in the response's `rejected` list as `syncedAt = now()`. Rejected rows stay pending (visible signal something's wrong) rather than being silently dropped.
-- `pull()`: read the stored cursor from `sync_state`, call `sync-api.pullBooks`, upsert each returned row into local `books`/`book_tags` via `insert...onConflictDoUpdate` on the PK — setting **all** fields from the server payload including `syncedAt = now()` (this is the one place a mutation intentionally does *not* clear `syncedAt`, since the row is already known-synced) — then advance `sync_state`'s cursor to the response's `booksCursor`/`tagsCursor`, and only after the whole batch applies successfully. Calls `booksStore.reload()` at the end so reactive UI picks up the change.
+- `push()`: select `books`/`bookTags` rows where `syncedAt IS NULL`, call `sync-api.pushEntities`, mark everything **not** in the response's `rejected` list as `syncedAt = now()`. Rejected rows stay pending (visible signal something's wrong) rather than being silently dropped.
+- `pull()`: read the stored cursor from `sync_state`, call `sync-api.pullEntities`, upsert each returned row into local `books`/`book_tags` via `insert...onConflictDoUpdate` on the PK — setting **all** fields from the server payload including `syncedAt = now()` (this is the one place a mutation intentionally does *not* clear `syncedAt`, since the row is already known-synced) — then advance `sync_state`'s cursor to the response's `cursors.books`/`cursors.bookTags`, and only after the whole batch applies successfully. Calls `booksStore.reload()` at the end so reactive UI picks up the change.
 - `sync()`: `push()` then `pull()` — push first so any of this device's own edits are already reflected server-side before pulling (see the earlier design conversation's reasoning: avoids waiting a full extra cycle to see your own accepted state).
 
 ### Tauri client: wiring (`hooks.client.ts`)
