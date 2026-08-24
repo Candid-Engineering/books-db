@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { http, HttpResponse } from 'msw'
 import { mockServer } from '../../testing/msw-setup'
 import { setupMockKeyring } from '../../testing/mock-keyring'
@@ -369,6 +369,13 @@ describe('AuthStore', () => {
             name: 'Ada Reader',
             email: 'reader@example.com',
           })
+        })
+
+        it('should read the refresh token from the keychain only once', async () => {
+          const getTokenSpy = vi.spyOn(tokenStorage, 'getToken')
+          await authStore.initialize()
+          const refreshReads = getTokenSpy.mock.calls.filter(([tokenType]) => tokenType === 'refresh')
+          expect(refreshReads).toHaveLength(1)
         })
       })
 

@@ -42,7 +42,7 @@ export interface AuthStore {
   
   // Token management
   getAuthToken(): Promise<string | null>
-  refreshAuthToken(): Promise<string>
+  refreshAuthToken(knownRefreshToken?: string): Promise<string>
   
   // Initialization
   initialize(): Promise<void>
@@ -177,8 +177,8 @@ class AuthStoreImpl implements AuthStore {
     return null
   }
 
-  async refreshAuthToken(): Promise<string> {
-    const refreshToken = await this.tokenStorage.getToken('refresh')
+  async refreshAuthToken(knownRefreshToken?: string): Promise<string> {
+    const refreshToken = knownRefreshToken ?? (await this.tokenStorage.getToken('refresh'))
     if (!refreshToken) {
       throw new Error('No refresh token available')
     }
@@ -227,7 +227,7 @@ class AuthStoreImpl implements AuthStore {
         this.authState.isAuthenticated = true
       }
 
-      await this.refreshAuthToken()
+      await this.refreshAuthToken(refreshToken)
     } catch (error) {
       if (!(error instanceof AuthApiError)) {
         throw error
