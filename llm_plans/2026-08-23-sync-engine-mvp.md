@@ -57,20 +57,17 @@ end
 add_index :book_tags, :server_seq, unique: true
 ```
 
-`Book`/`BookTag` models: `include Discard::Model` (matches `User`'s existing pattern exactly), `belongs_to :user` / `belongs_to :book`, plus the `server_seq` assignment:
+`Book`/`BookTag` models: `include Discard::Model` (matches `User`'s existing pattern exactly), `belongs_to :user` / `belongs_to :book`.
 
-```ruby
-before_save { self.server_seq = self.class.connection.select_value("SELECT nextval('books_server_seq')") }
-```
-(sequence name per table)
+**Implemented** (superseding the original `nextval()`/advisory-lock sketch below, which turned out to be wrong): a bare Postgres `SEQUENCE` created via raw `execute` in a migration is invisible to `schema.rb` — it dumps tables/columns/indexes, not freestanding sequences, so the sequence silently vanished on the next `db:schema:load` (caught immediately via `db:test:prepare` failing). Fixed with a plain `sync_counters(table_name, user_id, value)` table instead — fully `schema.rb`-visible — and `SyncCounter.next_value(table_name, user_id)` does a single atomic upsert (`INSERT ... ON CONFLICT (table_name, user_id) DO UPDATE SET value = value + 1 RETURNING value`). `Book#assign_server_seq`/`BookTag#assign_server_seq` (a `before_save`) call this.
 
-No `dependent: :destroy`/discard-cascade on the association — see scope decision above.
+Keying the counter **per user** turned out to fully replace the planned advisory lock, not just avoid the schema.rb problem: the upsert's row lock on that user's counter row is held for the transaction, so a second concurrent push for the *same* user blocks on that row until the first commits — exactly the serialization the advisory lock was for, as a side effect of assigning the value, with no second mechanism needed. Cross-user writes are unaffected (different rows). This is why the original gap-visibility bug (two concurrent push transactions assigning seqs in one order but committing in another, permanently skipping a row past an already-advanced pull cursor) is fixed: assignment order now can't diverge from commit order for a given user's stream.
 
-**Correctness issue caught in review, fixed via per-user locking (not a separate assignment process):** a bare `nextval()` has a real gap-visibility race under concurrency. Two concurrent push transactions (e.g. the same user's phone and laptop syncing at once) can call `nextval()` in one order but commit in the other — if the transaction that got the *lower* seq is still slower to commit, a pull that already advanced its cursor past the *higher* seq (from the transaction that committed first) will permanently skip the lower-seq row once it finally commits, since `server_seq > cursor` no longer includes it.
+`Book.has_many :book_tags, dependent: :destroy` / `User.has_many :books, dependent: :destroy` were added (see the CCPA hard-delete addition below) — these only fire on a real `.destroy`, never on `.discard` (a plain `save`), so they don't affect the sync-tombstone path at all.
 
-Fixed by serializing writes **per user** (not globally, and not via a separate background assignment process — both `server_seq` gapless-ness and pull filtering are already scoped per-`user_id`, so the race only matters *within* one user's own concurrent writes): `SyncController#push` takes a Postgres advisory transaction lock keyed on the user before writing, forcing at most one push transaction per user to be assigning/committing sequence numbers at a time — so assignment order is guaranteed to match commit order for that user's stream, which is exactly what pull's cursor correctness depends on. Cross-user writes are completely unaffected (different lock keys). Pull needs no corresponding change — Postgres's normal read-committed visibility already guarantees a pull only ever sees committed rows, and once writes are serialized per-user there's no longer a gap to be visible to.
+### Added mid-implementation, not in the original design: `User#erase!`
 
-**Deliberately not fully specified here**: the exact structure (where the lock is acquired relative to the transaction boundary, how the user is hashed into a lock key, how it's tested) is agreed as *approach only* — worth working through carefully together at implementation time rather than locking in a sketch now.
+Raised during implementation: users need a real hard-delete path for CCPA/GDPR-style erasure requests, distinct from the normal `.discard` soft-delete. The `discard` gem doesn't provide one (unlike `paranoia`, which has `really_destroy!` — checked the installed gem source directly rather than assuming); plain `.destroy!` already is a full hard delete once `Discard::Model` is involved, so `User#erase!` is a thin, clearly-named wrapper (`destroy!`) so intent is unambiguous at call sites. Cascades via the `dependent: :destroy` associations above. No controller/API endpoint for this yet — deliberately out of scope here, this is the underlying capability only.
 
 ### Rails: authentication concern (new)
 
@@ -155,7 +152,7 @@ Archive this plan as `books-db/llm_plans/2026-08-23-sync-engine-mvp.md` first, s
 **`books-db-rails`** (small commits, request-spec-first where there's real behavior):
 1. Migration + `Book`/`BookTag` models + factories. No behavior yet to test-first beyond "table/model exists" — light model specs only if a real validation is added (e.g. `title` presence).
 2. `Authenticatable` concern — written alongside step 3 since it has no independent public interface to test against yet (see "test through public interfaces" note above).
-3. `POST /sync/push` — request-spec-first (new row, overwrite, tombstone, cross-user rejection, unauthenticated), then implement `SyncController#push` + route. Per-user advisory locking is part of this step, but its exact structure and how to test it (a true concurrent-write race is hard to assert deterministically in a request spec) is intentionally left to be worked out carefully during implementation, not pre-decided here — don't skip discussing it when this step comes up.
+3. `POST /sync/push` — request-spec-first (new row, overwrite, tombstone, cross-user rejection, unauthenticated), then implement `SyncController#push` + route. Per-user write serialization is already handled by `SyncCounter`'s row-locked upsert (see above) — no separate lock needed in the controller itself.
 4. `GET /sync/pull` — request-spec-first (cursor filtering, per-user scoping, tombstones included, empty-cursor full sync), then implement `SyncController#pull`.
 
 **`books-db`** (small commits, TDD):
@@ -168,7 +165,8 @@ Archive this plan as `books-db/llm_plans/2026-08-23-sync-engine-mvp.md` first, s
 
 ## Critical files
 
-- `books-db-rails/db/migrate/*_create_books_and_book_tags.rb`, `app/models/book.rb`, `app/models/book_tag.rb`, `spec/factories/books.rb`, `spec/factories/book_tags.rb`
+- `books-db-rails/db/migrate/*_create_books_and_book_tags.rb`, `app/models/book.rb`, `app/models/book_tag.rb`, `app/models/sync_counter.rb`, `spec/factories/books.rb`, `spec/factories/book_tags.rb`
+- `books-db-rails/app/models/user.rb` (`#erase!`, `has_many :books, dependent: :destroy`), `spec/models/user_spec.rb`
 - `books-db-rails/app/controllers/concerns/authenticatable.rb`
 - `books-db-rails/app/controllers/sync_controller.rb`, `spec/requests/sync_spec.rb`, `config/routes.rb`
 - `books-db/src-ui/lib/db/tables.ts` (new `syncState` table), `migrations/`
