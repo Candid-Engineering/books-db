@@ -125,7 +125,7 @@ New singleton table (same pattern as `local_user`):
 export const syncState = sqliteTable('sync_state', {
   singleton: integer().primaryKey().default(1),
   booksSince: integer().notNull().default(0),
-  tagsSince: integer().notNull().default(0),
+  bookTagsSince: integer().notNull().default(0),
 })
 ```
 New migration via `pnpm gen:migration`.

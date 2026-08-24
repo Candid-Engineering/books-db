@@ -47,3 +47,9 @@ export const localUser = sqliteTable('local_user', {
     .notNull()
     .default(sql`(unixepoch())`),
 })
+
+export const syncState = sqliteTable('sync_state', {
+  singleton: integer().primaryKey().default(1), // fixed PK — enforces at most one row
+  booksSince: integer().notNull().default(0),
+  bookTagsSince: integer().notNull().default(0),
+})
