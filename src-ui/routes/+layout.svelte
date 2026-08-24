@@ -38,6 +38,7 @@
   <NavBar>
     <a class="navbar-item" href="/">Home</a>
     <a class="navbar-item" href="/about">About</a>
+    <a class="navbar-item" href="/settings">Settings</a>
     {#snippet end()}
       {#if authStore.state.isAuthenticated}
         <span class="navbar-item">Signed in as {authStore.state.user?.name}</span>
