@@ -1,14 +1,12 @@
 <script lang="ts">
   import { save, open, confirm } from '@tauri-apps/plugin-dialog'
   import { writeTextFile, readTextFile } from '@tauri-apps/plugin-fs'
-  import { relaunch } from '@tauri-apps/plugin-process'
-  import { commands as sqliteProxy } from '$lib/generated/sqlite_proxy'
   import { getBooksStore } from '$lib/state/Books.svelte'
   import { booksToCsv } from '$lib/csv/csv-export'
   import { csvToBooks } from '$lib/csv/csv-import'
   import { errorToast } from '$lib/error-toast.svelte'
   import { reportError } from '$lib/error-reporting'
-  import { authStore } from '$lib/auth/auth-store.svelte'
+  import { wipeLocalDataAndRelaunch } from '$lib/sign-out'
   import { checkForUpdatesAndPrompt } from '$lib/updater'
   import Button from '$lib/components/core/Button.svelte'
 
@@ -57,19 +55,7 @@
     )
     if (!confirmed) return
 
-    try {
-      await authStore.logout()
-      const result = await sqliteProxy.factoryReset()
-      if (result.status === 'error') {
-        throw new Error(result.error.toString())
-      }
-    } catch (error) {
-      reportError(error, 'reset-app-data')
-      errorToast.show('Could not fully reset app data. Please try again.')
-      return
-    }
-
-    await relaunch()
+    await wipeLocalDataAndRelaunch('reset-app-data', 'Could not fully reset app data. Please try again.')
   }
 
   async function handleCheckForUpdates() {

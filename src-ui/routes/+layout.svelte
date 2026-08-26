@@ -4,6 +4,7 @@
   import { Modals, modals, type ModalStack } from 'svelte-modals'
   import 'bulma-checkbox/css/main.css'
   import { authStore } from '$lib/auth/auth-store.svelte'
+  import { signOut } from '$lib/sign-out'
   import LoginModal from '$lib/components/LoginModal.svelte'
   import ErrorToast from '$lib/components/ErrorToast.svelte'
 
@@ -42,7 +43,7 @@
     {#snippet end()}
       {#if authStore.state.isAuthenticated}
         <span class="navbar-item">Signed in as {authStore.state.user?.name}</span>
-        <a class="navbar-item" href="#placeholder" role="button" onclick={() => authStore.logout()}>
+        <a class="navbar-item" href="#placeholder" role="button" onclick={() => signOut()}>
           Logout
         </a>
       {:else}
