@@ -4,6 +4,14 @@ import * as schema from '$lib/db/schema'
 import type { BooksStore } from '$lib/state/Books.svelte'
 import { pushEntities, pullEntities } from './sync-api'
 
+export async function hasUnsyncedData(db: SqliteRemoteDatabase<typeof schema>): Promise<boolean> {
+  const [pendingBook] = await db.select().from(schema.books).where(isNull(schema.books.syncedAt)).limit(1)
+  if (pendingBook) return true
+
+  const [pendingTag] = await db.select().from(schema.bookTags).where(isNull(schema.bookTags.syncedAt)).limit(1)
+  return !!pendingTag
+}
+
 export class SyncEngine {
   constructor(
     private db: SqliteRemoteDatabase<typeof schema>,

@@ -3,9 +3,40 @@ import { http, HttpResponse } from 'msw'
 import { mockServer } from '../../testing/msw-setup'
 import { testDb } from '../../testing/db-setup'
 import { createTestBooksStore } from '$lib/state/Books.svelte'
-import { SyncEngine } from './sync-engine'
+import { SyncEngine, hasUnsyncedData } from './sync-engine'
 import * as schema from '$lib/db/schema'
 import { eq, and } from 'drizzle-orm/sql/expressions/conditions'
+
+describe('hasUnsyncedData', () => {
+  it('is false when there is nothing local', async () => {
+    expect(await hasUnsyncedData(testDb.drizzle)).toBe(false)
+  })
+
+  it('is false when every book and tag is already synced', async () => {
+    await testDb.drizzle
+      .insert(schema.books)
+      .values({ id: 'book-1', title: 'Dune', authors: [ 'Frank Herbert' ], syncedAt: new Date() })
+
+    expect(await hasUnsyncedData(testDb.drizzle)).toBe(false)
+  })
+
+  it('is true when a book is pending sync', async () => {
+    await testDb.drizzle
+      .insert(schema.books)
+      .values({ id: 'book-1', title: 'Dune', authors: [ 'Frank Herbert' ] })
+
+    expect(await hasUnsyncedData(testDb.drizzle)).toBe(true)
+  })
+
+  it('is true when a tag is pending sync even if its book is synced', async () => {
+    await testDb.drizzle
+      .insert(schema.books)
+      .values({ id: 'book-1', title: 'Dune', authors: [ 'Frank Herbert' ], syncedAt: new Date() })
+    await testDb.drizzle.insert(schema.bookTags).values({ bookId: 'book-1', name: 'sci-fi' })
+
+    expect(await hasUnsyncedData(testDb.drizzle)).toBe(true)
+  })
+})
 
 const BASE_URL = 'http://localhost:3000'
 const AUTH_TOKEN = 'auth-token-xyz'
