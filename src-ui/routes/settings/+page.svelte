@@ -1,6 +1,7 @@
 <script lang="ts">
-  import { save, open, confirm, message } from '@tauri-apps/plugin-dialog'
+  import { save, open, confirm } from '@tauri-apps/plugin-dialog'
   import { writeTextFile, readTextFile } from '@tauri-apps/plugin-fs'
+  import { relaunch } from '@tauri-apps/plugin-process'
   import { commands as sqliteProxy } from '$lib/generated/sqlite_proxy'
   import { getBooksStore } from '$lib/state/Books.svelte'
   import { booksToCsv } from '$lib/csv/csv-export'
@@ -51,7 +52,7 @@
 
   async function handleReset() {
     const confirmed = await confirm(
-      'This deletes your entire catalog and signs you out. This cannot be undone.',
+      'This deletes your entire catalog and signs you out, and restarts the app. This cannot be undone.',
       { title: 'Reset app data', kind: 'warning' }
     )
     if (!confirmed) return
@@ -68,9 +69,7 @@
       return
     }
 
-    await message('Your data has been reset. Please quit and reopen BooksDB.', {
-      title: 'Reset complete',
-    })
+    await relaunch()
   }
 
   async function handleCheckForUpdates() {
