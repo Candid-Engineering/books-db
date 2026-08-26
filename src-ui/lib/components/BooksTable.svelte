@@ -58,7 +58,7 @@
       </tr>
     </thead>
     <tbody>
-      {#each booksStore.value as book}
+      {#each booksStore.value as book (book.id)}
         <BooksTableRow {book} />
       {:else}
         <tr>
