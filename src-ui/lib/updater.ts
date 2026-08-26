@@ -10,9 +10,6 @@ interface CheckForUpdatesOptions {
   notifyIfUpToDate?: boolean
 }
 
-// Orchestration over Tauri plugin calls (check/ask/downloadAndInstall/relaunch),
-// same category as the Settings page's Export/Import/Reset handlers - not unit
-// tested, verified manually.
 export async function checkForUpdatesAndPrompt(options: CheckForUpdatesOptions = {}): Promise<void> {
   try {
     const update = await check()
@@ -33,6 +30,11 @@ export async function checkForUpdatesAndPrompt(options: CheckForUpdatesOptions =
     await relaunch()
   } catch (error) {
     reportError(error, 'check-for-updates')
-    errorToast.show('Could not check for updates. Please try again.')
+    // A silent boot-time check failing isn't worth interrupting the user for
+    // (matches hooks.client.ts's runSync) - only a user-triggered check
+    // surfaces anything, and it's the flag distinguishing the two.
+    if (options.notifyIfUpToDate) {
+      errorToast.show("Couldn't check for updates. Check your internet connection and try again.")
+    }
   }
 }
