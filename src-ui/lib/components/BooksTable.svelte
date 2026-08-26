@@ -8,8 +8,12 @@
   let booksStore = getBooksStore()
 
   const addByISBN = async (isbn: string): Promise<void> => {
-    const book = await getByISBN(isbn)
-    await booksStore.add(book)
+    const {book, tags} = await getByISBN(isbn)
+    const bookId = await booksStore.add(book)
+    if (tags.length > 0) {
+      const fullBook = booksStore.value.find(b => b.id === bookId)!
+      await booksStore.updateTags(fullBook, tags)
+    }
   }
 
   type scanEvent = {

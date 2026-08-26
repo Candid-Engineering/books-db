@@ -18,6 +18,7 @@
     "./src-ui/**/*.js",
     "./src-ui/**/*.ts",
     "./src-ui/**/*.svelte",
+    "./integration/**/*.ts",
     "./.storybook/**/*.js",
     "./.storybook/**/*.ts",
     "./.storybook/**/*.svelte",

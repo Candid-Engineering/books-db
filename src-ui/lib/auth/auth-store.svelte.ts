@@ -1,0 +1,246 @@
+import { KeychainTokenStorage, type TokenStorage } from './token-storage'
+import { getLocalUserStore, type LocalUserStore } from './local-user-store'
+import * as authApi from './auth-api'
+import { AuthApiError, type AuthTokenResult } from './auth-api'
+
+export interface User {
+  id: string
+  email: string
+  name: string
+}
+
+export interface AuthState {
+  isAuthenticated: boolean
+  user: User | null
+  isLoading: boolean
+  error: string | null
+}
+
+interface StoredAuthToken {
+  token: string
+  expiresAt: number
+}
+
+function isStoredAuthToken(value: unknown): value is StoredAuthToken {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    typeof (value as StoredAuthToken).token === 'string' &&
+    typeof (value as StoredAuthToken).expiresAt === 'number'
+  )
+}
+
+export interface AuthStore {
+  // Reactive state (Svelte 5 runes)
+  readonly state: AuthState
+  
+  // Authentication actions
+  requestLoginLink(email: string): Promise<void>
+  register(email: string, name: string): Promise<void>
+  exchangeLoginToken(loginToken: string): Promise<void>
+  logout(): Promise<void>
+  
+  // Token management
+  getAuthToken(): Promise<string | null>
+  refreshAuthToken(): Promise<string>
+  
+  // Initialization
+  initialize(): Promise<void>
+}
+
+class AuthStoreImpl implements AuthStore {
+  private tokenStorage: TokenStorage
+  private localUserStore: LocalUserStore
+  private authState = $state<AuthState>({
+    isAuthenticated: false,
+    user: null,
+    isLoading: false,
+    error: null
+  })
+
+  constructor(
+    tokenStorage: TokenStorage = new KeychainTokenStorage(),
+    localUserStore: LocalUserStore = getLocalUserStore()
+  ) {
+    this.tokenStorage = tokenStorage
+    this.localUserStore = localUserStore
+  }
+
+  get state(): AuthState {
+    return this.authState
+  }
+
+  async logout(): Promise<void> {
+    await this.tokenStorage.clearToken('refresh')
+    await this.tokenStorage.clearToken('auth')
+    await this.localUserStore.clear()
+    this.authState.isAuthenticated = false
+    this.authState.user = null
+    this.authState.error = null
+  }
+
+  async requestLoginLink(email: string): Promise<void> {
+    this.authState.isLoading = true
+    this.authState.error = null
+
+    try {
+      await authApi.requestLoginLink(email)
+    } catch (error) {
+      if (error instanceof AuthApiError) {
+        this.authState.error = error.message
+      } else {
+        throw error
+      }
+    } finally {
+      this.authState.isLoading = false
+    }
+  }
+
+  async register(email: string, name: string): Promise<void> {
+    this.authState.isLoading = true
+    this.authState.error = null
+
+    try {
+      await authApi.registerUser(email, name)
+    } catch (error) {
+      if (error instanceof AuthApiError) {
+        this.authState.error = error.message
+      } else {
+        throw error
+      }
+    } finally {
+      this.authState.isLoading = false
+    }
+  }
+
+  async exchangeLoginToken(loginToken: string): Promise<void> {
+    this.authState.isLoading = true
+    this.authState.error = null
+
+    try {
+      const { refreshToken } = await authApi.exchangeLoginTokenForRefreshToken(loginToken)
+      await this.tokenStorage.setToken(refreshToken, 'refresh')
+
+      const authResult = await authApi.exchangeRefreshTokenForAuthToken(refreshToken)
+      await this.applyAuthTokenResult(authResult)
+    } catch (error) {
+      if (error instanceof AuthApiError) {
+        this.authState.error = error.message
+      } else {
+        throw error
+      }
+    } finally {
+      this.authState.isLoading = false
+    }
+  }
+
+  async getAuthToken(): Promise<string | null> {
+    const storedAuth = await this.tokenStorage.getToken('auth')
+    if (storedAuth) {
+      try {
+        const parsed: unknown = JSON.parse(storedAuth)
+        if (!isStoredAuthToken(parsed)) {
+          throw new SyntaxError('Stored auth token has an unexpected shape')
+        }
+        const { token, expiresAt } = parsed
+
+        // Check if token expires within 5 minutes (refresh buffer)
+        const refreshBuffer = 5 * 60 * 1000
+        if (Date.now() + refreshBuffer < expiresAt) {
+          return token
+        }
+
+        // Token expired or expiring soon, try to refresh
+        const refreshToken = await this.tokenStorage.getToken('refresh')
+        if (refreshToken) {
+          return await this.refreshAuthToken()
+        }
+
+        // No refresh token, clear expired auth token
+        await this.tokenStorage.clearToken('auth')
+        return null
+      } catch (error) {
+        if (!(error instanceof SyntaxError)) {
+          throw error
+        }
+        // Invalid JSON or unexpected shape, treat as expired
+        await this.tokenStorage.clearToken('auth')
+      }
+    }
+
+    // No auth token, try to refresh if we have a refresh token
+    const refreshToken = await this.tokenStorage.getToken('refresh')
+    if (refreshToken) {
+      return await this.refreshAuthToken()
+    }
+
+    return null
+  }
+
+  async refreshAuthToken(): Promise<string> {
+    const refreshToken = await this.tokenStorage.getToken('refresh')
+    if (!refreshToken) {
+      throw new Error('No refresh token available')
+    }
+
+    try {
+      const result = await authApi.exchangeRefreshTokenForAuthToken(refreshToken)
+      return await this.applyAuthTokenResult(result)
+    } catch (error) {
+      if (error instanceof AuthApiError) {
+        // The refresh token itself is invalid/expired/wrong type/not found — force a full logout.
+        await this.logout()
+      }
+      throw error
+    }
+  }
+
+  private async applyAuthTokenResult(result: AuthTokenResult): Promise<string> {
+    const storedAuthToken: StoredAuthToken = {
+      token: result.authToken,
+      expiresAt: Date.now() + result.expiresIn * 1000
+    }
+    await this.tokenStorage.setToken(JSON.stringify(storedAuthToken), 'auth')
+    await this.localUserStore.set(result.user)
+
+    this.authState.isAuthenticated = true
+    this.authState.user = result.user
+
+    return result.authToken
+  }
+
+  async initialize(): Promise<void> {
+    this.authState.isLoading = true
+    try {
+      const refreshToken = await this.tokenStorage.getToken('refresh')
+      if (!refreshToken) {
+        this.authState.isAuthenticated = false
+        return
+      }
+
+      // Hydrate instantly from the local cache, if there is one, so reactive
+      // UI has something to show before the revalidation round-trip below
+      // resolves. refreshAuthToken() overwrites this with fresh data next.
+      const cachedUser = await this.localUserStore.get()
+      if (cachedUser) {
+        this.authState.user = cachedUser
+        this.authState.isAuthenticated = true
+      }
+
+      await this.refreshAuthToken()
+    } catch (error) {
+      if (!(error instanceof AuthApiError)) {
+        throw error
+      }
+      // refreshAuthToken() already logged out on an invalid refresh token.
+    } finally {
+      this.authState.isLoading = false
+    }
+  }
+}
+
+export const authStore: AuthStore = new AuthStoreImpl()
+
+export function createTestAuthStore(tokenStorage: TokenStorage, localUserStore: LocalUserStore): AuthStore {
+  return new AuthStoreImpl(tokenStorage, localUserStore)
+}

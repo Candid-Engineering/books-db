@@ -27,3 +27,13 @@ export const bookTags = sqliteTable('book_tags', {
     pk: primaryKey({ columns: [table.bookId, table.name] }),
   }
 })
+
+export const localUser = sqliteTable('local_user', {
+  singleton: integer().primaryKey().default(1), // fixed PK — enforces at most one row
+  id: text().notNull(),
+  email: text().notNull(),
+  name: text().notNull(),
+  updatedAt: integer({ mode: 'timestamp' })
+    .notNull()
+    .default(sql`(unixepoch())`),
+})

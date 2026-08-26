@@ -9,12 +9,13 @@
   "private": true,
   "scripts": {
     "preinstall": "npx only-allow pnpm",
-    "test": "pnpm run js:test run && pnpm run rust:test && pnpm run e2e:test",
+    "test": "pnpm run js:test run && pnpm run rust:test && pnpm run e2e:test && pnpm run test:integration",
     "e2e:test": "pnpm wdio",
     "wdio": "wdio run ./e2e/wdio.conf.ts",
     "test:js": "pnpm js:test",
     "test:rust": "pnpm rust:test",
     "test:e2e": "pnpm e2e",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
     "dev": "pnpm tauri dev",
     "db:drop": "cargo xtask db:drop",
     "gen:migration": "cargo xtask gen:migration",
@@ -26,6 +27,9 @@
     "js:fix": "prettier --write . && eslint . --fix",
     "js:typecheck": "tsc --noEmit -p tsconfig.json --composite false",
     "js:test": "vitest",
+    "check": "pnpm check:js && pnpm check:rust && pnpm test:integration",
+    "check:js": "pnpm js:typecheck && pnpm js:lint && pnpm js:test run",
+    "check:rust": "pnpm rust:test && pnpm tauri build --no-bundle",
     "rust:test": "cargo test --manifest-path src-tauri/Cargo.toml",
     "rust:cargo": "cargo --manifest-path src-tauri/Cargo.toml",
     "rust:format": "cargo fmt --manifest-path src-tauri/Cargo.toml",
@@ -39,7 +43,7 @@
     "storybook:build": "storybook build"
   },
   "dependencies": {
-    "@tauri-apps/api": "^2.1.1",
+    "@tauri-apps/api": "^2.7.0",
     "@tauri-apps/plugin-fs": "^2.0.2",
     "better-sqlite3": "^11.5.0",
     "bulma": "^1.0.2",
@@ -50,6 +54,7 @@
     "open-library-api": "^0.1.2",
     "openapi-fetch": "^0.12.5",
     "svelte-modals": "^2.0.0",
+    "tauri-plugin-keyring-api": "^0.1.1",
     "uuid": "^10.0.0"
   },
   "devDependencies": {
