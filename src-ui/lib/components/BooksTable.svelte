@@ -1,21 +1,11 @@
 <script lang="ts">
-  import { getByISBN } from '$lib/openLibrary.js'
+  import { addBookByIsbn } from '$lib/add-book-by-isbn.js'
   import { getBooksStore } from '$lib/state/Books.svelte'
   import onScan from 'onscan.js'
   import type { Action } from 'svelte/action'
   import BooksTableRow from './BooksTableRow.svelte'
 
   let booksStore = getBooksStore()
-
-  const addByISBN = async (isbn: string): Promise<void> => {
-    const { book, tags, authors } = await getByISBN(isbn)
-    const bookId = await booksStore.add(book)
-    if (tags.length > 0 || authors.length > 0) {
-      const fullBook = booksStore.value.find((b) => b.id === bookId)!
-      if (tags.length > 0) await booksStore.updateTags(fullBook, tags)
-      if (authors.length > 0) await booksStore.updateAuthors(fullBook, authors)
-    }
-  }
 
   type scanEvent = {
     detail: {
@@ -24,7 +14,7 @@
     }
   }
   const handleScan = (event: scanEvent): void => {
-    void addByISBN(event.detail.scanCode)
+    void addBookByIsbn(event.detail.scanCode, booksStore)
   }
 
   type ScanAttributes = {
