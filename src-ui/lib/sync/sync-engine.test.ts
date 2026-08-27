@@ -12,18 +12,16 @@ describe('hasUnsyncedData', () => {
     expect(await hasUnsyncedData(testDb.drizzle)).toBe(false)
   })
 
-  it('is false when every book and tag is already synced', async () => {
+  it('is false when every book, tag, and author is already synced', async () => {
     await testDb.drizzle
       .insert(schema.books)
-      .values({ id: 'book-1', title: 'Dune', authors: [ 'Frank Herbert' ], syncedAt: new Date() })
+      .values({ id: 'book-1', title: 'Dune', syncedAt: new Date() })
 
     expect(await hasUnsyncedData(testDb.drizzle)).toBe(false)
   })
 
   it('is true when a book is pending sync', async () => {
-    await testDb.drizzle
-      .insert(schema.books)
-      .values({ id: 'book-1', title: 'Dune', authors: [ 'Frank Herbert' ] })
+    await testDb.drizzle.insert(schema.books).values({ id: 'book-1', title: 'Dune' })
 
     expect(await hasUnsyncedData(testDb.drizzle)).toBe(true)
   })
@@ -31,8 +29,19 @@ describe('hasUnsyncedData', () => {
   it('is true when a tag is pending sync even if its book is synced', async () => {
     await testDb.drizzle
       .insert(schema.books)
-      .values({ id: 'book-1', title: 'Dune', authors: [ 'Frank Herbert' ], syncedAt: new Date() })
+      .values({ id: 'book-1', title: 'Dune', syncedAt: new Date() })
     await testDb.drizzle.insert(schema.bookTags).values({ bookId: 'book-1', name: 'sci-fi' })
+
+    expect(await hasUnsyncedData(testDb.drizzle)).toBe(true)
+  })
+
+  it('is true when an author is pending sync even if its book is synced', async () => {
+    await testDb.drizzle
+      .insert(schema.books)
+      .values({ id: 'book-1', title: 'Dune', syncedAt: new Date() })
+    await testDb.drizzle
+      .insert(schema.bookAuthors)
+      .values({ bookId: 'book-1', name: 'Frank Herbert' })
 
     expect(await hasUnsyncedData(testDb.drizzle)).toBe(true)
   })
@@ -41,7 +50,9 @@ describe('hasUnsyncedData', () => {
 const BASE_URL = 'http://localhost:3000'
 const AUTH_TOKEN = 'auth-token-xyz'
 
-function createSyncEngine(getAuthToken: () => Promise<string | null> = () => Promise.resolve(AUTH_TOKEN)) {
+function createSyncEngine(
+  getAuthToken: () => Promise<string | null> = () => Promise.resolve(AUTH_TOKEN)
+) {
   const booksStore = createTestBooksStore(testDb.drizzle)
   return new SyncEngine(testDb.drizzle, booksStore, getAuthToken)
 }
@@ -49,8 +60,8 @@ function createSyncEngine(getAuthToken: () => Promise<string | null> = () => Pro
 describe('SyncEngine#push', () => {
   it('sends only rows pending sync (syncedAt IS NULL)', async () => {
     await testDb.drizzle.insert(schema.books).values([
-      { id: 'pending-book', title: 'Dune', authors: [ 'Frank Herbert' ] },
-      { id: 'synced-book', title: 'Dune Messiah', authors: [ 'Frank Herbert' ], syncedAt: new Date() },
+      { id: 'pending-book', title: 'Dune' },
+      { id: 'synced-book', title: 'Dune Messiah', syncedAt: new Date() },
     ])
 
     let pushedIds: string[] = []
@@ -64,27 +75,30 @@ describe('SyncEngine#push', () => {
 
     await createSyncEngine().push()
 
-    expect(pushedIds).toEqual([ 'pending-book' ])
+    expect(pushedIds).toEqual(['pending-book'])
   })
 
   it('marks pushed rows as synced on success', async () => {
-    await testDb.drizzle.insert(schema.books).values({ id: 'book-1', title: 'Dune', authors: [ 'Frank Herbert' ] })
+    await testDb.drizzle.insert(schema.books).values({ id: 'book-1', title: 'Dune' })
     mockServer.use(http.post(`${BASE_URL}/sync/push`, () => HttpResponse.json({ rejected: [] })))
 
     await createSyncEngine().push()
 
-    const [ book ] = await testDb.drizzle.select().from(schema.books).where(eq(schema.books.id, 'book-1'))
+    const [book] = await testDb.drizzle
+      .select()
+      .from(schema.books)
+      .where(eq(schema.books.id, 'book-1'))
     expect(book.syncedAt).not.toBeNull()
   })
 
   it('leaves rejected rows pending rather than marking them synced', async () => {
     await testDb.drizzle.insert(schema.books).values([
-      { id: 'accepted-book', title: 'Dune', authors: [ 'Frank Herbert' ] },
-      { id: 'rejected-book', title: 'Hijacked', authors: [ 'Someone Else' ] },
+      { id: 'accepted-book', title: 'Dune' },
+      { id: 'rejected-book', title: 'Hijacked' },
     ])
     mockServer.use(
       http.post(`${BASE_URL}/sync/push`, () =>
-        HttpResponse.json({ rejected: [ { type: 'books', id: 'rejected-book' } ] })
+        HttpResponse.json({ rejected: [{ type: 'books', id: 'rejected-book' }] })
       )
     )
 
@@ -98,24 +112,24 @@ describe('SyncEngine#push', () => {
   })
 
   it('marks pushed tags as synced by (bookId, name), not just books', async () => {
-    await testDb.drizzle.insert(schema.books).values({ id: 'book-1', title: 'Dune', authors: [ 'Frank Herbert' ] })
+    await testDb.drizzle.insert(schema.books).values({ id: 'book-1', title: 'Dune' })
     await testDb.drizzle.insert(schema.bookTags).values([
       { bookId: 'book-1', name: 'Science Fiction' },
       { bookId: 'book-1', name: 'Classic' },
     ])
     mockServer.use(
       http.post(`${BASE_URL}/sync/push`, () =>
-        HttpResponse.json({ rejected: [ { type: 'book_tags', book_id: 'book-1', name: 'Classic' } ] })
+        HttpResponse.json({ rejected: [{ type: 'book_tags', book_id: 'book-1', name: 'Classic' }] })
       )
     )
 
     await createSyncEngine().push()
 
-    const [ acceptedTag ] = await testDb.drizzle
+    const [acceptedTag] = await testDb.drizzle
       .select()
       .from(schema.bookTags)
       .where(and(eq(schema.bookTags.bookId, 'book-1'), eq(schema.bookTags.name, 'Science Fiction')))
-    const [ rejectedTag ] = await testDb.drizzle
+    const [rejectedTag] = await testDb.drizzle
       .select()
       .from(schema.bookTags)
       .where(and(eq(schema.bookTags.bookId, 'book-1'), eq(schema.bookTags.name, 'Classic')))
@@ -123,14 +137,49 @@ describe('SyncEngine#push', () => {
     expect(rejectedTag.syncedAt).toBeNull()
   })
 
+  it('marks pushed authors as synced by (bookId, name), not just books', async () => {
+    await testDb.drizzle.insert(schema.books).values({ id: 'book-1', title: 'Dune' })
+    await testDb.drizzle.insert(schema.bookAuthors).values([
+      { bookId: 'book-1', name: 'Frank Herbert' },
+      { bookId: 'book-1', name: 'Someone Else' },
+    ])
+    mockServer.use(
+      http.post(`${BASE_URL}/sync/push`, () =>
+        HttpResponse.json({
+          rejected: [{ type: 'book_authors', book_id: 'book-1', name: 'Someone Else' }],
+        })
+      )
+    )
+
+    await createSyncEngine().push()
+
+    const [acceptedAuthor] = await testDb.drizzle
+      .select()
+      .from(schema.bookAuthors)
+      .where(
+        and(eq(schema.bookAuthors.bookId, 'book-1'), eq(schema.bookAuthors.name, 'Frank Herbert'))
+      )
+    const [rejectedAuthor] = await testDb.drizzle
+      .select()
+      .from(schema.bookAuthors)
+      .where(
+        and(eq(schema.bookAuthors.bookId, 'book-1'), eq(schema.bookAuthors.name, 'Someone Else'))
+      )
+    expect(acceptedAuthor.syncedAt).not.toBeNull()
+    expect(rejectedAuthor.syncedAt).toBeNull()
+  })
+
   it('does nothing when there is no auth token', async () => {
-    await testDb.drizzle.insert(schema.books).values({ id: 'book-1', title: 'Dune', authors: [ 'Frank Herbert' ] })
+    await testDb.drizzle.insert(schema.books).values({ id: 'book-1', title: 'Dune' })
     const fetchSpy = vi.spyOn(global, 'fetch')
 
     await createSyncEngine(() => Promise.resolve(null)).push()
 
     expect(fetchSpy).not.toHaveBeenCalled()
-    const [ book ] = await testDb.drizzle.select().from(schema.books).where(eq(schema.books.id, 'book-1'))
+    const [book] = await testDb.drizzle
+      .select()
+      .from(schema.books)
+      .where(eq(schema.books.id, 'book-1'))
     expect(book.syncedAt).toBeNull()
   })
 
@@ -150,7 +199,6 @@ function wireBook(overrides: Record<string, unknown> = {}) {
     isbn13: null,
     title: 'Dune',
     subtitle: null,
-    authors: [ 'Frank Herbert' ],
     series: null,
     page_count: null,
     publication_date: null,
@@ -169,39 +217,49 @@ describe('SyncEngine#pull', () => {
     mockServer.use(
       http.get(`${BASE_URL}/sync/pull`, () =>
         HttpResponse.json({
-          entities: { books: [ wireBook() ], book_tags: [] },
-          cursors: { books: 1, book_tags: 0 },
+          entities: { books: [wireBook()], book_tags: [], book_authors: [] },
+          cursors: { books: 1, book_tags: 0, book_authors: 0 },
         })
       )
     )
 
     await createSyncEngine().pull()
 
-    const [ book ] = await testDb.drizzle.select().from(schema.books).where(eq(schema.books.id, 'book-1'))
+    const [book] = await testDb.drizzle
+      .select()
+      .from(schema.books)
+      .where(eq(schema.books.id, 'book-1'))
     expect(book).toBeDefined()
     expect(book.title).toBe('Dune')
     expect(book.syncedAt).not.toBeNull()
   })
 
   it('applies pulled tags into the local db, marked as already synced', async () => {
-    await testDb.drizzle.insert(schema.books).values({ id: 'book-1', title: 'Dune', authors: [ 'Frank Herbert' ] })
+    await testDb.drizzle.insert(schema.books).values({ id: 'book-1', title: 'Dune' })
     mockServer.use(
       http.get(`${BASE_URL}/sync/pull`, () =>
         HttpResponse.json({
           entities: {
             books: [],
             book_tags: [
-              { book_id: 'book-1', name: 'Science Fiction', discarded_at: null, updated_at: '2026-01-02T00:00:00.000Z', server_seq: 1 },
+              {
+                book_id: 'book-1',
+                name: 'Science Fiction',
+                discarded_at: null,
+                updated_at: '2026-01-02T00:00:00.000Z',
+                server_seq: 1,
+              },
             ],
+            book_authors: [],
           },
-          cursors: { books: 0, book_tags: 1 },
+          cursors: { books: 0, book_tags: 1, book_authors: 0 },
         })
       )
     )
 
     await createSyncEngine().pull()
 
-    const [ tag ] = await testDb.drizzle
+    const [tag] = await testDb.drizzle
       .select()
       .from(schema.bookTags)
       .where(and(eq(schema.bookTags.bookId, 'book-1'), eq(schema.bookTags.name, 'Science Fiction')))
@@ -209,19 +267,61 @@ describe('SyncEngine#pull', () => {
     expect(tag.syncedAt).not.toBeNull()
   })
 
-  it('stores a tombstoned pulled row as deleted', async () => {
+  it('applies pulled authors into the local db, marked as already synced', async () => {
+    await testDb.drizzle.insert(schema.books).values({ id: 'book-1', title: 'Dune' })
     mockServer.use(
       http.get(`${BASE_URL}/sync/pull`, () =>
         HttpResponse.json({
-          entities: { books: [ wireBook({ discarded_at: '2026-01-03T00:00:00.000Z' }) ], book_tags: [] },
-          cursors: { books: 1, book_tags: 0 },
+          entities: {
+            books: [],
+            book_tags: [],
+            book_authors: [
+              {
+                book_id: 'book-1',
+                name: 'Frank Herbert',
+                discarded_at: null,
+                updated_at: '2026-01-02T00:00:00.000Z',
+                server_seq: 1,
+              },
+            ],
+          },
+          cursors: { books: 0, book_tags: 0, book_authors: 1 },
         })
       )
     )
 
     await createSyncEngine().pull()
 
-    const [ book ] = await testDb.drizzle.select().from(schema.books).where(eq(schema.books.id, 'book-1'))
+    const [author] = await testDb.drizzle
+      .select()
+      .from(schema.bookAuthors)
+      .where(
+        and(eq(schema.bookAuthors.bookId, 'book-1'), eq(schema.bookAuthors.name, 'Frank Herbert'))
+      )
+    expect(author).toBeDefined()
+    expect(author.syncedAt).not.toBeNull()
+  })
+
+  it('stores a tombstoned pulled row as deleted', async () => {
+    mockServer.use(
+      http.get(`${BASE_URL}/sync/pull`, () =>
+        HttpResponse.json({
+          entities: {
+            books: [wireBook({ discarded_at: '2026-01-03T00:00:00.000Z' })],
+            book_tags: [],
+            book_authors: [],
+          },
+          cursors: { books: 1, book_tags: 0, book_authors: 0 },
+        })
+      )
+    )
+
+    await createSyncEngine().pull()
+
+    const [book] = await testDb.drizzle
+      .select()
+      .from(schema.books)
+      .where(eq(schema.books.id, 'book-1'))
     expect(book.deletedAt).not.toBeNull()
   })
 
@@ -233,12 +333,15 @@ describe('SyncEngine#pull', () => {
         callCount += 1
         if (callCount === 1) {
           return HttpResponse.json({
-            entities: { books: [ wireBook({ server_seq: 7 }) ], book_tags: [] },
-            cursors: { books: 7, book_tags: 0 },
+            entities: { books: [wireBook({ server_seq: 7 })], book_tags: [], book_authors: [] },
+            cursors: { books: 7, book_tags: 0, book_authors: 0 },
           })
         }
         secondRequestQuery = new URL(request.url).searchParams
-        return HttpResponse.json({ entities: { books: [], book_tags: [] }, cursors: { books: 7, book_tags: 0 } })
+        return HttpResponse.json({
+          entities: { books: [], book_tags: [], book_authors: [] },
+          cursors: { books: 7, book_tags: 0, book_authors: 0 },
+        })
       })
     )
 
@@ -253,8 +356,8 @@ describe('SyncEngine#pull', () => {
     mockServer.use(
       http.get(`${BASE_URL}/sync/pull`, () =>
         HttpResponse.json({
-          entities: { books: [ wireBook() ], book_tags: [] },
-          cursors: { books: 1, book_tags: 0 },
+          entities: { books: [wireBook()], book_tags: [], book_authors: [] },
+          cursors: { books: 1, book_tags: 0, book_authors: 0 },
         })
       )
     )
@@ -263,16 +366,19 @@ describe('SyncEngine#pull', () => {
     await engine.pull()
     await engine.pull()
 
-    const rows = await testDb.drizzle.select().from(schema.books).where(eq(schema.books.id, 'book-1'))
+    const rows = await testDb.drizzle
+      .select()
+      .from(schema.books)
+      .where(eq(schema.books.id, 'book-1'))
     expect(rows).toHaveLength(1)
   })
 
-  it("reloads the books store so reactive UI picks up the change", async () => {
+  it('reloads the books store so reactive UI picks up the change', async () => {
     mockServer.use(
       http.get(`${BASE_URL}/sync/pull`, () =>
         HttpResponse.json({
-          entities: { books: [ wireBook() ], book_tags: [] },
-          cursors: { books: 1, book_tags: 0 },
+          entities: { books: [wireBook()], book_tags: [], book_authors: [] },
+          cursors: { books: 1, book_tags: 0, book_authors: 0 },
         })
       )
     )
@@ -308,14 +414,17 @@ describe('SyncEngine#sync', () => {
 
     await engine.sync()
 
-    expect(order).toEqual([ 'push', 'pull' ])
+    expect(order).toEqual(['push', 'pull'])
   })
 
   it('fetches the auth token once and reuses it for both push and pull', async () => {
     mockServer.use(
       http.post(`${BASE_URL}/sync/push`, () => HttpResponse.json({ rejected: [] })),
       http.get(`${BASE_URL}/sync/pull`, () =>
-        HttpResponse.json({ entities: { books: [], book_tags: [] }, cursors: { books: 0, book_tags: 0 } })
+        HttpResponse.json({
+          entities: { books: [], book_tags: [], book_authors: [] },
+          cursors: { books: 0, book_tags: 0, book_authors: 0 },
+        })
       )
     )
     const getAuthToken = vi.fn(() => Promise.resolve(AUTH_TOKEN))

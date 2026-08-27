@@ -5,11 +5,26 @@ import type { BooksStore } from '$lib/state/Books.svelte'
 import { pushEntities, pullEntities } from './sync-api'
 
 export async function hasUnsyncedData(db: SqliteRemoteDatabase<typeof schema>): Promise<boolean> {
-  const [pendingBook] = await db.select().from(schema.books).where(isNull(schema.books.syncedAt)).limit(1)
+  const [pendingBook] = await db
+    .select()
+    .from(schema.books)
+    .where(isNull(schema.books.syncedAt))
+    .limit(1)
   if (pendingBook) return true
 
-  const [pendingTag] = await db.select().from(schema.bookTags).where(isNull(schema.bookTags.syncedAt)).limit(1)
-  return !!pendingTag
+  const [pendingTag] = await db
+    .select()
+    .from(schema.bookTags)
+    .where(isNull(schema.bookTags.syncedAt))
+    .limit(1)
+  if (pendingTag) return true
+
+  const [pendingAuthor] = await db
+    .select()
+    .from(schema.bookAuthors)
+    .where(isNull(schema.bookAuthors.syncedAt))
+    .limit(1)
+  return !!pendingAuthor
 }
 
 export class SyncEngine {
@@ -23,16 +38,33 @@ export class SyncEngine {
     const authToken = knownAuthToken ?? (await this.getAuthToken())
     if (!authToken) return
 
-    const pendingBooks = await this.db.select().from(schema.books).where(isNull(schema.books.syncedAt))
-    const pendingTags = await this.db.select().from(schema.bookTags).where(isNull(schema.bookTags.syncedAt))
+    const pendingBooks = await this.db
+      .select()
+      .from(schema.books)
+      .where(isNull(schema.books.syncedAt))
+    const pendingTags = await this.db
+      .select()
+      .from(schema.bookTags)
+      .where(isNull(schema.bookTags.syncedAt))
+    const pendingAuthors = await this.db
+      .select()
+      .from(schema.bookAuthors)
+      .where(isNull(schema.bookAuthors.syncedAt))
 
-    if (pendingBooks.length === 0 && pendingTags.length === 0) return
+    if (pendingBooks.length === 0 && pendingTags.length === 0 && pendingAuthors.length === 0) return
 
-    const { rejected } = await pushEntities(authToken, { books: pendingBooks, bookTags: pendingTags })
+    const { rejected } = await pushEntities(authToken, {
+      books: pendingBooks,
+      bookTags: pendingTags,
+      bookAuthors: pendingAuthors,
+    })
 
     const rejectedBookIds = new Set(rejected.filter((r) => r.type === 'books').map((r) => r.id))
     const rejectedTagKeys = new Set(
       rejected.filter((r) => r.type === 'book_tags').map((r) => `${r.bookId}:${r.name}`)
+    )
+    const rejectedAuthorKeys = new Set(
+      rejected.filter((r) => r.type === 'book_authors').map((r) => `${r.bookId}:${r.name}`)
     )
 
     const syncedAt = new Date()
@@ -49,6 +81,19 @@ export class SyncEngine {
         .set({ syncedAt })
         .where(and(eq(schema.bookTags.bookId, tag.bookId), eq(schema.bookTags.name, tag.name)))
     }
+
+    for (const author of pendingAuthors) {
+      if (rejectedAuthorKeys.has(`${author.bookId}:${author.name}`)) continue
+      await this.db
+        .update(schema.bookAuthors)
+        .set({ syncedAt })
+        .where(
+          and(
+            eq(schema.bookAuthors.bookId, author.bookId),
+            eq(schema.bookAuthors.name, author.name)
+          )
+        )
+    }
   }
 
   async pull(knownAuthToken?: string): Promise<void> {
@@ -56,7 +101,11 @@ export class SyncEngine {
     if (!authToken) return
 
     const [state] = await this.db.select().from(schema.syncState)
-    const since = { books: state?.booksSince ?? 0, bookTags: state?.bookTagsSince ?? 0 }
+    const since = {
+      books: state?.booksSince ?? 0,
+      bookTags: state?.bookTagsSince ?? 0,
+      bookAuthors: state?.bookAuthorsSince ?? 0,
+    }
 
     const { entities, cursors } = await pullEntities(authToken, since)
 
@@ -79,12 +128,31 @@ export class SyncEngine {
         })
     }
 
+    for (const author of entities.bookAuthors) {
+      await this.db
+        .insert(schema.bookAuthors)
+        .values({ ...author, syncedAt })
+        .onConflictDoUpdate({
+          target: [schema.bookAuthors.bookId, schema.bookAuthors.name],
+          set: { ...author, syncedAt },
+        })
+    }
+
     await this.db
       .insert(schema.syncState)
-      .values({ singleton: 1, booksSince: cursors.books, bookTagsSince: cursors.bookTags })
+      .values({
+        singleton: 1,
+        booksSince: cursors.books,
+        bookTagsSince: cursors.bookTags,
+        bookAuthorsSince: cursors.bookAuthors,
+      })
       .onConflictDoUpdate({
         target: schema.syncState.singleton,
-        set: { booksSince: cursors.books, bookTagsSince: cursors.bookTags },
+        set: {
+          booksSince: cursors.books,
+          bookTagsSince: cursors.bookTags,
+          bookAuthorsSince: cursors.bookAuthors,
+        },
       })
 
     await this.booksStore.reload()

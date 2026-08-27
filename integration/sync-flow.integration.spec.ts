@@ -23,17 +23,19 @@ describe('sync flow against a real Rails server', () => {
     await authStore.exchangeLoginToken(loginToken)
   })
 
-  it('round-trips a new book and tag from one device to another', async () => {
+  it('round-trips a new book, tag, and author from one device to another', async () => {
     const deviceABooksStore = createTestBooksStore(testDb.drizzle)
-    const deviceASync = new SyncEngine(testDb.drizzle, deviceABooksStore, () => authStore.getAuthToken())
+    const deviceASync = new SyncEngine(testDb.drizzle, deviceABooksStore, () =>
+      authStore.getAuthToken()
+    )
 
     const bookId = await deviceABooksStore.add({
       title: 'Dune',
-      authors: [ 'Frank Herbert' ],
       isbn13: '9780441172719',
     })
     const book = deviceABooksStore.value.find((b) => b.id === bookId)!
-    await deviceABooksStore.updateTags(book, [ 'Science Fiction' ])
+    await deviceABooksStore.updateTags(book, ['Science Fiction'])
+    await deviceABooksStore.updateAuthors(book, ['Frank Herbert'])
 
     await deviceASync.push()
 
@@ -41,7 +43,9 @@ describe('sync flow against a real Rails server', () => {
     // a second device pulling down what the first just pushed.
     const deviceB = await createTestDB()
     const deviceBBooksStore = createTestBooksStore(deviceB.drizzle)
-    const deviceBSync = new SyncEngine(deviceB.drizzle, deviceBBooksStore, () => authStore.getAuthToken())
+    const deviceBSync = new SyncEngine(deviceB.drizzle, deviceBBooksStore, () =>
+      authStore.getAuthToken()
+    )
 
     await deviceBSync.pull()
 
@@ -49,13 +53,16 @@ describe('sync flow against a real Rails server', () => {
     expect(pulledBook).toBeDefined()
     expect(pulledBook?.title).toBe('Dune')
     expect(pulledBook?.tags.map((t) => t.name)).toContain('Science Fiction')
+    expect(pulledBook?.authors.map((a) => a.name)).toContain('Frank Herbert')
   })
 
   it('round-trips a deletion as a tombstone', async () => {
     const deviceABooksStore = createTestBooksStore(testDb.drizzle)
-    const deviceASync = new SyncEngine(testDb.drizzle, deviceABooksStore, () => authStore.getAuthToken())
+    const deviceASync = new SyncEngine(testDb.drizzle, deviceABooksStore, () =>
+      authStore.getAuthToken()
+    )
 
-    const bookId = await deviceABooksStore.add({ title: 'Dune Messiah', authors: [ 'Frank Herbert' ] })
+    const bookId = await deviceABooksStore.add({ title: 'Dune Messiah' })
     await deviceASync.push()
 
     await deviceABooksStore.remove(bookId)
@@ -63,7 +70,9 @@ describe('sync flow against a real Rails server', () => {
 
     const deviceB = await createTestDB()
     const deviceBBooksStore = createTestBooksStore(deviceB.drizzle)
-    const deviceBSync = new SyncEngine(deviceB.drizzle, deviceBBooksStore, () => authStore.getAuthToken())
+    const deviceBSync = new SyncEngine(deviceB.drizzle, deviceBBooksStore, () =>
+      authStore.getAuthToken()
+    )
 
     await deviceBSync.pull()
 
