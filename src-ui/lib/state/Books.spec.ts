@@ -4,6 +4,8 @@ import { createTestBooksStore, type BooksStore } from './Books.svelte.js'
 import { type Book, type NewBook } from '$lib/types/book.js'
 import { mockServer } from '../../testing/msw-setup.js'
 import { testDb } from '../../testing/db-setup.js'
+import * as schema from '$lib/db/schema'
+import { and, eq } from 'drizzle-orm/sql/expressions/conditions'
 
 const duneMessiah: NewBook = {
   isbn10: '0441172695',
@@ -264,6 +266,103 @@ describe('booksStore', () => {
         await booksStore.remove(duneMessiahWithId.id)
         expect(booksStore.value.length).toBe(1)
         expect(booksStore.value[0].title).toBe(princessAndGrilledCheese.title)
+      })
+
+      it('should soft-delete rather than removing the row', async () => {
+        await booksStore.remove(duneMessiahWithId.id)
+        const [rawRow] = await testDb.drizzle
+          .select()
+          .from(schema.books)
+          .where(eq(schema.books.id, duneMessiahWithId.id))
+        expect(rawRow).toBeDefined()
+        expect(rawRow.deletedAt).not.toBeNull()
+      })
+
+      it('should mark the book as pending sync', async () => {
+        await booksStore.remove(duneMessiahWithId.id)
+        const [rawRow] = await testDb.drizzle
+          .select()
+          .from(schema.books)
+          .where(eq(schema.books.id, duneMessiahWithId.id))
+        expect(rawRow.syncedAt).toBeNull()
+      })
+
+      it('should tombstone the book\'s active tags too', async () => {
+        await booksStore.updateTags(duneMessiahWithId, ['Science Fiction'])
+        await booksStore.remove(duneMessiahWithId.id)
+
+        const [rawTagRow] = await testDb.drizzle
+          .select()
+          .from(schema.bookTags)
+          .where(
+            and(
+              eq(schema.bookTags.bookId, duneMessiahWithId.id),
+              eq(schema.bookTags.name, 'Science Fiction')
+            )
+          )
+        expect(rawTagRow.deletedAt).not.toBeNull()
+        expect(rawTagRow.syncedAt).toBeNull()
+      })
+    })
+
+    describe('tag lifecycle', () => {
+      it('should mark a removed tag as pending sync rather than deleting the row', async () => {
+        await booksStore.updateTags(duneMessiahWithId, ['Science Fiction'])
+        const withTagAdded = booksStore.value.find((book) => book.id === duneMessiahWithId.id)!
+        await booksStore.updateTags(withTagAdded, [])
+
+        const rawTagRows = await testDb.drizzle
+          .select()
+          .from(schema.bookTags)
+          .where(
+            and(
+              eq(schema.bookTags.bookId, duneMessiahWithId.id),
+              eq(schema.bookTags.name, 'Science Fiction')
+            )
+          )
+
+        expect(rawTagRows).toHaveLength(1)
+        expect(rawTagRows[0].deletedAt).not.toBeNull()
+        expect(rawTagRows[0].syncedAt).toBeNull()
+
+        const editedBook = booksStore.value.find((book) => book.id === duneMessiahWithId.id)
+        expect(editedBook?.tags.map((t) => t.name)).not.toContain('Science Fiction')
+      })
+
+      it('should revive a previously-removed tag on re-add instead of erroring or duplicating', async () => {
+        await booksStore.updateTags(duneMessiahWithId, ['Science Fiction'])
+        const withTagAdded = booksStore.value.find((book) => book.id === duneMessiahWithId.id)!
+        await booksStore.updateTags(withTagAdded, [])
+        const withTagRemoved = booksStore.value.find((book) => book.id === duneMessiahWithId.id)!
+        await booksStore.updateTags(withTagRemoved, ['Science Fiction'])
+
+        const rawTagRows = await testDb.drizzle
+          .select()
+          .from(schema.bookTags)
+          .where(
+            and(
+              eq(schema.bookTags.bookId, duneMessiahWithId.id),
+              eq(schema.bookTags.name, 'Science Fiction')
+            )
+          )
+
+        expect(rawTagRows).toHaveLength(1)
+        expect(rawTagRows[0].deletedAt).toBeNull()
+        expect(rawTagRows[0].syncedAt).toBeNull()
+
+        const editedBook = booksStore.value.find((book) => book.id === duneMessiahWithId.id)
+        expect(editedBook?.tags.map((t) => t.name)).toContain('Science Fiction')
+      })
+    })
+
+    describe('sync tracking', () => {
+      it('should mark a book as pending sync after editing', async () => {
+        await booksStore.edit({ ...duneMessiahWithId, title: 'Dune Messiah: Revised Edition' })
+        const [rawRow] = await testDb.drizzle
+          .select()
+          .from(schema.books)
+          .where(eq(schema.books.id, duneMessiahWithId.id))
+        expect(rawRow.syncedAt).toBeNull()
       })
     })
   })

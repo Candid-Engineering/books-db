@@ -1,9 +1,9 @@
 import { v4 as uuidv4 } from 'uuid'
-import { type Book, type BookTag, type NewBook } from '$lib/types/book.js'
+import { type Book, type NewBook } from '$lib/types/book.js'
 import realDb from '$lib/db/index.js'
 import * as schema from '$lib/db/schema'
 import type { SqliteRemoteDatabase } from 'drizzle-orm/sqlite-proxy'
-import { and, eq } from 'drizzle-orm/sql/expressions/conditions'
+import { and, eq, isNull } from 'drizzle-orm/sql/expressions/conditions'
 import _ from 'lodash'
 
 class BooksStore {
@@ -40,7 +40,10 @@ class BooksStore {
   }
 
   async edit(updatedBook: Book): Promise<void> {
-    await this.db.update(schema.books).set(updatedBook).where(eq(schema.books.id, updatedBook.id))
+    await this.db
+      .update(schema.books)
+      .set({ ...updatedBook, updatedAt: new Date(), syncedAt: null })
+      .where(eq(schema.books.id, updatedBook.id))
     await this.reload()
   }
 
@@ -56,21 +59,37 @@ class BooksStore {
   }
 
   private async addTag(book: Book, tagName: string): Promise<void> {
-    const newTag: BookTag = {bookId: book.id, name: tagName}
-    await this.db.insert(schema.bookTags).values(newTag)
+    await this.db
+      .insert(schema.bookTags)
+      .values({ bookId: book.id, name: tagName })
+      .onConflictDoUpdate({
+        target: [schema.bookTags.bookId, schema.bookTags.name],
+        set: { deletedAt: null, updatedAt: new Date(), syncedAt: null },
+      })
   }
 
   private async removeTag(book: Book, tag: string): Promise<void> {
-    await this.db.delete(schema.bookTags).where(
-      and(
-        eq(schema.bookTags.bookId, book.id),
-        eq(schema.bookTags.name, tag)
+    await this.db
+      .update(schema.bookTags)
+      .set({ deletedAt: new Date(), updatedAt: new Date(), syncedAt: null })
+      .where(
+        and(
+          eq(schema.bookTags.bookId, book.id),
+          eq(schema.bookTags.name, tag)
+        )
       )
-    )
   }
 
   async remove(id: string): Promise<void> {
-    await this.db.delete(schema.books).where(eq(schema.books.id, id))
+    const now = new Date()
+    await this.db
+      .update(schema.books)
+      .set({ deletedAt: now, updatedAt: now, syncedAt: null })
+      .where(eq(schema.books.id, id))
+    await this.db
+      .update(schema.bookTags)
+      .set({ deletedAt: now, updatedAt: now, syncedAt: null })
+      .where(and(eq(schema.bookTags.bookId, id), isNull(schema.bookTags.deletedAt)))
     await this.reload()
   }
 
@@ -80,7 +99,10 @@ class BooksStore {
   }
 
   async reload(): Promise<BooksStore> {
-    this.#value = await this.db.query.books.findMany({with: {tags: true}})
+    this.#value = await this.db.query.books.findMany({
+      where: isNull(schema.books.deletedAt),
+      with: { tags: { where: isNull(schema.bookTags.deletedAt) } },
+    })
     return this
   }
 }

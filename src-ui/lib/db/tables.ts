@@ -17,11 +17,21 @@ export const books = sqliteTable('books', {
   createdAt: integer({ mode: 'timestamp' })
     .notNull()
     .default(sql`(unixepoch())`),
+  updatedAt: integer({ mode: 'timestamp' })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  deletedAt: integer({ mode: 'timestamp' }), // tombstone; null = active
+  syncedAt: integer({ mode: 'timestamp' }), // null = pending push to server
 })
 
 export const bookTags = sqliteTable('book_tags', {
   bookId: text().notNull().references(() => books.id, {onDelete: 'cascade'}), // automatically deletes tags when a book is deleted
   name: text().notNull(),
+  updatedAt: integer({ mode: 'timestamp' })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  deletedAt: integer({ mode: 'timestamp' }), // tombstone; null = active
+  syncedAt: integer({ mode: 'timestamp' }), // null = pending push to server
 }, (table) => {
   return {
     pk: primaryKey({ columns: [table.bookId, table.name] }),
