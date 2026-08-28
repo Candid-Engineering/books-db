@@ -8,6 +8,7 @@ import { getBooksStore, type BooksStore } from '$lib/state/Books.svelte'
 import { authStore, type AuthStore } from '$lib/auth/auth-store.svelte'
 import { reportError } from '$lib/error-reporting'
 import { errorToast } from '$lib/error-toast.svelte'
+import { SyncEngine } from '$lib/sync/sync-engine'
 
 declare global {
   interface Window {
@@ -18,6 +19,7 @@ declare global {
     sqlite: typeof commands
     booksStore: BooksStore
     authStore: AuthStore
+    syncEngine: SyncEngine
   }
 }
 
@@ -32,6 +34,23 @@ window.booksStore = getBooksStore()
 
 await authStore.initialize()
 window.authStore = authStore
+
+const syncEngine = new SyncEngine(db, window.booksStore, () => authStore.getAuthToken())
+window.syncEngine = syncEngine
+
+async function runSync(): Promise<void> {
+  if (!authStore.state.isAuthenticated) return
+  try {
+    await syncEngine.sync()
+  } catch (error) {
+    // A failed background sync isn't worth interrupting the user for - it
+    // just retries next cycle. Still reported so it's visible in devtools.
+    reportError(error, 'sync')
+  }
+}
+
+void runSync()
+setInterval(() => void runSync(), 60_000)
 
 window.addEventListener('error', (event) => {
   reportError(event.error, 'window.onerror')
