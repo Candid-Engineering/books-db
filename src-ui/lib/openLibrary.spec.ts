@@ -191,8 +191,8 @@ describe('book', () => {
           return HttpResponse.json({
             title: 'The Foundation Trilogy',
             key: '/books/OL26219343M',
-            works: [ { key: '/works/OL46390W' } ],
-            isbn_13: [ '9780307292063' ],
+            works: [{ key: '/works/OL46390W' }],
+            isbn_13: ['9780307292063'],
           })
         }),
         http.get('https://openlibrary.org/works/OL46390W.json', () => {
@@ -214,7 +214,7 @@ describe('book', () => {
 
       const result = await getByISBN(foundationIsbn)
 
-      expect(result.authors).toEqual([ 'Isaac Asimov' ])
+      expect(result.authors).toEqual(['Isaac Asimov'])
     })
 
     it('should throw a timeout error when Open Library is down and request times out', async () => {

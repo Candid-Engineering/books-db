@@ -16,7 +16,10 @@ describe('LoginForm', () => {
 
   beforeEach(() => {
     setupMockKeyring()
-    authStore = createTestAuthStore(new KeychainTokenStorage(), new DrizzleLocalUserStore(testDb.drizzle))
+    authStore = createTestAuthStore(
+      new KeychainTokenStorage(),
+      new DrizzleLocalUserStore(testDb.drizzle)
+    )
     form = new LoginForm(authStore)
   })
 

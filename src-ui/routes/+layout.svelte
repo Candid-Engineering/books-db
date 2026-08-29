@@ -47,7 +47,8 @@
           Logout
         </a>
       {:else}
-        <a class="navbar-item" href="#placeholder" role="button" onclick={handleLoginClick}>Login</a>
+        <a class="navbar-item" href="#placeholder" role="button" onclick={handleLoginClick}>Login</a
+        >
       {/if}
     {/snippet}
   </NavBar>

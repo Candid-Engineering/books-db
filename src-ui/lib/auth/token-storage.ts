@@ -63,7 +63,10 @@ export class SqliteTokenStorage implements TokenStorage {
 
   async getToken(namespace?: string): Promise<string | null> {
     const key = this.getKey(namespace)
-    const [row] = await this.db.select().from(schema.devTokens).where(eq(schema.devTokens.namespace, key))
+    const [row] = await this.db
+      .select()
+      .from(schema.devTokens)
+      .where(eq(schema.devTokens.namespace, key))
     return row?.value ?? null
   }
 

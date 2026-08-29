@@ -5,7 +5,10 @@ import path from 'node:path'
 import { isServerUp, waitForServer } from './wait-for-server'
 import { TAURI_INTEGRATION_PORT, TAURI_INTEGRATION_HEALTH_URL } from './config'
 
-const RAILS_REPO_PATH = path.resolve(fileURLToPath(new URL('.', import.meta.url)), '../../books-db-rails')
+const RAILS_REPO_PATH = path.resolve(
+  fileURLToPath(new URL('.', import.meta.url)),
+  '../../books-db-rails'
+)
 const HEALTH_URL = TAURI_INTEGRATION_HEALTH_URL
 
 export default async function setup(): Promise<() => Promise<void>> {
@@ -23,7 +26,9 @@ export default async function setup(): Promise<() => Promise<void>> {
   console.log('[integration] Preparing the tauri_integration database...')
   const prepare = spawnSync(railsBin, ['db:tauri_integration:prepare'], { cwd: RAILS_REPO_PATH })
   if (prepare.status !== 0) {
-    throw new Error(`Failed to prepare the tauri_integration database:\n${prepare.stderr?.toString() ?? ''}`)
+    throw new Error(
+      `Failed to prepare the tauri_integration database:\n${prepare.stderr?.toString() ?? ''}`
+    )
   }
 
   console.log(`[integration] Booting Rails server on port ${TAURI_INTEGRATION_PORT}...`)

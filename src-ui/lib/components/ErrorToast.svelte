@@ -5,7 +5,8 @@
 
 {#if errorToast.message}
   <div class="notification is-danger error-toast">
-    <button type="button" class="delete" aria-label="close" onclick={() => errorToast.dismiss()}></button>
+    <button type="button" class="delete" aria-label="close" onclick={() => errorToast.dismiss()}
+    ></button>
     {errorToast.message}
   </div>
 {/if}

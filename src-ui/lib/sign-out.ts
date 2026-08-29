@@ -26,7 +26,10 @@ export async function signOut(): Promise<void> {
 
 // Shared with Settings' "Reset App Data" button, which does its own
 // (stronger, unconditional) confirmation before calling this.
-export async function wipeLocalDataAndRelaunch(context: string, failureMessage: string): Promise<void> {
+export async function wipeLocalDataAndRelaunch(
+  context: string,
+  failureMessage: string
+): Promise<void> {
   try {
     await authStore.logout()
     const result = await sqliteProxy.factoryReset()

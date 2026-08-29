@@ -32,13 +32,17 @@ describe('waitForServer', () => {
       })
     )
 
-    await expect(waitForServer(HEALTH_URL, { timeoutMs: 1000, intervalMs: 5 })).resolves.toBeUndefined()
+    await expect(
+      waitForServer(HEALTH_URL, { timeoutMs: 1000, intervalMs: 5 })
+    ).resolves.toBeUndefined()
     expect(attempt).toBe(3)
   })
 
   it('should reject if the server never comes up within the timeout', async () => {
     mockServer.use(http.get(HEALTH_URL, () => HttpResponse.error()))
 
-    await expect(waitForServer(HEALTH_URL, { timeoutMs: 20, intervalMs: 5 })).rejects.toThrow(/did not become healthy/)
+    await expect(waitForServer(HEALTH_URL, { timeoutMs: 20, intervalMs: 5 })).rejects.toThrow(
+      /did not become healthy/
+    )
   })
 })
