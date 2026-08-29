@@ -1,7 +1,11 @@
 import { describe, it, expect } from 'vitest'
 import Papa from 'papaparse'
 import { booksToCsv } from './csv-export'
-import type { Book } from '$lib/types/book'
+import type { Book, BookAuthor } from '$lib/types/book'
+
+function bookAuthor(name: string): BookAuthor {
+  return { bookId: 'book-1', name, updatedAt: null, deletedAt: null, syncedAt: null }
+}
 
 function book(overrides: Partial<Book> = {}): Book {
   return {
@@ -10,7 +14,7 @@ function book(overrides: Partial<Book> = {}): Book {
     isbn13: null,
     title: 'Dune',
     subtitle: null,
-    authors: [ 'Frank Herbert' ],
+    authors: [bookAuthor('Frank Herbert')],
     series: null,
     pageCount: null,
     publicationDate: null,
@@ -33,8 +37,10 @@ function parseRows(csv: string): Record<string, string>[] {
 describe('booksToCsv', () => {
   it('produces the expected header', () => {
     const csv = booksToCsv([])
-    const [ headerLine ] = csv.trim().split('\n')
-    expect(headerLine).toBe('title,subtitle,authors,isbn10,isbn13,series,pageCount,publicationDate,copyrightDate')
+    const [headerLine] = csv.trim().split('\n')
+    expect(headerLine).toBe(
+      'title,subtitle,authors,isbn10,isbn13,series,pageCount,publicationDate,copyrightDate'
+    )
   })
 
   it('writes a full row', () => {
@@ -42,7 +48,7 @@ describe('booksToCsv', () => {
       book({
         title: 'Dune',
         subtitle: 'Dune Chronicles, Book 1',
-        authors: [ 'Frank Herbert' ],
+        authors: [bookAuthor('Frank Herbert')],
         isbn10: '0441172717',
         isbn13: '9780441172719',
         series: 'Dune (1)',
@@ -52,7 +58,7 @@ describe('booksToCsv', () => {
       }),
     ])
 
-    const [ row ] = parseRows(csv)
+    const [row] = parseRows(csv)
     expect(row).toEqual({
       title: 'Dune',
       subtitle: 'Dune Chronicles, Book 1',
@@ -67,34 +73,36 @@ describe('booksToCsv', () => {
   })
 
   it('joins multiple authors with a semicolon', () => {
-    const csv = booksToCsv([ book({ authors: [ 'Frank Herbert', 'Bill Herbert' ] }) ])
-    const [ row ] = parseRows(csv)
+    const csv = booksToCsv([
+      book({ authors: [bookAuthor('Frank Herbert'), bookAuthor('Bill Herbert')] }),
+    ])
+    const [row] = parseRows(csv)
     expect(row.authors).toBe('Frank Herbert; Bill Herbert')
   })
 
   it('writes null fields as empty cells', () => {
-    const csv = booksToCsv([ book({ subtitle: null, isbn10: null, pageCount: null }) ])
-    const [ row ] = parseRows(csv)
+    const csv = booksToCsv([book({ subtitle: null, isbn10: null, pageCount: null })])
+    const [row] = parseRows(csv)
     expect(row.subtitle).toBe('')
     expect(row.isbn10).toBe('')
     expect(row.pageCount).toBe('')
   })
 
   it('preserves a leading zero in an ISBN', () => {
-    const csv = booksToCsv([ book({ isbn10: '0441172717' }) ])
-    const [ row ] = parseRows(csv)
+    const csv = booksToCsv([book({ isbn10: '0441172717' })])
+    const [row] = parseRows(csv)
     expect(row.isbn10).toBe('0441172717')
   })
 
   it('correctly quotes a title containing a comma', () => {
-    const csv = booksToCsv([ book({ title: 'Foundation, Book 1' }) ])
-    const [ row ] = parseRows(csv)
+    const csv = booksToCsv([book({ title: 'Foundation, Book 1' })])
+    const [row] = parseRows(csv)
     expect(row.title).toBe('Foundation, Book 1')
   })
 
   it('writes multiple rows in order', () => {
-    const csv = booksToCsv([ book({ title: 'Dune' }), book({ title: 'Dune Messiah' }) ])
+    const csv = booksToCsv([book({ title: 'Dune' }), book({ title: 'Dune Messiah' })])
     const rows = parseRows(csv)
-    expect(rows.map((r) => r.title)).toEqual([ 'Dune', 'Dune Messiah' ])
+    expect(rows.map((r) => r.title)).toEqual(['Dune', 'Dune Messiah'])
   })
 })

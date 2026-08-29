@@ -13,7 +13,10 @@
   const booksStore = getBooksStore()
 
   async function handleExport() {
-    const path = await save({ defaultPath: 'books.csv', filters: [ { name: 'CSV', extensions: [ 'csv' ] } ] })
+    const path = await save({
+      defaultPath: 'books.csv',
+      filters: [{ name: 'CSV', extensions: ['csv'] }],
+    })
     if (!path) return
 
     try {
@@ -25,7 +28,7 @@
   }
 
   async function handleImport() {
-    const path = await open({ filters: [ { name: 'CSV', extensions: [ 'csv' ] } ] })
+    const path = await open({ filters: [{ name: 'CSV', extensions: ['csv'] }] })
     if (!path || Array.isArray(path)) return
 
     let content: string
@@ -43,8 +46,12 @@
       return
     }
 
-    for (const book of result.books) {
-      await booksStore.add(book)
+    for (const { book, authors } of result.books) {
+      const bookId = await booksStore.add(book)
+      if (authors.length > 0) {
+        const fullBook = booksStore.value.find((b) => b.id === bookId)!
+        await booksStore.updateAuthors(fullBook, authors)
+      }
     }
   }
 
@@ -55,7 +62,10 @@
     )
     if (!confirmed) return
 
-    await wipeLocalDataAndRelaunch('reset-app-data', 'Could not fully reset app data. Please try again.')
+    await wipeLocalDataAndRelaunch(
+      'reset-app-data',
+      'Could not fully reset app data. Please try again.'
+    )
   }
 
   async function handleCheckForUpdates() {

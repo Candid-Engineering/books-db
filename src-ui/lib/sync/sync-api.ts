@@ -2,6 +2,7 @@ import * as schema from '$lib/db/schema'
 
 export type LocalBook = typeof schema.books.$inferSelect
 export type LocalBookTag = typeof schema.bookTags.$inferSelect
+export type LocalBookAuthor = typeof schema.bookAuthors.$inferSelect
 
 export interface RemoteBook {
   id: string
@@ -9,7 +10,6 @@ export interface RemoteBook {
   isbn13: string | null
   title: string
   subtitle: string | null
-  authors: string[]
   series: string | null
   pageCount: number | null
   publicationDate: string | null
@@ -27,11 +27,22 @@ export interface RemoteBookTag {
   updatedAt: Date
 }
 
-export type Rejection = { type: 'books'; id: string } | { type: 'book_tags'; bookId: string; name: string }
+export interface RemoteBookAuthor {
+  bookId: string
+  name: string
+  deletedAt: Date | null
+  updatedAt: Date
+}
+
+export type Rejection =
+  | { type: 'books'; id: string }
+  | { type: 'book_tags'; bookId: string; name: string }
+  | { type: 'book_authors'; bookId: string; name: string }
 
 export interface PullCursors {
   books: number
   bookTags: number
+  bookAuthors: number
 }
 
 export class SyncApiError extends Error {
@@ -68,7 +79,11 @@ async function request(authToken: string, path: string, init: RequestInit): Prom
 }
 
 function extractErrorMessage(body: unknown, status: number): string {
-  if (typeof body === 'object' && body !== null && Array.isArray((body as { errors?: unknown }).errors)) {
+  if (
+    typeof body === 'object' &&
+    body !== null &&
+    Array.isArray((body as { errors?: unknown }).errors)
+  ) {
     const [firstError] = (body as { errors: { message: string }[] }).errors
     if (firstError?.message) return firstError.message
   }
@@ -85,7 +100,6 @@ function bookToWire(book: LocalBook): Record<string, unknown> {
     isbn13: book.isbn13,
     title: book.title,
     subtitle: book.subtitle,
-    authors: book.authors,
     series: book.series,
     page_count: book.pageCount,
     publication_date: book.publicationDate,
@@ -104,13 +118,20 @@ function bookTagToWire(tag: LocalBookTag): Record<string, unknown> {
   }
 }
 
+function bookAuthorToWire(author: LocalBookAuthor): Record<string, unknown> {
+  return {
+    book_id: author.bookId,
+    name: author.name,
+    discarded_at: author.deletedAt,
+  }
+}
+
 interface WireBook {
   id: string
   isbn10: string | null
   isbn13: string | null
   title: string
   subtitle: string | null
-  authors: string[]
   series: string | null
   page_count: number | null
   publication_date: string | null
@@ -128,6 +149,13 @@ interface WireBookTag {
   updated_at: string
 }
 
+interface WireBookAuthor {
+  book_id: string
+  name: string
+  discarded_at: string | null
+  updated_at: string
+}
+
 function bookFromWire(row: WireBook): RemoteBook {
   return {
     id: row.id,
@@ -135,7 +163,6 @@ function bookFromWire(row: WireBook): RemoteBook {
     isbn13: row.isbn13,
     title: row.title,
     subtitle: row.subtitle,
-    authors: row.authors,
     series: row.series,
     pageCount: row.page_count,
     publicationDate: row.publication_date,
@@ -156,16 +183,33 @@ function bookTagFromWire(row: WireBookTag): RemoteBookTag {
   }
 }
 
-function rejectionFromWire(row: { type: string; id?: string; book_id?: string; name?: string }): Rejection {
+function bookAuthorFromWire(row: WireBookAuthor): RemoteBookAuthor {
+  return {
+    bookId: row.book_id,
+    name: row.name,
+    deletedAt: row.discarded_at ? new Date(row.discarded_at) : null,
+    updatedAt: new Date(row.updated_at),
+  }
+}
+
+function rejectionFromWire(row: {
+  type: string
+  id?: string
+  book_id?: string
+  name?: string
+}): Rejection {
   if (row.type === 'books') {
     return { type: 'books', id: row.id as string }
+  }
+  if (row.type === 'book_authors') {
+    return { type: 'book_authors', bookId: row.book_id as string, name: row.name as string }
   }
   return { type: 'book_tags', bookId: row.book_id as string, name: row.name as string }
 }
 
 export async function pushEntities(
   authToken: string,
-  entities: { books: LocalBook[]; bookTags: LocalBookTag[] }
+  entities: { books: LocalBook[]; bookTags: LocalBookTag[]; bookAuthors: LocalBookAuthor[] }
 ): Promise<{ rejected: Rejection[] }> {
   const body = await request(authToken, '/sync/push', {
     method: 'POST',
@@ -174,33 +218,45 @@ export async function pushEntities(
       entities: {
         books: entities.books.map(bookToWire),
         book_tags: entities.bookTags.map(bookTagToWire),
+        book_authors: entities.bookAuthors.map(bookAuthorToWire),
       },
     }),
   })
 
-  const { rejected } = body as { rejected: { type: string; id?: string; book_id?: string; name?: string }[] }
+  const { rejected } = body as {
+    rejected: { type: string; id?: string; book_id?: string; name?: string }[]
+  }
   return { rejected: rejected.map(rejectionFromWire) }
 }
 
 export async function pullEntities(
   authToken: string,
   since: PullCursors
-): Promise<{ entities: { books: RemoteBook[]; bookTags: RemoteBookTag[] }; cursors: PullCursors }> {
+): Promise<{
+  entities: { books: RemoteBook[]; bookTags: RemoteBookTag[]; bookAuthors: RemoteBookAuthor[] }
+  cursors: PullCursors
+}> {
   const query = new URLSearchParams()
   query.set('since[books]', String(since.books))
   query.set('since[book_tags]', String(since.bookTags))
+  query.set('since[book_authors]', String(since.bookAuthors))
 
   const body = await request(authToken, `/sync/pull?${query.toString()}`, { method: 'GET' })
   const { entities, cursors } = body as {
-    entities: { books: WireBook[]; book_tags: WireBookTag[] }
-    cursors: { books: number; book_tags: number }
+    entities: { books: WireBook[]; book_tags: WireBookTag[]; book_authors: WireBookAuthor[] }
+    cursors: { books: number; book_tags: number; book_authors: number }
   }
 
   return {
     entities: {
       books: entities.books.map(bookFromWire),
       bookTags: entities.book_tags.map(bookTagFromWire),
+      bookAuthors: entities.book_authors.map(bookAuthorFromWire),
     },
-    cursors: { books: cursors.books, bookTags: cursors.book_tags },
+    cursors: {
+      books: cursors.books,
+      bookTags: cursors.book_tags,
+      bookAuthors: cursors.book_authors,
+    },
   }
 }

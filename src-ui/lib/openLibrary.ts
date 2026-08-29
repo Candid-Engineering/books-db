@@ -5,6 +5,7 @@ import { type NewBook } from './types/book.js'
 export type OpenLibraryBookData = {
   book: NewBook
   tags: string[]
+  authors: string[]
 }
 
 const fetchWithTimeout = async (request: Request | string, timeout = 3000): Promise<Response> => {
@@ -45,7 +46,9 @@ export async function getByISBN(isbn: string): Promise<OpenLibraryBookData> {
   return await normalizeOpenLibraryBook(data)
 }
 
-async function normalizeOpenLibraryBook(data: components['schemas']['Edition']): Promise<OpenLibraryBookData> {
+async function normalizeOpenLibraryBook(
+  data: components['schemas']['Edition']
+): Promise<OpenLibraryBookData> {
   const id = data.key.split('/').pop()
   const authorIds = data.authors?.map((v) => v.key.split('/').pop() || '').filter(Boolean) || []
   return {
@@ -54,7 +57,6 @@ async function normalizeOpenLibraryBook(data: components['schemas']['Edition']):
       isbn13: data.isbn_13?.[0],
       title: data.title,
       subtitle: data.subtitle,
-      authors: await Promise.all(authorIds?.map(getAuthorName)),
       series: data.series?.[0],
       pageCount: normalizePages(data.number_of_pages),
       publicationDate: data.publish_date, // 1883 or October 1996 or Apr 15, 2019
@@ -66,6 +68,7 @@ async function normalizeOpenLibraryBook(data: components['schemas']['Edition']):
       },
     },
     tags: data.subjects ?? [],
+    authors: await Promise.all(authorIds?.map(getAuthorName)),
   }
 }
 

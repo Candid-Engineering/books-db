@@ -72,12 +72,35 @@ class BooksStore {
     await this.db
       .update(schema.bookTags)
       .set({ deletedAt: new Date(), updatedAt: new Date(), syncedAt: null })
-      .where(
-        and(
-          eq(schema.bookTags.bookId, book.id),
-          eq(schema.bookTags.name, tag)
-        )
-      )
+      .where(and(eq(schema.bookTags.bookId, book.id), eq(schema.bookTags.name, tag)))
+  }
+
+  async updateAuthors(book: Book, authors: string[]): Promise<void> {
+    const existingAuthors = book.authors.map((bookAuthor) => bookAuthor.name)
+    for (const authorToRemove of _.difference(existingAuthors, authors)) {
+      await this.removeAuthor(book, authorToRemove)
+    }
+    for (const authorToAdd of _.difference(authors, existingAuthors)) {
+      await this.addAuthor(book, authorToAdd)
+    }
+    await this.reload()
+  }
+
+  private async addAuthor(book: Book, authorName: string): Promise<void> {
+    await this.db
+      .insert(schema.bookAuthors)
+      .values({ bookId: book.id, name: authorName })
+      .onConflictDoUpdate({
+        target: [schema.bookAuthors.bookId, schema.bookAuthors.name],
+        set: { deletedAt: null, updatedAt: new Date(), syncedAt: null },
+      })
+  }
+
+  private async removeAuthor(book: Book, author: string): Promise<void> {
+    await this.db
+      .update(schema.bookAuthors)
+      .set({ deletedAt: new Date(), updatedAt: new Date(), syncedAt: null })
+      .where(and(eq(schema.bookAuthors.bookId, book.id), eq(schema.bookAuthors.name, author)))
   }
 
   async remove(id: string): Promise<void> {
@@ -90,6 +113,10 @@ class BooksStore {
       .update(schema.bookTags)
       .set({ deletedAt: now, updatedAt: now, syncedAt: null })
       .where(and(eq(schema.bookTags.bookId, id), isNull(schema.bookTags.deletedAt)))
+    await this.db
+      .update(schema.bookAuthors)
+      .set({ deletedAt: now, updatedAt: now, syncedAt: null })
+      .where(and(eq(schema.bookAuthors.bookId, id), isNull(schema.bookAuthors.deletedAt)))
     await this.reload()
   }
 
@@ -101,7 +128,10 @@ class BooksStore {
   async reload(): Promise<BooksStore> {
     this.#value = await this.db.query.books.findMany({
       where: isNull(schema.books.deletedAt),
-      with: { tags: { where: isNull(schema.bookTags.deletedAt) } },
+      with: {
+        tags: { where: isNull(schema.bookTags.deletedAt) },
+        authors: { where: isNull(schema.bookAuthors.deletedAt) },
+      },
     })
     return this
   }

@@ -50,6 +50,13 @@
       "when": 1787586405006,
       "tag": "20260824154645_add_dev_tokens_table",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1787807446702,
+      "tag": "20260827051046_add_book_authors_table",
+      "breakpoints": true
     }
   ]
 }

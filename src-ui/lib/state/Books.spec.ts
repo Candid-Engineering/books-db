@@ -13,7 +13,6 @@ const duneMessiah: NewBook = {
   title: 'Dune Messiah',
   subtitle: 'Dune Chronicles, Book 2',
   series: 'Dune (2)', // or 'Dune Chronicles, Book 2'
-  authors: ['Frank Herbert'],
   copyrightDate: '1969',
   publicationDate: 'July 15, 1987',
   coverImages: {
@@ -27,7 +26,6 @@ const duneMessiah: NewBook = {
 const princessAndGrilledCheese: NewBook = {
   isbn13: '9780316538725',
   title: 'Princess and the Grilled Cheese Sandwich (a Graphic Novel)',
-  authors: ['Deya Muniz'],
 }
 
 let booksStore: BooksStore
@@ -195,16 +193,6 @@ describe('booksStore', () => {
         expect(editedBook?.subtitle).toBe('Revised Subtitle')
       })
 
-      it('should edit the authors of a book', async () => {
-        const updatedBook = {
-          ...duneMessiahWithId,
-          authors: ['Frank Herbert', 'New Co-Author'],
-        }
-        await booksStore.edit(updatedBook)
-        const editedBook = booksStore.value.find((book) => book.id === duneMessiahWithId.id)
-        expect(editedBook?.authors).toContain('New Co-Author')
-      })
-
       it('should edit the publication date', async () => {
         const updatedBook = {
           ...duneMessiahWithId,
@@ -258,7 +246,14 @@ describe('booksStore', () => {
         const editedBook = booksStore.value.find((book) => book.id === duneMessiahWithId.id)
         expect(editedBook?.tags.map((t) => t.name)).toContain('Science Fiction')
       })
+    })
 
+    describe('#updateAuthors', () => {
+      it('should update the authors of a book', async () => {
+        await booksStore.updateAuthors(duneMessiahWithId, ['Frank Herbert', 'Brian Herbert'])
+        const editedBook = booksStore.value.find((book) => book.id === duneMessiahWithId.id)
+        expect(editedBook?.authors.map((a) => a.name)).toContain('Frank Herbert')
+      })
     })
 
     describe('#remove', () => {
@@ -287,7 +282,7 @@ describe('booksStore', () => {
         expect(rawRow.syncedAt).toBeNull()
       })
 
-      it('should tombstone the book\'s active tags too', async () => {
+      it("should tombstone the book's active tags too", async () => {
         await booksStore.updateTags(duneMessiahWithId, ['Science Fiction'])
         await booksStore.remove(duneMessiahWithId.id)
 
@@ -302,6 +297,23 @@ describe('booksStore', () => {
           )
         expect(rawTagRow.deletedAt).not.toBeNull()
         expect(rawTagRow.syncedAt).toBeNull()
+      })
+
+      it("should tombstone the book's active authors too", async () => {
+        await booksStore.updateAuthors(duneMessiahWithId, ['Frank Herbert'])
+        await booksStore.remove(duneMessiahWithId.id)
+
+        const [rawAuthorRow] = await testDb.drizzle
+          .select()
+          .from(schema.bookAuthors)
+          .where(
+            and(
+              eq(schema.bookAuthors.bookId, duneMessiahWithId.id),
+              eq(schema.bookAuthors.name, 'Frank Herbert')
+            )
+          )
+        expect(rawAuthorRow.deletedAt).not.toBeNull()
+        expect(rawAuthorRow.syncedAt).toBeNull()
       })
     })
 
@@ -352,6 +364,56 @@ describe('booksStore', () => {
 
         const editedBook = booksStore.value.find((book) => book.id === duneMessiahWithId.id)
         expect(editedBook?.tags.map((t) => t.name)).toContain('Science Fiction')
+      })
+    })
+
+    describe('author lifecycle', () => {
+      it('should mark a removed author as pending sync rather than deleting the row', async () => {
+        await booksStore.updateAuthors(duneMessiahWithId, ['Frank Herbert'])
+        const withAuthorAdded = booksStore.value.find((book) => book.id === duneMessiahWithId.id)!
+        await booksStore.updateAuthors(withAuthorAdded, [])
+
+        const rawAuthorRows = await testDb.drizzle
+          .select()
+          .from(schema.bookAuthors)
+          .where(
+            and(
+              eq(schema.bookAuthors.bookId, duneMessiahWithId.id),
+              eq(schema.bookAuthors.name, 'Frank Herbert')
+            )
+          )
+
+        expect(rawAuthorRows).toHaveLength(1)
+        expect(rawAuthorRows[0].deletedAt).not.toBeNull()
+        expect(rawAuthorRows[0].syncedAt).toBeNull()
+
+        const editedBook = booksStore.value.find((book) => book.id === duneMessiahWithId.id)
+        expect(editedBook?.authors.map((a) => a.name)).not.toContain('Frank Herbert')
+      })
+
+      it('should revive a previously-removed author on re-add instead of erroring or duplicating', async () => {
+        await booksStore.updateAuthors(duneMessiahWithId, ['Frank Herbert'])
+        const withAuthorAdded = booksStore.value.find((book) => book.id === duneMessiahWithId.id)!
+        await booksStore.updateAuthors(withAuthorAdded, [])
+        const withAuthorRemoved = booksStore.value.find((book) => book.id === duneMessiahWithId.id)!
+        await booksStore.updateAuthors(withAuthorRemoved, ['Frank Herbert'])
+
+        const rawAuthorRows = await testDb.drizzle
+          .select()
+          .from(schema.bookAuthors)
+          .where(
+            and(
+              eq(schema.bookAuthors.bookId, duneMessiahWithId.id),
+              eq(schema.bookAuthors.name, 'Frank Herbert')
+            )
+          )
+
+        expect(rawAuthorRows).toHaveLength(1)
+        expect(rawAuthorRows[0].deletedAt).toBeNull()
+        expect(rawAuthorRows[0].syncedAt).toBeNull()
+
+        const editedBook = booksStore.value.find((book) => book.id === duneMessiahWithId.id)
+        expect(editedBook?.authors.map((a) => a.name)).toContain('Frank Herbert')
       })
     })
 

@@ -10,18 +10,18 @@
 
   let booksStore = getBooksStore()
   const handleEdit = async (book: Book, field: keyof Book, valueStr: string) => {
-    let value: string | string[] = valueStr.trim()
-
-    if (field === 'authors') {
-      value = value.split(',').map(trim)
-    }
-
+    const value = valueStr.trim()
     await booksStore.edit({ ...book, [field]: value })
   }
 
   async function updateTags(book: Book, commaSeparatedTags: string): Promise<void> {
     const tags = commaSeparatedTags.split(',').map(trim)
     await booksStore.updateTags(book, tags)
+  }
+
+  async function updateAuthors(book: Book, commaSeparatedAuthors: string): Promise<void> {
+    const authors = commaSeparatedAuthors.split(',').map(trim)
+    await booksStore.updateAuthors(book, authors)
   }
 
   const removeBook = async (id: string): Promise<void> => {
@@ -58,8 +58,8 @@
     onChange={(newValue: string) => handleEdit(book, 'title', newValue)}
   />
   <EditableTd
-    value={book.authors?.join(', ')}
-    onChange={(newValue: string) => handleEdit(book, 'authors', newValue)}
+    value={book.authors.map((bookAuthor) => bookAuthor.name).join(', ')}
+    onChange={(newValue: string) => updateAuthors(book, newValue)}
   />
   <EditableTd
     value={book.tags.map((bookTag) => bookTag.name).join(', ')}

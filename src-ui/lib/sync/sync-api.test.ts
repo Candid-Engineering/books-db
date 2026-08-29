@@ -1,7 +1,14 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
 import { http, HttpResponse } from 'msw'
 import { mockServer } from '../../testing/msw-setup'
-import { SyncApiError, pushEntities, pullEntities, type LocalBook, type LocalBookTag } from './sync-api'
+import {
+  SyncApiError,
+  pushEntities,
+  pullEntities,
+  type LocalBook,
+  type LocalBookTag,
+  type LocalBookAuthor,
+} from './sync-api'
 
 const BASE_URL = 'http://localhost:3000'
 const AUTH_TOKEN = 'auth-token-xyz'
@@ -17,7 +24,6 @@ function localBook(overrides: Partial<LocalBook> = {}): LocalBook {
     isbn13: '9780441172719',
     title: 'Dune',
     subtitle: null,
-    authors: [ 'Frank Herbert' ],
     series: null,
     pageCount: null,
     publicationDate: null,
@@ -43,6 +49,17 @@ function localBookTag(overrides: Partial<LocalBookTag> = {}): LocalBookTag {
   }
 }
 
+function localBookAuthor(overrides: Partial<LocalBookAuthor> = {}): LocalBookAuthor {
+  return {
+    bookId: 'book-1',
+    name: 'Frank Herbert',
+    updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+    deletedAt: null,
+    syncedAt: null,
+    ...overrides,
+  }
+}
+
 describe('pushEntities', () => {
   it('sends the wire-shaped, snake_case request body with the auth header', async () => {
     mockServer.use(
@@ -57,7 +74,6 @@ describe('pushEntities', () => {
                 isbn13: '9780441172719',
                 title: 'Dune',
                 subtitle: null,
-                authors: [ 'Frank Herbert' ],
                 series: null,
                 page_count: null,
                 publication_date: null,
@@ -67,7 +83,8 @@ describe('pushEntities', () => {
                 discarded_at: null,
               },
             ],
-            book_tags: [ { book_id: 'book-1', name: 'Science Fiction', discarded_at: null } ],
+            book_tags: [{ book_id: 'book-1', name: 'Science Fiction', discarded_at: null }],
+            book_authors: [{ book_id: 'book-1', name: 'Frank Herbert', discarded_at: null }],
           },
         })
         return HttpResponse.json({ rejected: [] }, { status: 200 })
@@ -75,7 +92,11 @@ describe('pushEntities', () => {
     )
 
     await expect(
-      pushEntities(AUTH_TOKEN, { books: [ localBook() ], bookTags: [ localBookTag() ] })
+      pushEntities(AUTH_TOKEN, {
+        books: [localBook()],
+        bookTags: [localBookTag()],
+        bookAuthors: [localBookAuthor()],
+      })
     ).resolves.toEqual({ rejected: [] })
   })
 
@@ -87,6 +108,7 @@ describe('pushEntities', () => {
             rejected: [
               { type: 'books', id: 'book-1' },
               { type: 'book_tags', book_id: 'book-1', name: 'Mystery' },
+              { type: 'book_authors', book_id: 'book-1', name: 'Someone Else' },
             ],
           },
           { status: 200 }
@@ -94,10 +116,13 @@ describe('pushEntities', () => {
       })
     )
 
-    await expect(pushEntities(AUTH_TOKEN, { books: [], bookTags: [] })).resolves.toEqual({
+    await expect(
+      pushEntities(AUTH_TOKEN, { books: [], bookTags: [], bookAuthors: [] })
+    ).resolves.toEqual({
       rejected: [
         { type: 'books', id: 'book-1' },
         { type: 'book_tags', bookId: 'book-1', name: 'Mystery' },
+        { type: 'book_authors', bookId: 'book-1', name: 'Someone Else' },
       ],
     })
   })
@@ -106,13 +131,17 @@ describe('pushEntities', () => {
     mockServer.use(
       http.post(`${BASE_URL}/sync/push`, () => {
         return HttpResponse.json(
-          { errors: [ { code: 'token_expired', message: 'Token has expired' } ] },
+          { errors: [{ code: 'token_expired', message: 'Token has expired' }] },
           { status: 401 }
         )
       })
     )
 
-    const error = await pushEntities(AUTH_TOKEN, { books: [], bookTags: [] }).catch((e: unknown) => e)
+    const error = await pushEntities(AUTH_TOKEN, {
+      books: [],
+      bookTags: [],
+      bookAuthors: [],
+    }).catch((e: unknown) => e)
     expect(error).toBeInstanceOf(SyncApiError)
     expect(error).toMatchObject({ message: 'Token has expired' })
   })
@@ -125,15 +154,16 @@ describe('pullEntities', () => {
         const url = new URL(request.url)
         expect(url.searchParams.get('since[books]')).toBe('5')
         expect(url.searchParams.get('since[book_tags]')).toBe('3')
+        expect(url.searchParams.get('since[book_authors]')).toBe('2')
         expect(request.headers.get('Authorization')).toBe(`Bearer ${AUTH_TOKEN}`)
         return HttpResponse.json({
-          entities: { books: [], book_tags: [] },
-          cursors: { books: 5, book_tags: 3 },
+          entities: { books: [], book_tags: [], book_authors: [] },
+          cursors: { books: 5, book_tags: 3, book_authors: 2 },
         })
       })
     )
 
-    await pullEntities(AUTH_TOKEN, { books: 5, bookTags: 3 })
+    await pullEntities(AUTH_TOKEN, { books: 5, bookTags: 3, bookAuthors: 2 })
   })
 
   it('maps the wire response to camelCase local rows', async () => {
@@ -148,7 +178,6 @@ describe('pullEntities', () => {
                 isbn13: '9780441172719',
                 title: 'Dune',
                 subtitle: null,
-                authors: [ 'Frank Herbert' ],
                 series: null,
                 page_count: 412,
                 publication_date: 'August 1965',
@@ -169,13 +198,22 @@ describe('pullEntities', () => {
                 server_seq: 3,
               },
             ],
+            book_authors: [
+              {
+                book_id: 'book-1',
+                name: 'Frank Herbert',
+                discarded_at: null,
+                updated_at: '2026-01-04T00:00:00.000Z',
+                server_seq: 2,
+              },
+            ],
           },
-          cursors: { books: 5, book_tags: 3 },
+          cursors: { books: 5, book_tags: 3, book_authors: 2 },
         })
       })
     )
 
-    const result = await pullEntities(AUTH_TOKEN, { books: 0, bookTags: 0 })
+    const result = await pullEntities(AUTH_TOKEN, { books: 0, bookTags: 0, bookAuthors: 0 })
 
     expect(result).toEqual({
       entities: {
@@ -186,7 +224,6 @@ describe('pullEntities', () => {
             isbn13: '9780441172719',
             title: 'Dune',
             subtitle: null,
-            authors: [ 'Frank Herbert' ],
             series: null,
             pageCount: 412,
             publicationDate: 'August 1965',
@@ -205,8 +242,16 @@ describe('pullEntities', () => {
             updatedAt: new Date('2026-01-03T00:00:00.000Z'),
           },
         ],
+        bookAuthors: [
+          {
+            bookId: 'book-1',
+            name: 'Frank Herbert',
+            deletedAt: null,
+            updatedAt: new Date('2026-01-04T00:00:00.000Z'),
+          },
+        ],
       },
-      cursors: { books: 5, bookTags: 3 },
+      cursors: { books: 5, bookTags: 3, bookAuthors: 2 },
     })
   })
 })
@@ -216,13 +261,18 @@ describe('base URL configuration', () => {
     vi.stubEnv('VITE_API_BASE_URL', 'https://api.example.com')
     mockServer.use(
       http.get('https://api.example.com/sync/pull', () => {
-        return HttpResponse.json({ entities: { books: [], book_tags: [] }, cursors: { books: 0, book_tags: 0 } })
+        return HttpResponse.json({
+          entities: { books: [], book_tags: [], book_authors: [] },
+          cursors: { books: 0, book_tags: 0, book_authors: 0 },
+        })
       })
     )
 
-    await expect(pullEntities(AUTH_TOKEN, { books: 0, bookTags: 0 })).resolves.toEqual({
-      entities: { books: [], bookTags: [] },
-      cursors: { books: 0, bookTags: 0 },
+    await expect(
+      pullEntities(AUTH_TOKEN, { books: 0, bookTags: 0, bookAuthors: 0 })
+    ).resolves.toEqual({
+      entities: { books: [], bookTags: [], bookAuthors: [] },
+      cursors: { books: 0, bookTags: 0, bookAuthors: 0 },
     })
   })
 })

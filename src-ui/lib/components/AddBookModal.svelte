@@ -50,10 +50,13 @@
       return
     }
     const authorsStr = authors.split(',').map((v) => v.trim())
-    const tagsStr = tags.split(',').map((v) => v.trim())
-    const newBook = { ...book, title: book.title, authors: authorsStr, tags: tagsStr }
+    const tagsStr = tags.trim() ? tags.split(',').map((v) => v.trim()) : []
+    const newBook = { ...book, title: book.title }
     try {
-      await booksStore.add(newBook)
+      const bookId = await booksStore.add(newBook)
+      const fullBook = booksStore.value.find((b) => b.id === bookId)!
+      await booksStore.updateAuthors(fullBook, authorsStr)
+      await booksStore.updateTags(fullBook, tagsStr)
       close()
     } catch (error) {
       console.error('Error saving book:', error)
@@ -80,14 +83,24 @@
           <div class="field">
             <label class="label" for="isbn-10">ISBN-10</label>
             <div class="control">
-              <input class="input" type="text" bind:value={book.isbn10} placeholder="Enter ISBN-10" />
+              <input
+                class="input"
+                type="text"
+                bind:value={book.isbn10}
+                placeholder="Enter ISBN-10"
+              />
             </div>
           </div>
 
           <div class="field">
             <label class="label" for="isbn-13">ISBN-13</label>
             <div class="control">
-              <input class="input" type="text" bind:value={book.isbn13} placeholder="Enter ISBN-13" />
+              <input
+                class="input"
+                type="text"
+                bind:value={book.isbn13}
+                placeholder="Enter ISBN-13"
+              />
             </div>
           </div>
 

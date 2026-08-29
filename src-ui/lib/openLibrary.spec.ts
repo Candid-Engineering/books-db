@@ -165,7 +165,6 @@ describe('book', () => {
       const result = await getByISBN(isbn)
       const expected = {
         book: {
-          authors: ['Harry Harrison'],
           // copyrightDate: undefined,
           coverImages: {
             large: 'https://covers.openlibrary.org/b/olid/OL7524009M-L.jpg',
@@ -181,6 +180,7 @@ describe('book', () => {
           title: 'Adventures of the Stainless Steel Rat',
         },
         tags: [],
+        authors: ['Harry Harrison'],
       }
       expect(result).toEqual(expected)
     })

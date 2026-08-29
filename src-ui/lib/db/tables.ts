@@ -7,7 +7,6 @@ export const books = sqliteTable('books', {
   isbn13: text(),
   title: text().notNull(),
   subtitle: text(),
-  authors: text({ mode: 'json' }).notNull().$type<string[]>(),
   series: text(),
   pageCount: integer(),
   publicationDate: text(),
@@ -26,18 +25,43 @@ export const books = sqliteTable('books', {
   syncedAt: integer({ mode: 'timestamp' }), // null = pending push to server
 })
 
-export const bookTags = sqliteTable('book_tags', {
-  bookId: text().notNull().references(() => books.id, {onDelete: 'cascade'}), // automatically deletes tags when a book is deleted
-  name: text().notNull(),
-  // See books.updatedAt for why this has no DB default.
-  updatedAt: integer({ mode: 'timestamp' }),
-  deletedAt: integer({ mode: 'timestamp' }), // tombstone; null = active
-  syncedAt: integer({ mode: 'timestamp' }), // null = pending push to server
-}, (table) => {
-  return {
-    pk: primaryKey({ columns: [table.bookId, table.name] }),
+export const bookTags = sqliteTable(
+  'book_tags',
+  {
+    bookId: text()
+      .notNull()
+      .references(() => books.id, { onDelete: 'cascade' }), // automatically deletes tags when a book is deleted
+    name: text().notNull(),
+    // See books.updatedAt for why this has no DB default.
+    updatedAt: integer({ mode: 'timestamp' }),
+    deletedAt: integer({ mode: 'timestamp' }), // tombstone; null = active
+    syncedAt: integer({ mode: 'timestamp' }), // null = pending push to server
+  },
+  (table) => {
+    return {
+      pk: primaryKey({ columns: [table.bookId, table.name] }),
+    }
   }
-})
+)
+
+export const bookAuthors = sqliteTable(
+  'book_authors',
+  {
+    bookId: text()
+      .notNull()
+      .references(() => books.id, { onDelete: 'cascade' }), // automatically deletes authors when a book is deleted
+    name: text().notNull(),
+    // See books.updatedAt for why this has no DB default.
+    updatedAt: integer({ mode: 'timestamp' }),
+    deletedAt: integer({ mode: 'timestamp' }), // tombstone; null = active
+    syncedAt: integer({ mode: 'timestamp' }), // null = pending push to server
+  },
+  (table) => {
+    return {
+      pk: primaryKey({ columns: [table.bookId, table.name] }),
+    }
+  }
+)
 
 export const localUser = sqliteTable('local_user', {
   singleton: integer().primaryKey().default(1), // fixed PK — enforces at most one row
@@ -53,6 +77,7 @@ export const syncState = sqliteTable('sync_state', {
   singleton: integer().primaryKey().default(1), // fixed PK — enforces at most one row
   booksSince: integer().notNull().default(0),
   bookTagsSince: integer().notNull().default(0),
+  bookAuthorsSince: integer().notNull().default(0),
 })
 
 // Dev-only backing store for SqliteTokenStorage (see token-storage.ts) - an

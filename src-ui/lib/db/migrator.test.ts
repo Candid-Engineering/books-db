@@ -28,7 +28,7 @@ describe('migrate against an already-populated table', () => {
     return { drizzleDb, sqlite }
   }
 
-  const firstJournalEntries = [ { idx: 0, when: 1, tag: '0001_create_books', breakpoints: true } ]
+  const firstJournalEntries = [{ idx: 0, when: 1, tag: '0001_create_books', breakpoints: true }]
   const firstJournal = JSON.stringify({ entries: firstJournalEntries })
   const firstMigrationData = {
     '0001_create_books': 'CREATE TABLE books (id text PRIMARY KEY, title text NOT NULL);',
@@ -73,7 +73,53 @@ describe('migrate against an already-populated table', () => {
 
     await migrate(drizzleDb, journal, migrationData)
 
-    const [ [ updatedAt ] ] = sqlite.exec('SELECT updatedAt FROM books')[0].values
+    const [[updatedAt]] = sqlite.exec('SELECT updatedAt FROM books')[0].values
     expect(updatedAt).toBeGreaterThan(0)
+  })
+
+  it('backfills book_authors from the legacy authors JSON column before dropping it', async () => {
+    const { drizzleDb, sqlite } = await createDb()
+    const journalWithAuthorsColumn = JSON.stringify({
+      entries: [
+        {
+          idx: 0,
+          when: 1,
+          tag: '0001_create_books_with_authors_json',
+          breakpoints: true,
+        },
+      ],
+    })
+    const migrationDataWithAuthorsColumn = {
+      '0001_create_books_with_authors_json':
+        "CREATE TABLE books (id text PRIMARY KEY, title text NOT NULL, authors text NOT NULL DEFAULT '[]');",
+    }
+    await migrate(drizzleDb, journalWithAuthorsColumn, migrationDataWithAuthorsColumn)
+    sqlite.run(
+      "INSERT INTO books (id, title, authors) VALUES ('1', 'Dune', '[\"Frank Herbert\"]'), ('2', 'No Author', '[]')"
+    )
+
+    const journal = JSON.stringify({
+      entries: [
+        ...(JSON.parse(journalWithAuthorsColumn) as { entries: unknown[] }).entries,
+        { idx: 1, when: 2, tag: '0002_add_book_authors_table', breakpoints: true },
+      ],
+    })
+    const migrationData = {
+      ...migrationDataWithAuthorsColumn,
+      '0002_add_book_authors_table':
+        'CREATE TABLE book_authors (bookId text NOT NULL, name text NOT NULL, PRIMARY KEY (bookId, name));' +
+        '--> statement-breakpoint\n' +
+        "INSERT INTO book_authors (bookId, name) SELECT books.id, json_each.value FROM books, json_each(books.authors) WHERE json_each.value != '';" +
+        '--> statement-breakpoint\n' +
+        'ALTER TABLE books DROP COLUMN authors;',
+    }
+
+    await migrate(drizzleDb, journal, migrationData)
+
+    const authorRows = sqlite.exec('SELECT bookId, name FROM book_authors')[0]?.values ?? []
+    expect(authorRows).toEqual([['1', 'Frank Herbert']])
+    expect(sqlite.exec('PRAGMA table_info(books)')[0].values.map((row) => row[1])).not.toContain(
+      'authors'
+    )
   })
 })

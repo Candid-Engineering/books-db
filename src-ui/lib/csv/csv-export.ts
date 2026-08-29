@@ -17,7 +17,7 @@ export function booksToCsv(books: Book[]): string {
   const data = books.map((book) => [
     book.title,
     book.subtitle ?? '',
-    book.authors.join('; '),
+    book.authors.map((bookAuthor) => bookAuthor.name).join('; '),
     book.isbn10 ?? '',
     book.isbn13 ?? '',
     book.series ?? '',
@@ -26,5 +26,5 @@ export function booksToCsv(books: Book[]): string {
     book.copyrightDate ?? '',
   ])
 
-  return Papa.unparse({ fields: [ ...CSV_FIELDS ], data })
+  return Papa.unparse({ fields: [...CSV_FIELDS], data })
 }
