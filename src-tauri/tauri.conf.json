@@ -11,6 +11,7 @@
     "category": "DeveloperTool",
     "copyright": "",
     "targets": "all",
+    "createUpdaterArtifacts": true,
     "externalBin": [],
     "icon": [
       "icons/32x32.png",
@@ -47,7 +48,15 @@
   "mainBinaryName": "books-db",
   "version": "0.1.0",
   "identifier": "com.candid-eng.books-db",
-  "plugins": { "fs": {} },
+  "plugins": {
+    "fs": {},
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDlGRTgwNjYyMjk0QzI2OTUKUldTVkprd3BZZ2JvbjZTbnpJY0dzY3dKdVdBL2laREZZZUJhbU1VZTZ2c0JLUkluaTIwTHdLbTgK",
+      "endpoints": [
+        "https://github.com/Candid-Engineering/books-db/releases/latest/download/latest.json"
+      ]
+    }
+  },
   "app": {
     "windows": [
       {

@@ -1,8 +1,8 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "b37a98d9-da17-461b-97cb-cab6d9494b77",
-  "prevId": "de07e986-bf02-4cd4-8651-f86d7998ac0d",
+  "id": "317d2a34-2eb9-4c66-a63a-1f8f8a365bfd",
+  "prevId": "096fcabf-328e-434a-978a-20380039419d",
   "tables": {
     "book_tags": {
       "name": "book_tags",
@@ -25,9 +25,8 @@
           "name": "updatedAt",
           "type": "integer",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "(unixepoch())"
+          "notNull": false,
+          "autoincrement": false
         },
         "deletedAt": {
           "name": "deletedAt",
@@ -172,9 +171,8 @@
           "name": "updatedAt",
           "type": "integer",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "(unixepoch())"
+          "notNull": false,
+          "autoincrement": false
         },
         "deletedAt": {
           "name": "deletedAt",

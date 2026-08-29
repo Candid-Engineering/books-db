@@ -62,17 +62,20 @@ async function request(authToken: string, path: string, init: RequestInit): Prom
 
   const body: unknown = await response.json()
   if (!response.ok) {
-    throw new SyncApiError(extractErrorMessage(body))
+    throw new SyncApiError(extractErrorMessage(body, response.status))
   }
   return body
 }
 
-function extractErrorMessage(body: unknown): string {
+function extractErrorMessage(body: unknown, status: number): string {
   if (typeof body === 'object' && body !== null && Array.isArray((body as { errors?: unknown }).errors)) {
     const [firstError] = (body as { errors: { message: string }[] }).errors
-    return firstError?.message ?? 'Request failed'
+    if (firstError?.message) return firstError.message
   }
-  return 'Request failed'
+  // Body didn't match the shape we know how to parse - surface it verbatim
+  // rather than a generic message, so a mismatch is diagnosable from the
+  // error alone.
+  return `Request failed with status ${status}: ${JSON.stringify(body)}`
 }
 
 function bookToWire(book: LocalBook): Record<string, unknown> {

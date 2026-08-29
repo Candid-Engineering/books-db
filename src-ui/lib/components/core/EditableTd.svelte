@@ -13,7 +13,15 @@
 
   let { value, onChange }: Props = $props()
 
+  // $state only captures the prop's *initial* value - it won't pick up a
+  // later change to `value` (e.g. a row's tags arriving from a second store
+  // update after the row already mounted, such as after add() then
+  // updateTags()) without this effect, since the row is reused (keyed by
+  // book id), not recreated.
   let currVal = $state(value)
+  $effect(() => {
+    currVal = value
+  })
 
   function handleBlur() {
     onChange(currVal || '')

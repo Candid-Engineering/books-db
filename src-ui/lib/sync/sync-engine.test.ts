@@ -3,9 +3,40 @@ import { http, HttpResponse } from 'msw'
 import { mockServer } from '../../testing/msw-setup'
 import { testDb } from '../../testing/db-setup'
 import { createTestBooksStore } from '$lib/state/Books.svelte'
-import { SyncEngine } from './sync-engine'
+import { SyncEngine, hasUnsyncedData } from './sync-engine'
 import * as schema from '$lib/db/schema'
 import { eq, and } from 'drizzle-orm/sql/expressions/conditions'
+
+describe('hasUnsyncedData', () => {
+  it('is false when there is nothing local', async () => {
+    expect(await hasUnsyncedData(testDb.drizzle)).toBe(false)
+  })
+
+  it('is false when every book and tag is already synced', async () => {
+    await testDb.drizzle
+      .insert(schema.books)
+      .values({ id: 'book-1', title: 'Dune', authors: [ 'Frank Herbert' ], syncedAt: new Date() })
+
+    expect(await hasUnsyncedData(testDb.drizzle)).toBe(false)
+  })
+
+  it('is true when a book is pending sync', async () => {
+    await testDb.drizzle
+      .insert(schema.books)
+      .values({ id: 'book-1', title: 'Dune', authors: [ 'Frank Herbert' ] })
+
+    expect(await hasUnsyncedData(testDb.drizzle)).toBe(true)
+  })
+
+  it('is true when a tag is pending sync even if its book is synced', async () => {
+    await testDb.drizzle
+      .insert(schema.books)
+      .values({ id: 'book-1', title: 'Dune', authors: [ 'Frank Herbert' ], syncedAt: new Date() })
+    await testDb.drizzle.insert(schema.bookTags).values({ bookId: 'book-1', name: 'sci-fi' })
+
+    expect(await hasUnsyncedData(testDb.drizzle)).toBe(true)
+  })
+})
 
 const BASE_URL = 'http://localhost:3000'
 const AUTH_TOKEN = 'auth-token-xyz'
@@ -278,5 +309,20 @@ describe('SyncEngine#sync', () => {
     await engine.sync()
 
     expect(order).toEqual([ 'push', 'pull' ])
+  })
+
+  it('fetches the auth token once and reuses it for both push and pull', async () => {
+    mockServer.use(
+      http.post(`${BASE_URL}/sync/push`, () => HttpResponse.json({ rejected: [] })),
+      http.get(`${BASE_URL}/sync/pull`, () =>
+        HttpResponse.json({ entities: { books: [], book_tags: [] }, cursors: { books: 0, book_tags: 0 } })
+      )
+    )
+    const getAuthToken = vi.fn(() => Promise.resolve(AUTH_TOKEN))
+    const engine = createSyncEngine(getAuthToken)
+
+    await engine.sync()
+
+    expect(getAuthToken).toHaveBeenCalledTimes(1)
   })
 })

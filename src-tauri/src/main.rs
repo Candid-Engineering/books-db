@@ -14,6 +14,9 @@ fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_keyring::init())
+        .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_process::init())
         // TODO(rkofman): the name of the DB should be updated based on `.env` variables.
         // `books.db` for prod, `books-dev.db` for dev, and probably `:memory:` for test.
         // Also: consider moving this to the config file (assuming per-env configs).

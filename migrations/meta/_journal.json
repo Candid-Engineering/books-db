@@ -40,15 +40,15 @@
     {
       "idx": 5,
       "version": "6",
-      "when": 1787532272746,
-      "tag": "20260824004432_add_soft_delete_and_sync_tracking",
+      "when": 1787551771056,
+      "tag": "20260824060931_add_soft_delete_sync_tracking_and_sync_state",
       "breakpoints": true
     },
     {
       "idx": 6,
       "version": "6",
-      "when": 1787545168908,
-      "tag": "20260824041928_add_sync_state_table",
+      "when": 1787586405006,
+      "tag": "20260824154645_add_dev_tokens_table",
       "breakpoints": true
     }
   ]

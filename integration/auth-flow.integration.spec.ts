@@ -27,7 +27,7 @@ describe('auth flow against a real Rails server', () => {
       expect(authStore.state.isAuthenticated).toBe(true)
       expect(authStore.state.user).toMatchObject({ email, name: 'Ada Reader' })
       expect(await tokenStorage.getToken('refresh')).not.toBeNull()
-      expect(await tokenStorage.getToken('auth')).not.toBeNull()
+      expect(await authStore.getAuthToken()).not.toBeNull()
     })
   })
 

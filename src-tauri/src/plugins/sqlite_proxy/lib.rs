@@ -1,4 +1,8 @@
-use std::{fs::create_dir_all, path::PathBuf};
+use std::{
+    fs::{create_dir_all, remove_file},
+    io::ErrorKind,
+    path::{Path, PathBuf},
+};
 
 use super::error::{Error, Res};
 use super::json_param::into_json_params;
@@ -17,6 +21,43 @@ pub(super) fn connection_for(config_path: &PathBuf, filename: &String) -> Res<Co
         config_path.join(&filename)
     };
     Connection::open(&full_path).map_err(Error::Rusqlite)
+}
+
+/// Closes `connection` and deletes its backing file (plus any `-journal`/`-wal`/`-shm`
+/// sidecar), for a full local data wipe. A no-op for an in-memory connection (`path()`
+/// is `None`) rather than an error, since a factory reset of "no file" is trivially done.
+pub(super) fn factory_reset(connection: Connection) -> Res<()> {
+    let path = connection.path().map(PathBuf::from);
+    connection
+        .close()
+        .map_err(|(_, error)| Error::Rusqlite(error))?;
+
+    let Some(path) = path else {
+        return Ok(());
+    };
+    for candidate in db_file_paths(&path) {
+        remove_if_exists(&candidate)?;
+    }
+    Ok(())
+}
+
+fn db_file_paths(main_path: &Path) -> Vec<PathBuf> {
+    ["", "-journal", "-wal", "-shm"]
+        .iter()
+        .map(|suffix| {
+            let mut with_suffix = main_path.as_os_str().to_os_string();
+            with_suffix.push(suffix);
+            PathBuf::from(with_suffix)
+        })
+        .collect()
+}
+
+fn remove_if_exists(path: &Path) -> Res<()> {
+    match remove_file(path) {
+        Ok(()) => Ok(()),
+        Err(error) if error.kind() == ErrorKind::NotFound => Ok(()),
+        Err(_) => Err(Error::Generic("Failed to delete a database file.")),
+    }
 }
 
 pub(super) fn query(
@@ -265,5 +306,43 @@ mod test {
             .unwrap()
         );
         Ok(())
+    }
+
+    fn temp_dir_for(test_name: &str) -> PathBuf {
+        let dir = std::env::temp_dir().join(format!("books_db_test_{test_name}"));
+        let _ = std::fs::remove_dir_all(&dir);
+        dir
+    }
+
+    #[test]
+    fn test_factory_reset_deletes_the_db_file() {
+        let dir = temp_dir_for("factory_reset_deletes_the_db_file");
+        let connection = connection_for(&dir, &"books.db".into()).unwrap();
+        let db_path = dir.join("books.db");
+        assert!(db_path.exists());
+
+        factory_reset(connection).unwrap();
+
+        assert!(!db_path.exists());
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn test_factory_reset_deletes_sidecar_files_if_present() {
+        let dir = temp_dir_for("factory_reset_deletes_sidecar_files_if_present");
+        let connection = connection_for(&dir, &"books.db".into()).unwrap();
+        let journal_path = dir.join("books.db-journal");
+        std::fs::write(&journal_path, b"stale journal").unwrap();
+
+        factory_reset(connection).unwrap();
+
+        assert!(!journal_path.exists());
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn test_factory_reset_is_a_noop_for_an_in_memory_connection() {
+        let connection = connection_for(&PathBuf::new(), &":memory:".into()).unwrap();
+        assert!(factory_reset(connection).is_ok());
     }
 }

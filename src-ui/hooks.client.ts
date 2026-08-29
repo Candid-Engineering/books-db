@@ -9,6 +9,7 @@ import { authStore, type AuthStore } from '$lib/auth/auth-store.svelte'
 import { reportError } from '$lib/error-reporting'
 import { errorToast } from '$lib/error-toast.svelte'
 import { SyncEngine } from '$lib/sync/sync-engine'
+import { checkForUpdatesAndPrompt } from '$lib/updater'
 
 declare global {
   interface Window {
@@ -51,6 +52,13 @@ async function runSync(): Promise<void> {
 
 void runSync()
 setInterval(() => void runSync(), 60_000)
+
+// Dev sessions run straight from source, not an installed/versioned build -
+// there's nothing meaningful to update, so skip the boot-time check (matches
+// the dev/prod split already used for TokenStorage in auth-store.svelte.ts).
+if (!import.meta.env.DEV) {
+  void checkForUpdatesAndPrompt()
+}
 
 window.addEventListener('error', (event) => {
   reportError(event.error, 'window.onerror')

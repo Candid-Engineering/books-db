@@ -17,9 +17,11 @@ export const books = sqliteTable('books', {
   createdAt: integer({ mode: 'timestamp' })
     .notNull()
     .default(sql`(unixepoch())`),
-  updatedAt: integer({ mode: 'timestamp' })
-    .notNull()
-    .default(sql`(unixepoch())`),
+  // Nullable, no DB default (unlike createdAt): SQLite rejects ALTER TABLE
+  // ADD COLUMN with a non-constant default against a table that already has
+  // rows, which this column's migration must do for any real, already-used
+  // database. The app sets it explicitly on every write instead.
+  updatedAt: integer({ mode: 'timestamp' }),
   deletedAt: integer({ mode: 'timestamp' }), // tombstone; null = active
   syncedAt: integer({ mode: 'timestamp' }), // null = pending push to server
 })
@@ -27,9 +29,8 @@ export const books = sqliteTable('books', {
 export const bookTags = sqliteTable('book_tags', {
   bookId: text().notNull().references(() => books.id, {onDelete: 'cascade'}), // automatically deletes tags when a book is deleted
   name: text().notNull(),
-  updatedAt: integer({ mode: 'timestamp' })
-    .notNull()
-    .default(sql`(unixepoch())`),
+  // See books.updatedAt for why this has no DB default.
+  updatedAt: integer({ mode: 'timestamp' }),
   deletedAt: integer({ mode: 'timestamp' }), // tombstone; null = active
   syncedAt: integer({ mode: 'timestamp' }), // null = pending push to server
 }, (table) => {
@@ -52,4 +53,13 @@ export const syncState = sqliteTable('sync_state', {
   singleton: integer().primaryKey().default(1), // fixed PK — enforces at most one row
   booksSince: integer().notNull().default(0),
   bookTagsSince: integer().notNull().default(0),
+})
+
+// Dev-only backing store for SqliteTokenStorage (see token-storage.ts) - an
+// unencrypted alternative to the OS keychain, used only when running via
+// `pnpm tauri dev`, to avoid keychain access-control prompts on unsigned,
+// frequently-rebuilt dev binaries. Never used in a real build.
+export const devTokens = sqliteTable('dev_tokens', {
+  namespace: text().primaryKey(),
+  value: text().notNull(),
 })

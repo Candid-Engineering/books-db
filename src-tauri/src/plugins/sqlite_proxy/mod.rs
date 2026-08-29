@@ -19,7 +19,12 @@ use tauri::Wry;
 pub fn init(filename: impl Into<String> + Send + 'static) -> TauriPlugin<Wry> {
     // typescript export builder
     let specta_builder = tauri_specta::Builder::<tauri::Wry>::new()
-        .commands(tauri_specta::collect_commands![query, query_row, execute])
+        .commands(tauri_specta::collect_commands![
+            query,
+            query_row,
+            execute,
+            factory_reset
+        ])
         .plugin_name("sqlite-proxy");
 
     // typescript export happens during runtime, so should not happen on user machines.
@@ -36,7 +41,12 @@ pub fn init(filename: impl Into<String> + Send + 'static) -> TauriPlugin<Wry> {
             specta_builder.mount_events(app);
             setup(app, api, &filename.into())
         })
-        .invoke_handler(tauri::generate_handler![query, query_row, execute])
+        .invoke_handler(tauri::generate_handler![
+            query,
+            query_row,
+            execute,
+            factory_reset
+        ])
         .build()
 }
 

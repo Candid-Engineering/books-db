@@ -4,6 +4,14 @@ import * as schema from '$lib/db/schema'
 import type { BooksStore } from '$lib/state/Books.svelte'
 import { pushEntities, pullEntities } from './sync-api'
 
+export async function hasUnsyncedData(db: SqliteRemoteDatabase<typeof schema>): Promise<boolean> {
+  const [pendingBook] = await db.select().from(schema.books).where(isNull(schema.books.syncedAt)).limit(1)
+  if (pendingBook) return true
+
+  const [pendingTag] = await db.select().from(schema.bookTags).where(isNull(schema.bookTags.syncedAt)).limit(1)
+  return !!pendingTag
+}
+
 export class SyncEngine {
   constructor(
     private db: SqliteRemoteDatabase<typeof schema>,
@@ -11,8 +19,8 @@ export class SyncEngine {
     private getAuthToken: () => Promise<string | null>
   ) {}
 
-  async push(): Promise<void> {
-    const authToken = await this.getAuthToken()
+  async push(knownAuthToken?: string): Promise<void> {
+    const authToken = knownAuthToken ?? (await this.getAuthToken())
     if (!authToken) return
 
     const pendingBooks = await this.db.select().from(schema.books).where(isNull(schema.books.syncedAt))
@@ -43,8 +51,8 @@ export class SyncEngine {
     }
   }
 
-  async pull(): Promise<void> {
-    const authToken = await this.getAuthToken()
+  async pull(knownAuthToken?: string): Promise<void> {
+    const authToken = knownAuthToken ?? (await this.getAuthToken())
     if (!authToken) return
 
     const [state] = await this.db.select().from(schema.syncState)
@@ -83,7 +91,9 @@ export class SyncEngine {
   }
 
   async sync(): Promise<void> {
-    await this.push()
-    await this.pull()
+    const authToken = await this.getAuthToken()
+    if (!authToken) return
+    await this.push(authToken)
+    await this.pull(authToken)
   }
 }
