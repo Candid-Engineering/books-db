@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm'
-import { sqliteTable, text, integer, primaryKey } from 'drizzle-orm/sqlite-core'
+import { sqliteTable, text, integer, real, primaryKey } from 'drizzle-orm/sqlite-core'
 
 export const books = sqliteTable('books', {
   id: text().default('sql`(uuid_blob(uuid()))`').primaryKey().notNull(),
@@ -7,7 +7,6 @@ export const books = sqliteTable('books', {
   isbn13: text(),
   title: text().notNull(),
   subtitle: text(),
-  series: text(),
   pageCount: integer(),
   publicationDate: text(),
   copyrightDate: text(),
@@ -63,6 +62,27 @@ export const bookAuthors = sqliteTable(
   }
 )
 
+export const bookSeries = sqliteTable(
+  'book_series',
+  {
+    bookId: text()
+      .notNull()
+      .references(() => books.id, { onDelete: 'cascade' }), // automatically deletes series memberships when a book is deleted
+    name: text().notNull(),
+    label: text(), // display position as printed: "1", "1.5", "1–3", "Book Three"; null when unnumbered
+    sortKey: real(), // ordering within the series ("1", "1.5", "0.1"); null → fall back to publicationDate, then title
+    // See books.updatedAt for why this has no DB default.
+    updatedAt: integer({ mode: 'timestamp' }),
+    deletedAt: integer({ mode: 'timestamp' }), // tombstone; null = active
+    syncedAt: integer({ mode: 'timestamp' }), // null = pending push to server
+  },
+  (table) => {
+    return {
+      pk: primaryKey({ columns: [table.bookId, table.name] }),
+    }
+  }
+)
+
 export const localUser = sqliteTable('local_user', {
   singleton: integer().primaryKey().default(1), // fixed PK — enforces at most one row
   id: text().notNull(),
@@ -78,6 +98,7 @@ export const syncState = sqliteTable('sync_state', {
   booksSince: integer().notNull().default(0),
   bookTagsSince: integer().notNull().default(0),
   bookAuthorsSince: integer().notNull().default(0),
+  bookSeriesSince: integer().notNull().default(0),
 })
 
 // Dev-only backing store for SqliteTokenStorage (see token-storage.ts) - an

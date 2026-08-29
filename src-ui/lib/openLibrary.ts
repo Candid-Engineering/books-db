@@ -1,11 +1,13 @@
 import type { components, paths } from 'open-library-api'
 import createClient from 'openapi-fetch'
 import { type NewBook } from './types/book.js'
+import { parseSeries, type ParsedSeries } from './series.js'
 
 export type OpenLibraryBookData = {
   book: NewBook
   tags: string[]
   authors: string[]
+  series: ParsedSeries[]
 }
 
 const fetchWithTimeout = async (request: Request | string, timeout = 3000): Promise<Response> => {
@@ -57,7 +59,6 @@ async function normalizeOpenLibraryBook(
       isbn13: data.isbn_13?.[0],
       title: data.title,
       subtitle: data.subtitle,
-      series: data.series?.[0],
       pageCount: normalizePages(data.number_of_pages),
       publicationDate: data.publish_date, // 1883 or October 1996 or Apr 15, 2019
       copyrightDate: data.copyright_date, // YYYY-MM-DD
@@ -69,6 +70,7 @@ async function normalizeOpenLibraryBook(
     },
     tags: data.subjects ?? [],
     authors: await Promise.all(authorIds?.map(getAuthorName)),
+    series: await resolveSeries(data),
   }
 }
 
@@ -78,8 +80,31 @@ async function resolveAuthorIds(data: components['schemas']['Edition']): Promise
     data.authors?.map((v) => v.key.split('/').pop() || '').filter(Boolean) || []
   if (editionAuthorIds.length > 0) return editionAuthorIds
 
-  const workId = data.works[0]?.key.split('/').pop()
-  if (!workId) return []
+  const work = await fetchLinkedWork(data)
+  return (work?.authors ?? []).map((a) => a.author.key.split('/').pop() || '').filter(Boolean)
+}
+
+// Open Library keeps series as free text, usually on the edition but sometimes
+// only on the work. We take the first entry and parse its position out (see
+// series.ts); the user can correct it afterwards.
+async function resolveSeries(data: components['schemas']['Edition']): Promise<ParsedSeries[]> {
+  const editionSeries = data.series?.[0]
+  if (editionSeries) return toParsedSeries(editionSeries)
+
+  const work = await fetchLinkedWork(data)
+  return toParsedSeries((work as { series?: string[] } | undefined)?.series?.[0])
+}
+
+function toParsedSeries(raw: string | undefined): ParsedSeries[] {
+  const parsed = raw ? parseSeries(raw) : null
+  return parsed ? [parsed] : []
+}
+
+async function fetchLinkedWork(
+  data: components['schemas']['Edition']
+): Promise<components['schemas']['Work'] | undefined> {
+  const workId = data.works?.[0]?.key.split('/').pop()
+  if (!workId) return undefined
 
   const { data: work, error } = await client.GET('/works/{id}.json', {
     params: { path: { id: workId } },
@@ -87,7 +112,7 @@ async function resolveAuthorIds(data: components['schemas']['Edition']): Promise
   if (error) {
     throw new Error('Error handling not implemented yet for Open Library API')
   }
-  return (work.authors ?? []).map((a) => a.author.key.split('/').pop() || '').filter(Boolean)
+  return work
 }
 
 function normalizePages(originalCount: number | undefined): number | undefined {

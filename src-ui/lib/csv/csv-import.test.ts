@@ -21,12 +21,12 @@ describe('csvToBooks', () => {
             subtitle: 'Dune Chronicles Book 1',
             isbn10: '0441172717',
             isbn13: '9780441172719',
-            series: 'Dune (1)',
             pageCount: 412,
             publicationDate: 'August 1965',
             copyrightDate: '1965',
           },
           authors: ['Frank Herbert'],
+          series: [{ name: 'Dune', label: '1', sortKey: 1 }],
         },
       ],
     })
@@ -41,6 +41,18 @@ describe('csvToBooks', () => {
     expect(result.success && result.books[0].authors).toEqual(['Frank Herbert', 'Bill Herbert'])
   })
 
+  it('splits multiple semicolon-joined series and parses each position', () => {
+    const csv = [HEADER, 'Dune,,,,,Dune #1; Hugo Award Winners,,,'].join('\n')
+
+    const result = csvToBooks(csv)
+
+    expect(result.success).toBe(true)
+    expect(result.success && result.books[0].series).toEqual([
+      { name: 'Dune', label: '1', sortKey: 1 },
+      { name: 'Hugo Award Winners', label: null, sortKey: null },
+    ])
+  })
+
   it('treats empty authors as valid, defaulting to an empty array', () => {
     const csv = [HEADER, 'Dune,,,,,,,,'].join('\n')
 
@@ -48,6 +60,15 @@ describe('csvToBooks', () => {
 
     expect(result.success).toBe(true)
     expect(result.success && result.books[0].authors).toEqual([])
+  })
+
+  it('treats empty series as an empty array', () => {
+    const csv = [HEADER, 'Dune,,,,,,,,'].join('\n')
+
+    const result = csvToBooks(csv)
+
+    expect(result.success).toBe(true)
+    expect(result.success && result.books[0].series).toEqual([])
   })
 
   it('preserves a leading zero in an ISBN', () => {
@@ -73,12 +94,12 @@ describe('csvToBooks', () => {
             subtitle: null,
             isbn10: null,
             isbn13: null,
-            series: null,
             pageCount: null,
             publicationDate: null,
             copyrightDate: null,
           },
           authors: [],
+          series: [],
         },
       ],
     })

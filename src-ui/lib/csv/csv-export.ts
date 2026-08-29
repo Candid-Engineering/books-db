@@ -1,5 +1,6 @@
 import Papa from 'papaparse'
 import type { Book } from '$lib/types/book'
+import { formatSeries } from '$lib/series'
 
 export const CSV_FIELDS = [
   'title',
@@ -20,7 +21,7 @@ export function booksToCsv(books: Book[]): string {
     book.authors.map((bookAuthor) => bookAuthor.name).join('; '),
     book.isbn10 ?? '',
     book.isbn13 ?? '',
-    book.series ?? '',
+    book.series.map(formatSeries).join('; '),
     book.pageCount?.toString() ?? '',
     book.publicationDate ?? '',
     book.copyrightDate ?? '',

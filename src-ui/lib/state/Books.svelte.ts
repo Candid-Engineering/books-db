@@ -1,5 +1,6 @@
 import { v4 as uuidv4 } from 'uuid'
 import { type Book, type NewBook } from '$lib/types/book.js'
+import { type ParsedSeries } from '$lib/series.js'
 import realDb from '$lib/db/index.js'
 import * as schema from '$lib/db/schema'
 import type { SqliteRemoteDatabase } from 'drizzle-orm/sqlite-proxy'
@@ -103,6 +104,45 @@ class BooksStore {
       .where(and(eq(schema.bookAuthors.bookId, book.id), eq(schema.bookAuthors.name, author)))
   }
 
+  async updateSeries(book: Book, entries: ParsedSeries[]): Promise<void> {
+    const incoming = entries.map((entry) => entry.name)
+    for (const nameToRemove of _.difference(
+      book.series.map((s) => s.name),
+      incoming
+    )) {
+      await this.removeSeries(book, nameToRemove)
+    }
+    for (const entry of entries) {
+      const current = book.series.find((s) => s.name === entry.name && !s.deletedAt)
+      if (current && current.label === entry.label && current.sortKey === entry.sortKey) continue
+      await this.upsertSeries(book, entry)
+    }
+    await this.reload()
+  }
+
+  private async upsertSeries(book: Book, entry: ParsedSeries): Promise<void> {
+    await this.db
+      .insert(schema.bookSeries)
+      .values({ bookId: book.id, name: entry.name, label: entry.label, sortKey: entry.sortKey })
+      .onConflictDoUpdate({
+        target: [schema.bookSeries.bookId, schema.bookSeries.name],
+        set: {
+          label: entry.label,
+          sortKey: entry.sortKey,
+          deletedAt: null,
+          updatedAt: new Date(),
+          syncedAt: null,
+        },
+      })
+  }
+
+  private async removeSeries(book: Book, name: string): Promise<void> {
+    await this.db
+      .update(schema.bookSeries)
+      .set({ deletedAt: new Date(), updatedAt: new Date(), syncedAt: null })
+      .where(and(eq(schema.bookSeries.bookId, book.id), eq(schema.bookSeries.name, name)))
+  }
+
   async remove(id: string): Promise<void> {
     const now = new Date()
     await this.db
@@ -117,6 +157,10 @@ class BooksStore {
       .update(schema.bookAuthors)
       .set({ deletedAt: now, updatedAt: now, syncedAt: null })
       .where(and(eq(schema.bookAuthors.bookId, id), isNull(schema.bookAuthors.deletedAt)))
+    await this.db
+      .update(schema.bookSeries)
+      .set({ deletedAt: now, updatedAt: now, syncedAt: null })
+      .where(and(eq(schema.bookSeries.bookId, id), isNull(schema.bookSeries.deletedAt)))
     await this.reload()
   }
 
@@ -131,6 +175,7 @@ class BooksStore {
       with: {
         tags: { where: isNull(schema.bookTags.deletedAt) },
         authors: { where: isNull(schema.bookAuthors.deletedAt) },
+        series: { where: isNull(schema.bookSeries.deletedAt) },
       },
     })
     return this

@@ -46,11 +46,12 @@
       return
     }
 
-    for (const { book, authors } of result.books) {
+    for (const { book, authors, series } of result.books) {
       const bookId = await booksStore.add(book)
-      if (authors.length > 0) {
+      if (authors.length > 0 || series.length > 0) {
         const fullBook = booksStore.value.find((b) => b.id === bookId)!
-        await booksStore.updateAuthors(fullBook, authors)
+        if (authors.length > 0) await booksStore.updateAuthors(fullBook, authors)
+        if (series.length > 0) await booksStore.updateSeries(fullBook, series)
       }
     }
   }
