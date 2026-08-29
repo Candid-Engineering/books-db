@@ -50,7 +50,7 @@ async function normalizeOpenLibraryBook(
   data: components['schemas']['Edition']
 ): Promise<OpenLibraryBookData> {
   const id = data.key.split('/').pop()
-  const authorIds = data.authors?.map((v) => v.key.split('/').pop() || '').filter(Boolean) || []
+  const authorIds = await resolveAuthorIds(data)
   return {
     book: {
       isbn10: data.isbn_10?.[0],
@@ -70,6 +70,21 @@ async function normalizeOpenLibraryBook(
     tags: data.subjects ?? [],
     authors: await Promise.all(authorIds?.map(getAuthorName)),
   }
+}
+
+// Falls back to the linked work's authors when the edition has none of its own.
+async function resolveAuthorIds(data: components['schemas']['Edition']): Promise<string[]> {
+  const editionAuthorIds = data.authors?.map((v) => v.key.split('/').pop() || '').filter(Boolean) || []
+  if (editionAuthorIds.length > 0) return editionAuthorIds
+
+  const workId = data.works[0]?.key.split('/').pop()
+  if (!workId) return []
+
+  const { data: work, error } = await client.GET('/works/{id}.json', { params: { path: { id: workId } } })
+  if (error) {
+    throw new Error('Error handling not implemented yet for Open Library API')
+  }
+  return (work.authors ?? []).map((a) => a.author.key.split('/').pop() || '').filter(Boolean)
 }
 
 function normalizePages(originalCount: number | undefined): number | undefined {
