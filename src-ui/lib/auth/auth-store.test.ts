@@ -9,7 +9,9 @@ import { testDb } from '../../testing/db-setup'
 
 const BASE_URL = 'http://localhost:3000'
 
-function mockAuthTokenSuccess(overrides: { token?: string; expiresIn?: number; user?: Record<string, string> } = {}) {
+function mockAuthTokenSuccess(
+  overrides: { token?: string; expiresIn?: number; user?: Record<string, string> } = {}
+) {
   mockServer.use(
     http.post(`${BASE_URL}/tokens/auth`, () => {
       return HttpResponse.json(
@@ -239,7 +241,9 @@ describe('AuthStore', () => {
       })
 
       it('should not throw', async () => {
-        await expect(authStore.register('reader@example.com', 'Ada Reader')).resolves.toBeUndefined()
+        await expect(
+          authStore.register('reader@example.com', 'Ada Reader')
+        ).resolves.toBeUndefined()
       })
 
       it('should set an error', async () => {
@@ -385,7 +389,9 @@ describe('AuthStore', () => {
         it('should read the refresh token from the keychain only once', async () => {
           const getTokenSpy = vi.spyOn(tokenStorage, 'getToken')
           await authStore.initialize()
-          const refreshReads = getTokenSpy.mock.calls.filter(([tokenType]) => tokenType === 'refresh')
+          const refreshReads = getTokenSpy.mock.calls.filter(
+            ([tokenType]) => tokenType === 'refresh'
+          )
           expect(refreshReads).toHaveLength(1)
         })
       })

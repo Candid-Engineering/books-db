@@ -10,7 +10,9 @@ interface CheckForUpdatesOptions {
   notifyIfUpToDate?: boolean
 }
 
-export async function checkForUpdatesAndPrompt(options: CheckForUpdatesOptions = {}): Promise<void> {
+export async function checkForUpdatesAndPrompt(
+  options: CheckForUpdatesOptions = {}
+): Promise<void> {
   try {
     const update = await check()
     if (!update) {

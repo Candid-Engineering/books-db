@@ -124,7 +124,9 @@ describe('registerUser', () => {
   it('should resolve on success, sending the nested user params Rails expects', async () => {
     mockServer.use(
       http.post(`${BASE_URL}/users`, async ({ request }) => {
-        expect(await request.json()).toEqual({ user: { email: 'reader@example.com', name: 'Ada Reader' } })
+        expect(await request.json()).toEqual({
+          user: { email: 'reader@example.com', name: 'Ada Reader' },
+        })
         return HttpResponse.json(
           { user: { id: 'user-1', name: 'Ada Reader', email: 'reader@example.com' } },
           { status: 201 }

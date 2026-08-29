@@ -23,12 +23,13 @@
     "gen:schema": "cargo xtask gen:schema",
     "format": "pnpm rust:format && pnpm js:format",
     "js:format": "prettier --write .",
+    "js:format:check": "prettier --check .",
     "js:lint": "eslint .",
     "js:fix": "prettier --write . && eslint . --fix",
     "js:typecheck": "tsc --noEmit -p tsconfig.json --composite false",
     "js:test": "vitest",
     "check": "pnpm check:js && pnpm check:rust && pnpm test:integration",
-    "check:js": "pnpm js:typecheck && pnpm js:lint && pnpm js:test run",
+    "check:js": "pnpm js:format:check && pnpm js:typecheck && pnpm js:lint && pnpm js:test run",
     "check:rust": "pnpm rust:test && pnpm tauri build --no-bundle",
     "rust:test": "cargo test --manifest-path src-tauri/Cargo.toml",
     "rust:cargo": "cargo --manifest-path src-tauri/Cargo.toml",
@@ -40,7 +41,8 @@
     "svelte:preview": "vite preview",
     "storybook": "pnpm storybook:dev",
     "storybook:dev": "storybook dev -p 6006",
-    "storybook:build": "storybook build"
+    "storybook:build": "storybook build",
+    "prepare": "husky"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.7.0",
@@ -97,7 +99,9 @@
     "eslint-plugin-storybook": "^0.10.2",
     "eslint-plugin-svelte": "^2.46.0",
     "globals": "^15.12.0",
+    "husky": "^9.1.7",
     "jsdom": "^25.0.1",
+    "lint-staged": "^15",
     "msw": "^2.6.5",
     "picocolors": "^1.1.1",
     "prettier": "^3.3.3",
@@ -114,5 +118,8 @@
     "vite": "^5.4.11",
     "vitest": "^2.1.5"
   },
-  "type": "module"
+  "type": "module",
+  "lint-staged": {
+    "*.{js,ts,svelte,json,css,html,yml,yaml}": "prettier --write"
+  }
 }

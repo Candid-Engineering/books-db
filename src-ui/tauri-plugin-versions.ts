@@ -33,7 +33,9 @@ export function collectPluginVersionPairs(): VersionPair[] {
 }
 
 function installedJsVersion(packageName: string): string {
-  const pkg = JSON.parse(readFileSync(join(REPO_ROOT, 'node_modules', packageName, 'package.json'), 'utf-8')) as {
+  const pkg = JSON.parse(
+    readFileSync(join(REPO_ROOT, 'node_modules', packageName, 'package.json'), 'utf-8')
+  ) as {
     version: string
   }
   return pkg.version

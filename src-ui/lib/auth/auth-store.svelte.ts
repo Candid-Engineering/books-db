@@ -25,17 +25,17 @@ interface StoredAuthToken {
 export interface AuthStore {
   // Reactive state (Svelte 5 runes)
   readonly state: AuthState
-  
+
   // Authentication actions
   requestLoginLink(email: string): Promise<void>
   register(email: string, name: string): Promise<void>
   exchangeLoginToken(loginToken: string): Promise<void>
   logout(): Promise<void>
-  
+
   // Token management
   getAuthToken(): Promise<string | null>
   refreshAuthToken(knownRefreshToken?: string): Promise<string>
-  
+
   // Initialization
   initialize(): Promise<void>
 }
@@ -52,7 +52,7 @@ class AuthStoreImpl implements AuthStore {
     isAuthenticated: false,
     user: null,
     isLoading: false,
-    error: null
+    error: null,
   })
 
   constructor(
@@ -173,7 +173,7 @@ class AuthStoreImpl implements AuthStore {
   private async applyAuthTokenResult(result: AuthTokenResult): Promise<string> {
     this.inMemoryAuthToken = {
       token: result.authToken,
-      expiresAt: Date.now() + result.expiresIn * 1000
+      expiresAt: Date.now() + result.expiresIn * 1000,
     }
     await this.localUserStore.set(result.user)
 
@@ -227,6 +227,9 @@ const defaultTokenStorage: TokenStorage = import.meta.env.DEV
 
 export const authStore: AuthStore = new AuthStoreImpl(defaultTokenStorage)
 
-export function createTestAuthStore(tokenStorage: TokenStorage, localUserStore: LocalUserStore): AuthStore {
+export function createTestAuthStore(
+  tokenStorage: TokenStorage,
+  localUserStore: LocalUserStore
+): AuthStore {
   return new AuthStoreImpl(tokenStorage, localUserStore)
 }

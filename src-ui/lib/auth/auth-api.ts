@@ -77,11 +77,17 @@ function toAuthApiError(body: unknown): AuthApiError {
 }
 
 function isRailsTokenErrorBody(body: unknown): body is RailsTokenErrorBody {
-  return typeof body === 'object' && body !== null && Array.isArray((body as RailsTokenErrorBody).errors)
+  return (
+    typeof body === 'object' && body !== null && Array.isArray((body as RailsTokenErrorBody).errors)
+  )
 }
 
 function isRailsGenericErrorBody(body: unknown): body is RailsGenericErrorBody {
-  return typeof body === 'object' && body !== null && typeof (body as RailsGenericErrorBody).error === 'string'
+  return (
+    typeof body === 'object' &&
+    body !== null &&
+    typeof (body as RailsGenericErrorBody).error === 'string'
+  )
 }
 
 function isValidationErrorsBody(body: unknown): body is RailsValidationErrorsBody {
@@ -101,14 +107,18 @@ export async function registerUser(email: string, name: string): Promise<void> {
   await postJson('/users', { user: { email, name } })
 }
 
-export async function exchangeLoginTokenForRefreshToken(loginToken: string): Promise<RefreshTokenResult> {
+export async function exchangeLoginTokenForRefreshToken(
+  loginToken: string
+): Promise<RefreshTokenResult> {
   const body = await postJson<{ token: string; expires_in: number }>('/tokens/refresh', {
     login_token: loginToken,
   })
   return { refreshToken: body.token, expiresIn: body.expires_in }
 }
 
-export async function exchangeRefreshTokenForAuthToken(refreshToken: string): Promise<AuthTokenResult> {
+export async function exchangeRefreshTokenForAuthToken(
+  refreshToken: string
+): Promise<AuthTokenResult> {
   const body = await postJson<{
     token: string
     expires_in: number
