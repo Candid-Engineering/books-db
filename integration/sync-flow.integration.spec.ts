@@ -23,7 +23,7 @@ describe('sync flow against a real Rails server', () => {
     await authStore.exchangeLoginToken(loginToken)
   })
 
-  it('round-trips a new book, tag, and author from one device to another', async () => {
+  it('round-trips a new book, tag, author, and series from one device to another', async () => {
     const deviceABooksStore = createTestBooksStore(testDb.drizzle)
     const deviceASync = new SyncEngine(testDb.drizzle, deviceABooksStore, () =>
       authStore.getAuthToken()
@@ -36,6 +36,7 @@ describe('sync flow against a real Rails server', () => {
     const book = deviceABooksStore.value.find((b) => b.id === bookId)!
     await deviceABooksStore.updateTags(book, ['Science Fiction'])
     await deviceABooksStore.updateAuthors(book, ['Frank Herbert'])
+    await deviceABooksStore.updateSeries(book, [{ name: 'Dune', label: '1', sortKey: 1 }])
 
     await deviceASync.push()
 
@@ -54,6 +55,9 @@ describe('sync flow against a real Rails server', () => {
     expect(pulledBook?.title).toBe('Dune')
     expect(pulledBook?.tags.map((t) => t.name)).toContain('Science Fiction')
     expect(pulledBook?.authors.map((a) => a.name)).toContain('Frank Herbert')
+    expect(pulledBook?.series).toEqual([
+      expect.objectContaining({ name: 'Dune', label: '1', sortKey: 1 }),
+    ])
   })
 
   it('round-trips a deletion as a tombstone', async () => {
