@@ -36,4 +36,7 @@ jobs:
       # frozen lockfile should already be the default in CI, but making sure:
       - run: pnpm install --frozen-lockfile
       #    - run: npm run build --if-present
+      - run: pnpm js:format:check
+      - run: pnpm js:lint
+      - run: pnpm js:typecheck
       - run: pnpm js:test run

@@ -5,3 +5,7 @@ yarn.lock
 src-ui/lib/drizzle
 src-ui/lib/generated
 migrations/
+
+# Prose docs: Markdown is authored by hand (and by Claude) as long-form
+# design notes - prettier's list/emphasis rewriting hurts more than it helps.
+*.md
