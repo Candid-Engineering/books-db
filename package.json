@@ -6,6 +6,9 @@
   "author": "Candid Engineering",
   "homepage": "https://candid-eng.com",
   "packageManager": "pnpm@9.1.4",
+  "engines": {
+    "node": ">=26"
+  },
   "private": true,
   "scripts": {
     "preinstall": "npx only-allow pnpm",
@@ -121,5 +124,10 @@
   "type": "module",
   "lint-staged": {
     "*.{js,ts,svelte,json,css,html,yml,yaml}": "prettier --write"
+  },
+  "pnpm": {
+    "neverBuiltDependencies": [
+      "better-sqlite3"
+    ]
   }
 }
