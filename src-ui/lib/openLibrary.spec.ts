@@ -184,6 +184,39 @@ describe('book', () => {
       }
       expect(result).toEqual(expected)
     })
+    it('falls back to the work record for authors when the edition has none of its own', async () => {
+      const foundationIsbn = '9780307292063'
+      mockServer.use(
+        http.get(`https://openlibrary.org/isbn/${foundationIsbn}.json`, () => {
+          return HttpResponse.json({
+            title: 'The Foundation Trilogy',
+            key: '/books/OL26219343M',
+            works: [ { key: '/works/OL46390W' } ],
+            isbn_13: [ '9780307292063' ],
+          })
+        }),
+        http.get('https://openlibrary.org/works/OL46390W.json', () => {
+          return HttpResponse.json({
+            key: '/works/OL46390W',
+            title: 'Foundation',
+            authors: [
+              {
+                type: { key: '/type/author_role' },
+                author: { key: '/authors/OL34221A' },
+              },
+            ],
+          })
+        }),
+        http.get('https://openlibrary.org/authors/OL34221A.json', () => {
+          return HttpResponse.json({ name: 'Isaac Asimov', key: '/authors/OL34221A' })
+        })
+      )
+
+      const result = await getByISBN(foundationIsbn)
+
+      expect(result.authors).toEqual([ 'Isaac Asimov' ])
+    })
+
     it('should throw a timeout error when Open Library is down and request times out', async () => {
       global.fetch = vi.fn(
         (_, { signal }: RequestInit = {}) =>
