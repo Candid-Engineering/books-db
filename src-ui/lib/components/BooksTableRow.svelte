@@ -60,7 +60,12 @@
   const removeGroup = (): Promise<void> => booksStore.removeGroup(books)
 
   let coverFailed = false
-  $: coverSrc = coverFailed ? null : primary.coverImages?.small
+  // Medium, not small: the thumbnail renders larger than the small cover's
+  // native size. `?default=false` 404s a missing cover so `onerror` fires.
+  $: coverSrc =
+    primary.coverImages?.medium && !coverFailed
+      ? `${primary.coverImages.medium}?default=false`
+      : null
 </script>
 
 <!-- note: `slide` transitions (which I prefer here) don't currently work on tables: https://github.com/sveltejs/svelte/issues/4948 -->
@@ -157,39 +162,43 @@
   }
 
   .cover-cell {
-    width: 2.5rem;
-    min-width: 2.5rem;
+    width: 3.75rem;
+    min-width: 3.75rem;
   }
 
   .cover-thumb {
     display: block;
-    width: 1.75rem;
-    height: 2.5rem;
+    width: 3.25rem;
+    height: 4.75rem;
     object-fit: cover;
-    border-radius: 2px;
+    border-radius: 3px;
   }
 
   .cover-thumb--empty {
     background: var(--bulma-border, #dbdbdb);
   }
 
-  /* Long author / tag / series lists clip to one line; editing or hovering
-     shows the whole thing. The width lives on the inner element because a
-     <td> max-width isn't honoured under Bulma's `table-layout: auto`. */
+  /* Long author / tag / series lists clip to three lines (about what a row is
+     tall now); editing or hovering shows the whole thing. The width lives on
+     the inner element because a <td> max-width isn't honoured under Bulma's
+     `table-layout: auto`. */
   .clip-cell :global([contenteditable]),
   .clip-cell .varies {
-    display: block;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
     max-width: 16rem;
     overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
   }
 
   .clip-cell:hover :global([contenteditable]),
   .clip-cell :global([contenteditable]:focus),
   .clip-cell:hover .varies {
+    display: block;
+    -webkit-line-clamp: none;
+    line-clamp: none;
     max-width: none;
     overflow: visible;
-    white-space: normal;
   }
 </style>
