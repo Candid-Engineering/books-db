@@ -4,7 +4,7 @@
   import { fade } from 'svelte/transition'
   import Button from './core/Button.svelte'
   import { trim } from 'lodash'
-  import EditableTd from './core/EditableTd.svelte'
+  import Editable from './core/Editable.svelte'
   import { formatSeries, parseSeries, type ParsedSeries } from '$lib/series'
 
   export let book: Book
@@ -56,30 +56,42 @@
     ><Button aria-label="delete book" class="delete" onclick={() => removeBook(book.id)}
     ></Button></td
   >
-  <EditableTd
-    value={book.isbn10}
-    onChange={(newValue: string) => handleEdit(book, 'isbn10', newValue)}
-  />
-  <EditableTd
-    value={book.isbn13}
-    onChange={(newValue: string) => handleEdit(book, 'isbn13', newValue)}
-  />
-  <EditableTd
-    value={book.title}
-    onChange={(newValue: string) => handleEdit(book, 'title', newValue)}
-  />
-  <EditableTd
-    value={book.authors.map((bookAuthor) => bookAuthor.name).join(', ')}
-    onChange={(newValue: string) => updateAuthors(book, newValue)}
-  />
-  <EditableTd
-    value={book.tags.map((bookTag) => bookTag.name).join(', ')}
-    onChange={(newValue: string) => updateTags(book, newValue)}
-  />
-  <EditableTd
-    value={book.series.map(formatSeries).join(', ')}
-    onChange={(newValue: string) => updateSeries(book, newValue)}
-  />
+  <td>
+    <Editable
+      value={book.isbn10}
+      onChange={(newValue: string) => handleEdit(book, 'isbn10', newValue)}
+    />
+  </td>
+  <td>
+    <Editable
+      value={book.isbn13}
+      onChange={(newValue: string) => handleEdit(book, 'isbn13', newValue)}
+    />
+  </td>
+  <td>
+    <Editable
+      value={book.title}
+      onChange={(newValue: string) => handleEdit(book, 'title', newValue)}
+    />
+  </td>
+  <td>
+    <Editable
+      value={book.authors.map((bookAuthor) => bookAuthor.name).join(', ')}
+      onChange={(newValue: string) => updateAuthors(book, newValue)}
+    />
+  </td>
+  <td>
+    <Editable
+      value={book.tags.map((bookTag) => bookTag.name).join(', ')}
+      onChange={(newValue: string) => updateTags(book, newValue)}
+    />
+  </td>
+  <td>
+    <Editable
+      value={book.series.map(formatSeries).join(', ')}
+      onChange={(newValue: string) => updateSeries(book, newValue)}
+    />
+  </td>
   <td>
     <label class="b-checkbox checkbox is-regular m-1">
       <input
