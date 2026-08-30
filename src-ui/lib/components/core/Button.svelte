@@ -12,17 +12,14 @@
      */
     size?: 'small' | 'normal' | 'medium' | 'large'
     /**
-     * Button contents
+     * Button contents. Omit for an icon-only button (pair it with `aria-label`).
      */
-
-    label?: string
     children?: Snippet
   }
 
   let {
     primary = false,
     size = 'normal',
-    label = '',
     children,
     class: classProp,
     ...restProps
@@ -35,9 +32,5 @@
   class="button is-{size} {classProp}"
   {...restProps}
 >
-  {#if children}
-    {@render children?.()}
-  {:else}
-    {label}
-  {/if}
+  {@render children?.()}
 </button>
