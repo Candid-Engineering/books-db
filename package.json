@@ -81,6 +81,8 @@
     "@sveltejs/kit": "^2.70.3",
     "@sveltejs/vite-plugin-svelte": "^7.3.0",
     "@tauri-apps/cli": "^2.1.0",
+    "@testing-library/jest-dom": "^7.0.1",
+    "@testing-library/svelte": "^5.4.2",
     "@testing-library/webdriverio": "^3.2.1",
     "@types/eslint": "^9.6.1",
     "@types/eslint-config-prettier": "^6.11.3",
