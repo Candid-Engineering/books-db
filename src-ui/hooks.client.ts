@@ -39,6 +39,12 @@ window.authStore = authStore
 const syncEngine = new SyncEngine(db, window.booksStore, () => authStore.getAuthToken())
 window.syncEngine = syncEngine
 
+// How often the client polls the server for changes. Sync is poll-only (no
+// push channel), so this is the ceiling on how long a change made on another
+// device takes to appear. Payloads are incremental (per-entity server_seq
+// cursor), so a short interval is cheap.
+const SYNC_INTERVAL_MS = 5_000
+
 async function runSync(): Promise<void> {
   if (!authStore.state.isAuthenticated) return
   try {
@@ -51,7 +57,7 @@ async function runSync(): Promise<void> {
 }
 
 void runSync()
-setInterval(() => void runSync(), 60_000)
+setInterval(() => void runSync(), SYNC_INTERVAL_MS)
 
 // Dev sessions run straight from source, not an installed/versioned build -
 // there's nothing meaningful to update, so skip the boot-time check (matches
