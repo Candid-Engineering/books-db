@@ -91,25 +91,25 @@
     {/if}
     {#if grouped}<span class="tag is-light ml-2">×{books.length}</span>{/if}
   </td>
-  <td>
+  <td class="clip-cell">
     {#if authorsEditable}
       <Editable ariaLabel="Authors" value={authorsText} onChange={(v: string) => editAuthors(v)} />
     {:else}
-      <span class="has-text-grey" title={VARIES}>{authorsText}</span>
+      <span class="varies has-text-grey" title={VARIES}>{authorsText}</span>
     {/if}
   </td>
-  <td>
+  <td class="clip-cell">
     {#if tagsEditable}
       <Editable ariaLabel="Tags" value={tagsText} onChange={(v: string) => editTags(v)} />
     {:else}
-      <span class="has-text-grey" title={VARIES}>{tagsText}</span>
+      <span class="varies has-text-grey" title={VARIES}>{tagsText}</span>
     {/if}
   </td>
-  <td>
+  <td class="clip-cell">
     {#if seriesEditable}
       <Editable ariaLabel="Series" value={seriesText} onChange={(v: string) => editSeries(v)} />
     {:else}
-      <span class="has-text-grey" title={VARIES}>{seriesText}</span>
+      <span class="varies has-text-grey" title={VARIES}>{seriesText}</span>
     {/if}
   </td>
   <td>
@@ -156,6 +156,11 @@
     color: var(--bulma-text-weak, #7a7a7a);
   }
 
+  .cover-cell {
+    width: 2.5rem;
+    min-width: 2.5rem;
+  }
+
   .cover-thumb {
     display: block;
     width: 1.75rem;
@@ -166,5 +171,25 @@
 
   .cover-thumb--empty {
     background: var(--bulma-border, #dbdbdb);
+  }
+
+  /* Long author / tag / series lists clip to one line; editing or hovering
+     shows the whole thing. The width lives on the inner element because a
+     <td> max-width isn't honoured under Bulma's `table-layout: auto`. */
+  .clip-cell :global([contenteditable]),
+  .clip-cell .varies {
+    display: block;
+    max-width: 16rem;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  .clip-cell:hover :global([contenteditable]),
+  .clip-cell :global([contenteditable]:focus),
+  .clip-cell:hover .varies {
+    max-width: none;
+    overflow: visible;
+    white-space: normal;
   }
 </style>

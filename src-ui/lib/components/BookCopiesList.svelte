@@ -17,16 +17,14 @@
   <ul>
     {#each books as copy, i (copy.id)}
       <li class="is-flex is-align-items-center py-1">
+        <input
+          class="mr-3"
+          type="checkbox"
+          aria-label="Copy {i + 1} read"
+          checked={!!copy.readAt}
+          onchange={() => toggleRead(copy)}
+        />
         <span class="has-text-grey mr-3">acquired {copy.createdAt?.toLocaleDateString()}</span>
-        <label class="checkbox mr-3">
-          <input
-            type="checkbox"
-            aria-label="Copy {i + 1} read"
-            checked={!!copy.readAt}
-            onchange={() => toggleRead(copy)}
-          />
-          read
-        </label>
         <Button aria-label="delete copy {i + 1}" class="delete" onclick={() => removeCopy(copy)}
         ></Button>
       </li>
