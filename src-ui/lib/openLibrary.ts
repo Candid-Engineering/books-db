@@ -2,6 +2,7 @@ import type { components, paths } from 'open-library-api'
 import createClient from 'openapi-fetch'
 import { type NewBook } from './types/book.js'
 import { parseSeries, type ParsedSeries } from './series.js'
+import { reportError } from './error-reporting.js'
 
 export type OpenLibraryBookData = {
   book: NewBook
@@ -84,20 +85,44 @@ async function resolveAuthorIds(data: components['schemas']['Edition']): Promise
   return (work?.authors ?? []).map((a) => a.author.key.split('/').pop() || '').filter(Boolean)
 }
 
-// Open Library keeps series as free text, usually on the edition but sometimes
-// only on the work. We take the first entry and parse its position out (see
-// series.ts); the user can correct it afterwards.
+// Open Library carries series in two shapes: legacy free text on the edition
+// ("The Lord of the Rings, Part 1"), and a newer structured object on the
+// work ({ series: { key }, position }) whose name lives behind another fetch.
+// Anything else is reported and treated as "no series" - the user can add it
+// by hand. Never throws on a data-shape surprise.
 async function resolveSeries(data: components['schemas']['Edition']): Promise<ParsedSeries[]> {
-  const editionSeries = data.series?.[0]
-  if (editionSeries) return toParsedSeries(editionSeries)
+  const entry: unknown =
+    data.series?.[0] ??
+    ((await fetchLinkedWork(data)) as { series?: unknown[] } | undefined)?.series?.[0]
+  if (entry == null) return []
 
-  const work = await fetchLinkedWork(data)
-  return toParsedSeries((work as { series?: string[] } | undefined)?.series?.[0])
+  if (typeof entry === 'string') {
+    const parsed = parseSeries(entry)
+    return parsed ? [parsed] : []
+  }
+
+  if (typeof entry === 'object') {
+    const { series, position } = entry as { series?: { key?: string }; position?: unknown }
+    const seriesId = series?.key?.split('/').pop()
+    const name = seriesId ? await fetchSeriesName(seriesId) : undefined
+    if (!name) return []
+    const label = typeof position === 'string' && position ? position : null
+    const sortKey = label ? Number.parseFloat(label) : NaN
+    return [{ name, label, sortKey: Number.isNaN(sortKey) ? null : sortKey }]
+  }
+
+  reportError(
+    new Error(`unrecognized Open Library series shape: ${JSON.stringify(entry)}`),
+    'openLibrary-series'
+  )
+  return []
 }
 
-function toParsedSeries(raw: string | undefined): ParsedSeries[] {
-  const parsed = raw ? parseSeries(raw) : null
-  return parsed ? [parsed] : []
+async function fetchSeriesName(id: string): Promise<string | undefined> {
+  const res = await fetchWithTimeout(`https://openlibrary.org/series/${id}.json`)
+  if (!res.ok) return undefined
+  const body = (await res.json()) as { name?: unknown }
+  return typeof body.name === 'string' ? body.name : undefined
 }
 
 async function fetchLinkedWork(
