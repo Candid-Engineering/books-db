@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { render, screen } from '@testing-library/svelte'
+import { render, screen, waitFor } from '@testing-library/svelte'
 import BooksTable from './BooksTable.svelte'
 import { booksStoreWith } from '../../testing/component-helpers'
 
@@ -16,6 +16,17 @@ describe('BooksTable', () => {
 
     // header row + one per book
     expect(screen.getAllByRole('row')).toHaveLength(3)
+  })
+
+  it('drops a row when its book is removed from the store', async () => {
+    const store = await booksStoreWith([{ title: 'Keep' }, { title: 'Remove me' }])
+    render(BooksTable, { booksStore: store })
+    expect(screen.getAllByRole('row')).toHaveLength(3)
+
+    const target = store.value.find((b) => b.title === 'Remove me')!
+    await store.remove(target.id)
+
+    await waitFor(() => expect(screen.getAllByRole('row')).toHaveLength(2))
   })
 
   it('no longer has ISBN columns in the header', async () => {
