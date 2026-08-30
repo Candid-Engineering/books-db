@@ -6,6 +6,9 @@
   "author": "Candid Engineering",
   "homepage": "https://candid-eng.com",
   "packageManager": "pnpm@9.1.4",
+  "engines": {
+    "node": ">=26"
+  },
   "private": true,
   "scripts": {
     "preinstall": "npx only-allow pnpm",
@@ -73,10 +76,10 @@
     "@storybook/svelte": "8.3.3",
     "@storybook/sveltekit": "8.3.3",
     "@storybook/test": "8.3.3",
-    "@sveltejs/adapter-auto": "^3.3.1",
-    "@sveltejs/adapter-static": "^3.0.6",
-    "@sveltejs/kit": "^2.8.1",
-    "@sveltejs/vite-plugin-svelte": "^4.0.1",
+    "@sveltejs/adapter-auto": "^7.0.1",
+    "@sveltejs/adapter-static": "^3.0.10",
+    "@sveltejs/kit": "^2.70.3",
+    "@sveltejs/vite-plugin-svelte": "^7.3.0",
     "@tauri-apps/cli": "^2.1.0",
     "@testing-library/webdriverio": "^3.2.1",
     "@types/eslint": "^9.6.1",
@@ -97,29 +100,34 @@
     "eslint": "^9.15.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-storybook": "^0.10.2",
-    "eslint-plugin-svelte": "^2.46.0",
+    "eslint-plugin-svelte": "^3.23.0",
     "globals": "^15.12.0",
     "husky": "^9.1.7",
-    "jsdom": "^25.0.1",
+    "jsdom": "^30.0.1",
     "lint-staged": "^15",
-    "msw": "^2.6.5",
+    "msw": "^2.15.0",
     "picocolors": "^1.1.1",
     "prettier": "^3.3.3",
-    "prettier-plugin-svelte": "^3.2.8",
+    "prettier-plugin-svelte": "^4.1.1",
     "sql.js": "^1.12.0",
     "storybook": "8.3.3",
-    "svelte": "^5.2.7",
-    "svelte-check": "^4.0.9",
+    "svelte": "^5.57.0",
+    "svelte-check": "^4.7.6",
     "tree-kill": "^1.2.2",
     "tslib": "^2.8.1",
     "tsx": "^4.19.2",
     "typescript": "^5.6.3",
-    "typescript-eslint": "^8.15.0",
-    "vite": "^5.4.11",
-    "vitest": "^2.1.5"
+    "typescript-eslint": "^8.68.0",
+    "vite": "^8.2.2",
+    "vitest": "^4.1.11"
   },
   "type": "module",
   "lint-staged": {
     "*.{js,ts,svelte,json,css,html,yml,yaml}": "prettier --write"
+  },
+  "pnpm": {
+    "neverBuiltDependencies": [
+      "better-sqlite3"
+    ]
   }
 }

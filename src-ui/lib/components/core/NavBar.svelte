@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Snippet } from 'svelte'
+  import { resolve } from '$app/paths'
 
   interface Props {
     children: Snippet | undefined
@@ -15,7 +16,7 @@
 <nav class="navbar section pt-4" aria-label="main navigation">
   <!-- See: https://bulma.io/documentation/components/navbar/ -->
   <div class="navbar-brand">
-    <a class="navbar-item" href="/">📚 BooksDB </a>
+    <a class="navbar-item" href={resolve('/')}>📚 BooksDB </a>
     <a
       onclick={handleHamburgerClick}
       href="#placeholder"

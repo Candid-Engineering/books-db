@@ -6,6 +6,9 @@ export default defineConfig({
   test: {
     diff: './vitest.diff.ts',
     environment: 'jsdom',
+    // A `vi.spyOn` in one test must not see calls from another.
+    clearMocks: true,
+    restoreMocks: true,
     setupFiles: ['./src-ui/testing/msw-setup.ts', './src-ui/testing/db-setup.ts'],
     // *.integration.spec.ts files run under vitest.integration.config.ts
     // instead (real Rails server, no MSW) -- excluded here so they don't

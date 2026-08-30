@@ -5,6 +5,7 @@
   import 'bulma-checkbox/css/main.css'
   import { authStore } from '$lib/auth/auth-store.svelte'
   import { signOut } from '$lib/sign-out'
+  import { resolve } from '$app/paths'
   import LoginModal from '$lib/components/LoginModal.svelte'
   import ErrorToast from '$lib/components/ErrorToast.svelte'
 
@@ -37,9 +38,9 @@
 
 <header>
   <NavBar>
-    <a class="navbar-item" href="/">Home</a>
-    <a class="navbar-item" href="/about">About</a>
-    <a class="navbar-item" href="/settings">Settings</a>
+    <a class="navbar-item" href={resolve('/')}>Home</a>
+    <a class="navbar-item" href={resolve('/about')}>About</a>
+    <a class="navbar-item" href={resolve('/settings')}>Settings</a>
     {#snippet end()}
       {#if authStore.state.isAuthenticated}
         <span class="navbar-item">Signed in as {authStore.state.user?.name}</span>

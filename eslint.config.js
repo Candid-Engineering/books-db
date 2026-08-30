@@ -6,6 +6,7 @@ import prettier from 'eslint-config-prettier'
 // @ts-expect-error "no types for eslint-plugin-storybook"
 import storybook from 'eslint-plugin-storybook'
 import globals from 'globals'
+import svelteConfig from './svelte.config.js'
 
 export default tseslint.config(
   js.configs.recommended,
@@ -24,15 +25,18 @@ export default tseslint.config(
       parserOptions: {
         projectService: true,
         tsconfigRootDir: import.meta.dirname,
-        extraFileExtensions: ['svelte'],
+        extraFileExtensions: ['.svelte'],
       },
     },
   },
   {
-    files: ['**/*.svelte'],
+    // `.svelte` components and the runes modules alongside them - all parsed
+    // by svelte-eslint-parser, which delegates the script body to the TS parser.
+    files: ['**/*.svelte', '**/*.svelte.ts', '**/*.svelte.js'],
     languageOptions: {
       parserOptions: {
         parser: tseslint.parser,
+        svelteConfig,
       },
     },
   },
