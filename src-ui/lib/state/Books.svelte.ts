@@ -10,7 +10,7 @@ import _ from 'lodash'
 
 class BooksStore {
   constructor(private db: SqliteRemoteDatabase<typeof schema>) {
-    void this.reload().then(() => {
+    this.#ready = this.reload().then(() => {
       this.#initialized = true
     })
   }
@@ -21,9 +21,15 @@ class BooksStore {
 
   #initialized = $state(false)
   #value = $state<Book[]>([])
+  #ready: Promise<unknown>
 
   get initialized(): boolean {
     return this.#initialized
+  }
+
+  /** Resolves once the first load has completed (`initialized` is then true). */
+  get ready(): Promise<unknown> {
+    return this.#ready
   }
 
   get value(): Book[] {
