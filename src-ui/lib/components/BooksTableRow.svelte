@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { getBooksStore } from '$lib/state/Books.svelte'
+  import { getBooksStore, type BooksStore } from '$lib/state/Books.svelte'
   import type { Book } from '$lib/types/book.js'
   import { fade } from 'svelte/transition'
   import Button from './core/Button.svelte'
@@ -8,8 +8,7 @@
   import { formatSeries, parseSeries, type ParsedSeries } from '$lib/series'
 
   export let book: Book
-
-  let booksStore = getBooksStore()
+  export let booksStore: BooksStore = getBooksStore()
   const handleEdit = async (book: Book, field: keyof Book, valueStr: string) => {
     const value = valueStr.trim()
     await booksStore.edit({ ...book, [field]: value })

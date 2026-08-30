@@ -1,11 +1,11 @@
 <script lang="ts">
   import { addBookByIsbn } from '$lib/add-book-by-isbn.js'
-  import { getBooksStore } from '$lib/state/Books.svelte'
+  import { getBooksStore, type BooksStore } from '$lib/state/Books.svelte'
   import onScan from 'onscan.js'
   import type { Action } from 'svelte/action'
   import BooksTableRow from './BooksTableRow.svelte'
 
-  let booksStore = getBooksStore()
+  let { booksStore = getBooksStore() }: { booksStore?: BooksStore } = $props()
 
   type scanEvent = {
     detail: {
@@ -51,7 +51,7 @@
     </thead>
     <tbody>
       {#each booksStore.value as book (book.id)}
-        <BooksTableRow {book} />
+        <BooksTableRow {book} {booksStore} />
       {:else}
         <tr>
           <td colspan="9">
