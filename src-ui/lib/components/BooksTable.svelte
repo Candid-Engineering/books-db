@@ -38,15 +38,15 @@
   <table class="table is-fullwidth">
     <thead>
       <tr>
-        <th><!-- delete action --></th>
-        <th>ISBN 10</th>
-        <th>ISBN 13</th>
+        <th><!-- disclosure --></th>
+        <th><!-- cover --></th>
         <th>Title</th>
         <th>Author</th>
         <th>Tags</th>
         <th>Series</th>
         <th>Read?</th>
         <th>Scanned</th>
+        <th><!-- delete action --></th>
       </tr>
     </thead>
     <tbody>
