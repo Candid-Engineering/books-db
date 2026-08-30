@@ -29,6 +29,28 @@ describe('BooksTable', () => {
     await waitFor(() => expect(screen.getAllByRole('row')).toHaveLength(2))
   })
 
+  it('collapses copies that share an ISBN into a single row', async () => {
+    const store = await booksStoreWith([
+      { title: 'Dune', isbn13: '9780441172719' },
+      { title: 'Dune', isbn13: '9780441172719' },
+      { title: 'Dune', isbn13: '9780441172719' },
+    ])
+    render(BooksTable, { booksStore: store })
+
+    expect(screen.getAllByRole('row')).toHaveLength(2) // header + one grouped row
+    expect(screen.getByText('×3')).toBeInTheDocument()
+  })
+
+  it('keeps different editions on their own rows', async () => {
+    const store = await booksStoreWith([
+      { title: 'Dune', isbn13: '9780441172719' },
+      { title: 'Dune', isbn10: '0441172717' },
+    ])
+    render(BooksTable, { booksStore: store })
+
+    expect(screen.getAllByRole('row')).toHaveLength(3)
+  })
+
   it('no longer has ISBN columns in the header', async () => {
     render(BooksTable, { booksStore: await booksStoreWith([{ title: 'Dune' }]) })
 

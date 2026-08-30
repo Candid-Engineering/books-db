@@ -1,9 +1,10 @@
 import { describe, it, expect, vi } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/svelte'
+import { render, screen, fireEvent, waitFor } from '@testing-library/svelte'
 import BookDetail from './BookDetail.svelte'
 import { booksStoreWith } from '../../testing/component-helpers'
+import type { NewBook } from '$lib/types/book.js'
 
-const richBook = {
+const richBook: NewBook = {
   title: 'Dune',
   subtitle: 'Dune Chronicles, Book 1',
   isbn10: '0441172717',
@@ -16,19 +17,18 @@ const richBook = {
 
 const withRichBook = async () => {
   const store = await booksStoreWith([richBook])
-  const book = store.value[0]
-  await store.updateAuthors(book, ['Frank Herbert'])
-  await store.updateTags(book, ['classic', 'sci-fi'])
-  await store.updateSeries(book, [{ name: 'Dune', label: '1', sortKey: 1 }])
-  return { store, book: store.value[0] }
+  await store.updateAuthors(store.value[0], ['Frank Herbert'])
+  await store.updateTags(store.value[0], ['classic', 'sci-fi'])
+  await store.updateSeries(store.value[0], [{ name: 'Dune', label: '1', sortKey: 1 }])
+  return { store, books: store.value }
 }
 
 const fieldValue = (name: string) => screen.getByRole('textbox', { name }).innerText
 
 describe('BookDetail', () => {
   it('renders every stored field', async () => {
-    const { store, book } = await withRichBook()
-    render(BookDetail, { book, booksStore: store })
+    const { store, books } = await withRichBook()
+    render(BookDetail, { books, booksStore: store })
 
     expect(fieldValue('Title')).toBe('Dune')
     expect(fieldValue('Subtitle')).toBe('Dune Chronicles, Book 1')
@@ -44,8 +44,8 @@ describe('BookDetail', () => {
   })
 
   it('shows the cover art at the medium size, skipping Open Library blanks', async () => {
-    const { store, book } = await withRichBook()
-    render(BookDetail, { book, booksStore: store })
+    const { store, books } = await withRichBook()
+    render(BookDetail, { books, booksStore: store })
 
     const img = screen.getByRole('img', { name: /cover of dune/i })
     expect(img).toHaveAttribute(
@@ -55,8 +55,8 @@ describe('BookDetail', () => {
   })
 
   it('falls back to a placeholder when the cover fails to load', async () => {
-    const { store, book } = await withRichBook()
-    render(BookDetail, { book, booksStore: store })
+    const { store, books } = await withRichBook()
+    render(BookDetail, { books, booksStore: store })
 
     await fireEvent.error(screen.getByRole('img', { name: /cover of dune/i }))
 
@@ -66,69 +66,87 @@ describe('BookDetail', () => {
 
   it('shows a placeholder when the book has no cover', async () => {
     const store = await booksStoreWith([{ title: 'Coverless' }])
-    render(BookDetail, { book: store.value[0], booksStore: store })
+    render(BookDetail, { books: store.value, booksStore: store })
 
     expect(screen.queryByRole('img', { name: /cover of/i })).not.toBeInTheDocument()
     expect(screen.getByRole('img', { name: /no cover/i })).toBeInTheDocument()
   })
 
   it('saves an edited text field through the store', async () => {
-    const { store, book } = await withRichBook()
-    const editSpy = vi.spyOn(store, 'edit')
-    render(BookDetail, { book, booksStore: store })
+    const { store, books } = await withRichBook()
+    const spy = vi.spyOn(store, 'editGroup')
+    render(BookDetail, { books, booksStore: store })
 
     const field = screen.getByRole('textbox', { name: 'Published' })
     field.innerText = '1965-06-01'
     await fireEvent.input(field)
     await fireEvent.blur(field)
 
-    expect(editSpy).toHaveBeenCalledWith(
-      expect.objectContaining({ id: book.id, publicationDate: '1965-06-01' })
+    expect(spy).toHaveBeenCalledWith(
+      books,
+      expect.objectContaining({ publicationDate: '1965-06-01' })
     )
   })
 
   it('coerces the page count to a number, and to null when cleared', async () => {
-    const { store, book } = await withRichBook()
-    const editSpy = vi.spyOn(store, 'edit')
-    render(BookDetail, { book, booksStore: store })
+    const { store, books } = await withRichBook()
+    const spy = vi.spyOn(store, 'editGroup')
+    render(BookDetail, { books, booksStore: store })
 
     const field = screen.getByRole('textbox', { name: 'Pages' })
     field.innerText = '250'
     await fireEvent.input(field)
     await fireEvent.blur(field)
-    expect(editSpy).toHaveBeenLastCalledWith(expect.objectContaining({ pageCount: 250 }))
+    expect(spy).toHaveBeenLastCalledWith(books, expect.objectContaining({ pageCount: 250 }))
 
     field.innerText = ''
     await fireEvent.input(field)
     await fireEvent.blur(field)
-    expect(editSpy).toHaveBeenLastCalledWith(expect.objectContaining({ pageCount: null }))
+    expect(spy).toHaveBeenLastCalledWith(books, expect.objectContaining({ pageCount: null }))
   })
 
-  it('routes author edits through updateAuthors', async () => {
-    const { store, book } = await withRichBook()
-    const spy = vi.spyOn(store, 'updateAuthors')
-    render(BookDetail, { book, booksStore: store })
+  it('routes author edits through the group updater', async () => {
+    const { store, books } = await withRichBook()
+    const spy = vi.spyOn(store, 'updateGroupAuthors')
+    render(BookDetail, { books, booksStore: store })
 
     const field = screen.getByRole('textbox', { name: 'Authors' })
     field.innerText = 'Frank Herbert, Brian Herbert'
     await fireEvent.input(field)
     await fireEvent.blur(field)
 
-    expect(spy).toHaveBeenCalledWith(expect.anything(), ['Frank Herbert', 'Brian Herbert'])
+    expect(spy).toHaveBeenCalledWith(books, ['Frank Herbert', 'Brian Herbert'])
   })
 
-  it('toggles read state', async () => {
-    const { store, book } = await withRichBook()
-    const editSpy = vi.spyOn(store, 'edit')
-    render(BookDetail, { book, booksStore: store })
+  it('toggles read state for the group', async () => {
+    const { store, books } = await withRichBook()
+    const spy = vi.spyOn(store, 'editGroup')
+    render(BookDetail, { books, booksStore: store })
 
     await fireEvent.click(screen.getByRole('checkbox', { name: /read/i }))
-    expect(editSpy.mock.calls[0][0].readAt).toBeInstanceOf(Date)
+    expect(spy.mock.calls[0][1].readAt).toBeInstanceOf(Date)
+  })
+
+  it('fans an edit out to every copy in the group', async () => {
+    const store = await booksStoreWith([
+      { title: 'Dune', isbn13: '9780441172719' },
+      { title: 'Dune', isbn13: '9780441172719' },
+    ])
+    render(BookDetail, { books: store.value, booksStore: store })
+
+    const field = screen.getByRole('textbox', { name: 'Title' })
+    field.innerText = 'Dune (Deluxe)'
+    await fireEvent.input(field)
+    await fireEvent.blur(field)
+
+    await waitFor(() =>
+      expect(store.value.map((b) => b.title)).toEqual(['Dune (Deluxe)', 'Dune (Deluxe)'])
+    )
   })
 
   it('shows the acquired date as static text, not a field', async () => {
-    const { store, book } = await withRichBook()
-    render(BookDetail, { book, booksStore: store })
+    const { store, books } = await withRichBook()
+    render(BookDetail, { books, booksStore: store })
 
     expect(screen.queryByRole('textbox', { name: /added/i })).not.toBeInTheDocument()
     expect(screen.getByText(/Added/)).toBeInTheDocument()

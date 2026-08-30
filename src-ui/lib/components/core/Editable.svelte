@@ -51,6 +51,18 @@
   span {
     display: block;
     min-height: 1.2em;
+    padding: 0.15em 0.35em;
+    margin: -0.15em -0.35em;
+    border-radius: 3px;
     outline: none;
+  }
+
+  span:hover {
+    background: var(--bulma-background, #f5f5f5);
+  }
+
+  span:focus {
+    background: var(--bulma-scheme-main, #fff);
+    box-shadow: 0 0 0 2px var(--bulma-link, #485fc7);
   }
 </style>

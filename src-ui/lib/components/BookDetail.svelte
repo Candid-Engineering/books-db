@@ -6,8 +6,12 @@
   import { formatSeries, parseSeries, type ParsedSeries } from '$lib/series'
   import EditableField from './core/EditableField.svelte'
 
-  export let book: Book
+  // The copies this panel edits (length >= 1). `books[0]` is shown; every edit
+  // fans out across the whole group, so a lone book is just a group of one.
+  export let books: Book[]
   export let booksStore: BooksStore = getBooksStore()
+
+  $: book = books[0]
 
   let coverFailed = false
   // `?default=false` makes Open Library 404 a missing cover rather than serve
@@ -15,21 +19,23 @@
   $: coverSrc =
     book.coverImages?.medium && !coverFailed ? `${book.coverImages.medium}?default=false` : null
 
-  const editText = (field: keyof Book, value: string): Promise<void> =>
-    booksStore.edit({ ...book, [field]: value.trim() })
+  type TextField = 'title' | 'subtitle' | 'publicationDate' | 'copyrightDate' | 'isbn10' | 'isbn13'
+
+  const editText = (field: TextField, value: string): Promise<void> =>
+    booksStore.editGroup(books, { [field]: value.trim() })
 
   const editPageCount = (value: string): Promise<void> =>
-    booksStore.edit({ ...book, pageCount: Number(value) || null })
+    booksStore.editGroup(books, { pageCount: Number(value) || null })
 
   const updateAuthors = (csv: string): Promise<void> =>
-    booksStore.updateAuthors(book, csv.split(',').map(trim))
+    booksStore.updateGroupAuthors(books, csv.split(',').map(trim))
 
   const updateTags = (csv: string): Promise<void> =>
-    booksStore.updateTags(book, csv.split(',').map(trim))
+    booksStore.updateGroupTags(books, csv.split(',').map(trim))
 
   const updateSeries = (csv: string): Promise<void> =>
-    booksStore.updateSeries(
-      book,
+    booksStore.updateGroupSeries(
+      books,
       csv
         .split(',')
         .map((entry) => parseSeries(entry))
@@ -37,7 +43,7 @@
     )
 
   const toggleRead = (): Promise<void> =>
-    booksStore.edit({ ...book, readAt: book.readAt ? null : now() })
+    booksStore.editGroup(books, { readAt: book.readAt ? null : now() })
 </script>
 
 <article class="media box m-3">

@@ -6,54 +6,66 @@
   import { trim } from 'lodash'
   import Editable from './core/Editable.svelte'
   import BookDetail from './BookDetail.svelte'
+  import BookCopiesList from './BookCopiesList.svelte'
   import { formatSeries, parseSeries, type ParsedSeries } from '$lib/series'
+  import { converges, namesOf, readState } from '$lib/duplicates'
 
-  export let book: Book
+  // A group of copies of one edition (length >= 1). `books[0]` is the primary
+  // (oldest-acquired) copy and stands in for the group in the collapsed row.
+  export let books: Book[]
   export let booksStore: BooksStore = getBooksStore()
 
   let expanded = false
 
-  const handleEdit = async (book: Book, field: keyof Book, valueStr: string) => {
-    const value = valueStr.trim()
-    await booksStore.edit({ ...book, [field]: value })
-  }
+  $: primary = books[0]
+  $: grouped = books.length > 1
 
-  async function updateTags(book: Book, commaSeparatedTags: string): Promise<void> {
-    const tags = commaSeparatedTags.split(',').map(trim)
-    await booksStore.updateTags(book, tags)
-  }
+  // A field is inline-editable only when every copy already agrees on it;
+  // otherwise it shows the primary's value, greyed, and edits happen per-copy
+  // in the expanded panel.
+  $: titleEditable = !grouped || converges(books, (b) => b.title)
+  $: authorsEditable = !grouped || converges(books, (b) => namesOf(b.authors))
+  $: tagsEditable = !grouped || converges(books, (b) => namesOf(b.tags))
+  $: seriesEditable = !grouped || converges(books, (b) => b.series.map(formatSeries).sort())
 
-  async function updateAuthors(book: Book, commaSeparatedAuthors: string): Promise<void> {
-    const authors = commaSeparatedAuthors.split(',').map(trim)
-    await booksStore.updateAuthors(book, authors)
-  }
+  $: authorsText = primary.authors.map((a) => a.name).join(', ')
+  $: tagsText = primary.tags.map((t) => t.name).join(', ')
+  $: seriesText = primary.series.map(formatSeries).join(', ')
 
-  // Freeform "Series Name #1, Other Series" - each comma-separated entry is
-  // parsed for a trailing position (see series.ts).
-  async function updateSeries(book: Book, commaSeparatedSeries: string): Promise<void> {
-    const entries = commaSeparatedSeries
-      .split(',')
-      .map((entry) => parseSeries(entry))
-      .filter((entry): entry is ParsedSeries => entry !== null)
-    await booksStore.updateSeries(book, entries)
-  }
+  $: reads = readState(books)
 
-  const removeBook = async (id: string): Promise<void> => {
-    await booksStore.remove(id)
-  }
+  const VARIES = 'Varies across copies — expand to edit'
 
-  async function toggleRead(
-    event: Event & { currentTarget: EventTarget & HTMLInputElement },
-    book: Book
-  ) {
-    // TODO(rkofman): instead of updating the whole book element, there should be a method on the store
-    // to set the single field to a new value; filtered by ID.
-    const readAt = book.readAt ? null : new Date()
-    await booksStore.edit({ ...book, readAt })
-  }
+  const editTitle = (value: string): Promise<void> =>
+    booksStore.editGroup(books, { title: value.trim() })
+
+  const editAuthors = (csv: string): Promise<void> =>
+    booksStore.updateGroupAuthors(books, csv.split(',').map(trim))
+
+  const editTags = (csv: string): Promise<void> =>
+    booksStore.updateGroupTags(books, csv.split(',').map(trim))
+
+  const editSeries = (csv: string): Promise<void> =>
+    booksStore.updateGroupSeries(
+      books,
+      csv
+        .split(',')
+        .map((entry) => parseSeries(entry))
+        .filter((entry): entry is ParsedSeries => entry !== null)
+    )
+
+  const toggleRead = (): Promise<void> =>
+    booksStore.editGroup(books, { readAt: reads === 'all' ? null : new Date() })
+
+  const removeGroup = (): Promise<void> => booksStore.removeGroup(books)
 
   let coverFailed = false
-  $: coverSrc = coverFailed ? null : book.coverImages?.small
+  // Medium, not small: the thumbnail renders larger than the small cover's
+  // native size. `?default=false` 404s a missing cover so `onerror` fires.
+  $: coverSrc =
+    primary.coverImages?.medium && !coverFailed
+      ? `${primary.coverImages.medium}?default=false`
+      : null
 </script>
 
 <!-- note: `slide` transitions (which I prefer here) don't currently work on tables: https://github.com/sveltejs/svelte/issues/4948 -->
@@ -77,51 +89,64 @@
     {/if}
   </td>
   <td>
-    <Editable
-      value={book.title}
-      onChange={(newValue: string) => handleEdit(book, 'title', newValue)}
-    />
+    {#if titleEditable}
+      <Editable ariaLabel="Title" value={primary.title} onChange={(v: string) => editTitle(v)} />
+    {:else}
+      <span class="has-text-grey" title={VARIES}>{primary.title}</span>
+    {/if}
+    {#if grouped}<span class="tag is-light ml-2">×{books.length}</span>{/if}
   </td>
-  <td>
-    <Editable
-      value={book.authors.map((bookAuthor) => bookAuthor.name).join(', ')}
-      onChange={(newValue: string) => updateAuthors(book, newValue)}
-    />
+  <td class="clip-cell">
+    {#if authorsEditable}
+      <Editable ariaLabel="Authors" value={authorsText} onChange={(v: string) => editAuthors(v)} />
+    {:else}
+      <span class="varies has-text-grey" title={VARIES}>{authorsText}</span>
+    {/if}
   </td>
-  <td>
-    <Editable
-      value={book.tags.map((bookTag) => bookTag.name).join(', ')}
-      onChange={(newValue: string) => updateTags(book, newValue)}
-    />
+  <td class="clip-cell">
+    {#if tagsEditable}
+      <Editable ariaLabel="Tags" value={tagsText} onChange={(v: string) => editTags(v)} />
+    {:else}
+      <span class="varies has-text-grey" title={VARIES}>{tagsText}</span>
+    {/if}
   </td>
-  <td>
-    <Editable
-      value={book.series.map(formatSeries).join(', ')}
-      onChange={(newValue: string) => updateSeries(book, newValue)}
-    />
+  <td class="clip-cell">
+    {#if seriesEditable}
+      <Editable ariaLabel="Series" value={seriesText} onChange={(v: string) => editSeries(v)} />
+    {:else}
+      <span class="varies has-text-grey" title={VARIES}>{seriesText}</span>
+    {/if}
   </td>
   <td>
     <label class="b-checkbox checkbox is-regular m-1">
       <input
         type="checkbox"
-        value="false"
-        checked={!!book.readAt}
-        onchange={(e) => toggleRead(e, book)}
+        aria-label="Read"
+        checked={reads === 'all'}
+        indeterminate={reads === 'some'}
+        onchange={toggleRead}
       />
       <span class="check"></span>
     </label>
   </td>
   <td>
-    {book.createdAt?.toLocaleDateString()}
+    {primary.createdAt?.toLocaleDateString()}
   </td>
   <td>
-    <Button aria-label="delete book" class="delete" onclick={() => removeBook(book.id)}></Button>
+    <Button
+      aria-label={grouped ? `delete all ${books.length} copies` : 'delete book'}
+      class="delete"
+      onclick={removeGroup}
+    ></Button>
   </td>
 </tr>
 {#if expanded}
   <tr class="detail-row">
     <td colspan="9">
-      <BookDetail {book} {booksStore} />
+      <BookDetail {books} {booksStore} />
+      {#if grouped}
+        <BookCopiesList {books} {booksStore} />
+      {/if}
     </td>
   </tr>
 {/if}
@@ -136,15 +161,44 @@
     color: var(--bulma-text-weak, #7a7a7a);
   }
 
+  .cover-cell {
+    width: 3.75rem;
+    min-width: 3.75rem;
+  }
+
   .cover-thumb {
     display: block;
-    width: 1.75rem;
-    height: 2.5rem;
+    width: 3.25rem;
+    height: 4.75rem;
     object-fit: cover;
-    border-radius: 2px;
+    border-radius: 3px;
   }
 
   .cover-thumb--empty {
     background: var(--bulma-border, #dbdbdb);
+  }
+
+  /* Long author / tag / series lists clip to three lines (about what a row is
+     tall now); editing or hovering shows the whole thing. The width lives on
+     the inner element because a <td> max-width isn't honoured under Bulma's
+     `table-layout: auto`. */
+  .clip-cell :global([contenteditable]),
+  .clip-cell .varies {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+    max-width: 16rem;
+    overflow: hidden;
+  }
+
+  .clip-cell:hover :global([contenteditable]),
+  .clip-cell :global([contenteditable]:focus),
+  .clip-cell:hover .varies {
+    display: block;
+    -webkit-line-clamp: none;
+    line-clamp: none;
+    max-width: none;
+    overflow: visible;
   }
 </style>
