@@ -236,6 +236,101 @@ describe('book', () => {
 
       expect(result.series).toEqual([{ name: 'Foundation', label: null, sortKey: null }])
     })
+
+    it("resolves Open Library's structured series object (name via a second fetch, position as label)", async () => {
+      const isbn = '9780307292063'
+      mockServer.use(
+        http.get(`https://openlibrary.org/isbn/${isbn}.json`, () =>
+          HttpResponse.json({
+            title: 'The Foundation Trilogy',
+            key: '/books/OL1M',
+            works: [{ key: '/works/OL46390W' }],
+            isbn_13: [isbn],
+            authors: [{ key: '/authors/OL34221A' }],
+          })
+        ),
+        http.get('https://openlibrary.org/works/OL46390W.json', () =>
+          HttpResponse.json({
+            key: '/works/OL46390W',
+            series: [{ series: { key: '/series/OL329813L' }, position: '1-3' }],
+          })
+        ),
+        http.get('https://openlibrary.org/series/OL329813L.json', () =>
+          HttpResponse.json({ name: 'Foundation Trilogy', key: '/series/OL329813L' })
+        ),
+        http.get('https://openlibrary.org/authors/OL34221A.json', () =>
+          HttpResponse.json({ name: 'Isaac Asimov', key: '/authors/OL34221A' })
+        )
+      )
+
+      const result = await getByISBN(isbn)
+
+      expect(result.series).toEqual([{ name: 'Foundation Trilogy', label: '1-3', sortKey: 1 }])
+    })
+
+    it('resolves a structured series object with no position', async () => {
+      const isbn = '9780000000001'
+      mockServer.use(
+        http.get(`https://openlibrary.org/isbn/${isbn}.json`, () =>
+          HttpResponse.json({
+            title: 'Some Book',
+            key: '/books/OL2M',
+            works: [{ key: '/works/OL2W' }],
+            isbn_13: [isbn],
+          })
+        ),
+        http.get('https://openlibrary.org/works/OL2W.json', () =>
+          HttpResponse.json({ key: '/works/OL2W', series: [{ series: { key: '/series/OL9L' } }] })
+        ),
+        http.get('https://openlibrary.org/series/OL9L.json', () =>
+          HttpResponse.json({ name: 'Some Series' })
+        )
+      )
+
+      const result = await getByISBN(isbn)
+
+      expect(result.series).toEqual([{ name: 'Some Series', label: null, sortKey: null }])
+    })
+
+    it('returns no series (rather than throwing) for an unrecognized series shape', async () => {
+      const isbn = '9780000000002'
+      mockServer.use(
+        http.get(`https://openlibrary.org/isbn/${isbn}.json`, () =>
+          HttpResponse.json({
+            title: 'Odd Book',
+            key: '/books/OL3M',
+            isbn_13: [isbn],
+            series: [{ unexpected: true }],
+          })
+        )
+      )
+
+      const result = await getByISBN(isbn)
+
+      expect(result.series).toEqual([])
+    })
+
+    it('returns no series (rather than throwing) when the series record fetch fails', async () => {
+      const isbn = '9780000000003'
+      mockServer.use(
+        http.get(`https://openlibrary.org/isbn/${isbn}.json`, () =>
+          HttpResponse.json({
+            title: 'Book',
+            key: '/books/OL4M',
+            isbn_13: [isbn],
+            series: [{ series: { key: '/series/OLMISSINGL' }, position: '2' }],
+          })
+        ),
+        http.get('https://openlibrary.org/series/OLMISSINGL.json', () =>
+          HttpResponse.json({ error: 'notfound' }, { status: 404 })
+        )
+      )
+
+      const result = await getByISBN(isbn)
+
+      expect(result.series).toEqual([])
+    })
+
     it('falls back to the work record for authors when the edition has none of its own', async () => {
       const foundationIsbn = '9780307292063'
       mockServer.use(

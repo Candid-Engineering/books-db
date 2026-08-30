@@ -4,6 +4,7 @@ pnpm-lock.yaml
 yarn.lock
 src-ui/lib/drizzle
 src-ui/lib/generated
+src-tauri/gen/
 migrations/
 
 # Prose docs: Markdown is authored by hand (and by Claude) as long-form
