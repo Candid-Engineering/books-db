@@ -21,7 +21,13 @@
   let { label, value, onChange }: Props = $props()
 </script>
 
-<div class="field">
-  <span class="label">{label}</span>
-  <Editable {value} {onChange} ariaLabel={label} />
+<div class="field is-horizontal">
+  <div class="field-label is-normal">
+    <span class="label">{label}</span>
+  </div>
+  <div class="field-body">
+    <div class="control">
+      <Editable {value} {onChange} ariaLabel={label} />
+    </div>
+  </div>
 </div>

@@ -10,7 +10,7 @@
     booksStore.edit({ ...book, [field]: value.trim() })
 </script>
 
-<div class="book-detail">
+<div class="box m-3">
   <EditableField
     label="ISBN-10"
     value={book.isbn10}
@@ -21,5 +21,5 @@
     value={book.isbn13}
     onChange={(v: string) => editField('isbn13', v)}
   />
-  <p class="acquired">Added {book.createdAt?.toLocaleDateString()}</p>
+  <p class="is-size-7 has-text-grey mt-3">Added {book.createdAt?.toLocaleDateString()}</p>
 </div>
