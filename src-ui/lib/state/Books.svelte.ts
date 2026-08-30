@@ -5,6 +5,7 @@ import realDb from '$lib/db/index.js'
 import * as schema from '$lib/db/schema'
 import type { SqliteRemoteDatabase } from 'drizzle-orm/sqlite-proxy'
 import { and, eq, isNull } from 'drizzle-orm/sql/expressions/conditions'
+import { now } from '$lib/clock.js'
 import _ from 'lodash'
 
 class BooksStore {
@@ -35,7 +36,7 @@ class BooksStore {
     const id = uuidv4()
     const book_with_id: Book = { ...book, id } as Book
 
-    await this.db.insert(schema.books).values({ ...book_with_id, updatedAt: new Date() })
+    await this.db.insert(schema.books).values({ ...book_with_id, updatedAt: now() })
     await this.reload()
     return id
   }
@@ -43,7 +44,7 @@ class BooksStore {
   async edit(updatedBook: Book): Promise<void> {
     await this.db
       .update(schema.books)
-      .set({ ...updatedBook, updatedAt: new Date(), syncedAt: null })
+      .set({ ...updatedBook, updatedAt: now(), syncedAt: null })
       .where(eq(schema.books.id, updatedBook.id))
     await this.reload()
   }
@@ -65,14 +66,15 @@ class BooksStore {
       .values({ bookId: book.id, name: tagName })
       .onConflictDoUpdate({
         target: [schema.bookTags.bookId, schema.bookTags.name],
-        set: { deletedAt: null, updatedAt: new Date(), syncedAt: null },
+        set: { deletedAt: null, updatedAt: now(), syncedAt: null },
       })
   }
 
   private async removeTag(book: Book, tag: string): Promise<void> {
+    const timestamp = now()
     await this.db
       .update(schema.bookTags)
-      .set({ deletedAt: new Date(), updatedAt: new Date(), syncedAt: null })
+      .set({ deletedAt: timestamp, updatedAt: timestamp, syncedAt: null })
       .where(and(eq(schema.bookTags.bookId, book.id), eq(schema.bookTags.name, tag)))
   }
 
@@ -93,14 +95,15 @@ class BooksStore {
       .values({ bookId: book.id, name: authorName })
       .onConflictDoUpdate({
         target: [schema.bookAuthors.bookId, schema.bookAuthors.name],
-        set: { deletedAt: null, updatedAt: new Date(), syncedAt: null },
+        set: { deletedAt: null, updatedAt: now(), syncedAt: null },
       })
   }
 
   private async removeAuthor(book: Book, author: string): Promise<void> {
+    const timestamp = now()
     await this.db
       .update(schema.bookAuthors)
-      .set({ deletedAt: new Date(), updatedAt: new Date(), syncedAt: null })
+      .set({ deletedAt: timestamp, updatedAt: timestamp, syncedAt: null })
       .where(and(eq(schema.bookAuthors.bookId, book.id), eq(schema.bookAuthors.name, author)))
   }
 
@@ -130,36 +133,37 @@ class BooksStore {
           label: entry.label,
           sortKey: entry.sortKey,
           deletedAt: null,
-          updatedAt: new Date(),
+          updatedAt: now(),
           syncedAt: null,
         },
       })
   }
 
   private async removeSeries(book: Book, name: string): Promise<void> {
+    const timestamp = now()
     await this.db
       .update(schema.bookSeries)
-      .set({ deletedAt: new Date(), updatedAt: new Date(), syncedAt: null })
+      .set({ deletedAt: timestamp, updatedAt: timestamp, syncedAt: null })
       .where(and(eq(schema.bookSeries.bookId, book.id), eq(schema.bookSeries.name, name)))
   }
 
   async remove(id: string): Promise<void> {
-    const now = new Date()
+    const timestamp = now()
     await this.db
       .update(schema.books)
-      .set({ deletedAt: now, updatedAt: now, syncedAt: null })
+      .set({ deletedAt: timestamp, updatedAt: timestamp, syncedAt: null })
       .where(eq(schema.books.id, id))
     await this.db
       .update(schema.bookTags)
-      .set({ deletedAt: now, updatedAt: now, syncedAt: null })
+      .set({ deletedAt: timestamp, updatedAt: timestamp, syncedAt: null })
       .where(and(eq(schema.bookTags.bookId, id), isNull(schema.bookTags.deletedAt)))
     await this.db
       .update(schema.bookAuthors)
-      .set({ deletedAt: now, updatedAt: now, syncedAt: null })
+      .set({ deletedAt: timestamp, updatedAt: timestamp, syncedAt: null })
       .where(and(eq(schema.bookAuthors.bookId, id), isNull(schema.bookAuthors.deletedAt)))
     await this.db
       .update(schema.bookSeries)
-      .set({ deletedAt: now, updatedAt: now, syncedAt: null })
+      .set({ deletedAt: timestamp, updatedAt: timestamp, syncedAt: null })
       .where(and(eq(schema.bookSeries.bookId, id), isNull(schema.bookSeries.deletedAt)))
     await this.reload()
   }

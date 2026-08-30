@@ -13,15 +13,11 @@
 
   let { value, onChange }: Props = $props()
 
-  // $state only captures the prop's *initial* value - it won't pick up a
-  // later change to `value` (e.g. a row's tags arriving from a second store
-  // update after the row already mounted, such as after add() then
-  // updateTags()) without this effect, since the row is reused (keyed by
-  // book id), not recreated.
-  let currVal = $state(value)
-  $effect(() => {
-    currVal = value
-  })
+  // Writable $derived: tracks `value` when the prop changes (e.g. a row's
+  // tags arriving from a second store update after the row already mounted,
+  // since rows are reused by book id, not recreated), but the contenteditable
+  // binding below can still overwrite it while the user types.
+  let currVal = $derived(value)
 
   function handleBlur() {
     onChange(currVal || '')
