@@ -79,31 +79,6 @@
       </header>
       <form onsubmit={handleSubmit}>
         <section class="modal-card-body">
-          <!-- Form Fields -->
-          <div class="field">
-            <label class="label" for="isbn-10">ISBN-10</label>
-            <div class="control">
-              <input
-                class="input"
-                type="text"
-                bind:value={book.isbn10}
-                placeholder="Enter ISBN-10"
-              />
-            </div>
-          </div>
-
-          <div class="field">
-            <label class="label" for="isbn-13">ISBN-13</label>
-            <div class="control">
-              <input
-                class="input"
-                type="text"
-                bind:value={book.isbn13}
-                placeholder="Enter ISBN-13"
-              />
-            </div>
-          </div>
-
           <div class="field">
             <label class="label" for="title">Title</label>
             <div class="control">
@@ -129,6 +104,7 @@
               />
             </div>
           </div>
+
           <div class="field">
             <label class="label" for="tags">Tags</label>
             <div class="control">
@@ -140,12 +116,39 @@
               />
             </div>
           </div>
+
           <div class="field">
             <label class="b-checkbox checkbox is-regular m-1">
               <input type="checkbox" value="false" bind:checked={hasRead.bool} />
               <span class="check"></span>
               <span class="control-label">Read?</span>
             </label>
+          </div>
+
+          <h3 class="subtitle is-6 mt-5 mb-2">Identifiers</h3>
+
+          <div class="field">
+            <label class="label" for="isbn-10">ISBN-10</label>
+            <div class="control">
+              <input
+                class="input"
+                type="text"
+                bind:value={book.isbn10}
+                placeholder="Enter ISBN-10"
+              />
+            </div>
+          </div>
+
+          <div class="field">
+            <label class="label" for="isbn-13">ISBN-13</label>
+            <div class="control">
+              <input
+                class="input"
+                type="text"
+                bind:value={book.isbn13}
+                placeholder="Enter ISBN-13"
+              />
+            </div>
           </div>
         </section>
         <footer class="modal-card-foot">
