@@ -1,11 +1,14 @@
 <script lang="ts">
   import { addBookByIsbn } from '$lib/add-book-by-isbn.js'
   import { getBooksStore, type BooksStore } from '$lib/state/Books.svelte'
+  import { groupByEdition } from '$lib/duplicates'
   import onScan from 'onscan.js'
   import type { Action } from 'svelte/action'
   import BooksTableRow from './BooksTableRow.svelte'
 
   let { booksStore = getBooksStore() }: { booksStore?: BooksStore } = $props()
+
+  let groups = $derived(groupByEdition(booksStore.value))
 
   type scanEvent = {
     detail: {
@@ -50,8 +53,8 @@
       </tr>
     </thead>
     <tbody>
-      {#each booksStore.value as book (book.id)}
-        <BooksTableRow {book} {booksStore} />
+      {#each groups as group (group[0].id)}
+        <BooksTableRow books={group} {booksStore} />
       {:else}
         <tr>
           <td colspan="9">
