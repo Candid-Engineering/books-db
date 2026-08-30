@@ -53,6 +53,19 @@ integration tests. `devbox generate direnv` auto-activates on `cd`.
 - For *just* "pin the Node version," this is a sledgehammer — see the
   near-term options in the version-manager discussion.
 
+## Why not just mise (the lighter point on this spectrum)
+
+`mise` would fix the version-manager friction directly - polyglot (replaces
+nodenv + rbenv + pyenv), fuzzy-matches versions, fast, no shims. It reads the
+existing `.node-version` / `.ruby-version`.
+
+Deliberately not adopted: it's a *personal* toolchain choice, and committing a
+`mise.toml` would lean the repo on mise for every collaborator. The repo keeps
+a plain exact-pinned `.node-version` (`26.8.1`) so it works with any manager -
+nodenv (needs the exact string), mise/fnm/nvm (accept it too), and CI's
+`actions/setup-node`. Anyone who wants mise can run it against that file with
+no repo change. Revisit only if the whole team moves to one manager.
+
 ## Alternatives in the same tier
 
 - **flox** — also Nix-based, more polished packaging UX, optional hosted
