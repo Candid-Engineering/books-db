@@ -518,4 +518,64 @@ describe('booksStore', () => {
       })
     })
   })
+
+  describe('group operations', () => {
+    const isbn13 = duneMessiah.isbn13!
+    let copies: Book[]
+
+    beforeEach(async () => {
+      await booksStore.add({ ...duneMessiah, title: 'Dune' })
+      await booksStore.add({ ...duneMessiah, title: 'Dune' })
+      copies = booksStore.value.filter((book) => book.isbn13 === isbn13)
+      expect(copies).toHaveLength(2)
+    })
+
+    const currentCopies = () => booksStore.value.filter((book) => book.isbn13 === isbn13)
+
+    describe('#editGroup', () => {
+      it('applies the patch to every copy', async () => {
+        await booksStore.editGroup(copies, { title: 'Dune (Deluxe)' })
+
+        expect(currentCopies().map((b) => b.title)).toEqual(['Dune (Deluxe)', 'Dune (Deluxe)'])
+      })
+
+      it('marks every copy pending sync', async () => {
+        await booksStore.editGroup(copies, { pageCount: 999 })
+
+        const rows = await testDb.drizzle
+          .select()
+          .from(schema.books)
+          .where(eq(schema.books.isbn13, isbn13))
+        expect(rows.every((row) => row.syncedAt === null)).toBe(true)
+      })
+    })
+
+    describe('#updateGroupTags', () => {
+      it('sets the same tags on every copy', async () => {
+        await booksStore.updateGroupTags(copies, ['owned', 'sci-fi'])
+
+        for (const copy of currentCopies()) {
+          expect(copy.tags.map((t) => t.name).sort()).toEqual(['owned', 'sci-fi'])
+        }
+      })
+    })
+
+    describe('#updateGroupAuthors', () => {
+      it('sets the same authors on every copy', async () => {
+        await booksStore.updateGroupAuthors(copies, ['Frank Herbert'])
+
+        for (const copy of currentCopies()) {
+          expect(copy.authors.map((a) => a.name)).toEqual(['Frank Herbert'])
+        }
+      })
+    })
+
+    describe('#removeGroup', () => {
+      it('soft-deletes every copy', async () => {
+        await booksStore.removeGroup(copies)
+
+        expect(currentCopies()).toHaveLength(0)
+      })
+    })
+  })
 })

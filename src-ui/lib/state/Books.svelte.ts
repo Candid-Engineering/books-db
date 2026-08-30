@@ -48,14 +48,34 @@ class BooksStore {
   }
 
   async edit(updatedBook: Book): Promise<void> {
-    await this.db
-      .update(schema.books)
-      .set({ ...updatedBook, updatedAt: now(), syncedAt: null })
-      .where(eq(schema.books.id, updatedBook.id))
+    await this.#writeBookFields(updatedBook.id, updatedBook)
     await this.reload()
   }
 
+  /** Apply the same field patch to every copy in a group (one reload). */
+  async editGroup(books: Book[], patch: Partial<Book>): Promise<void> {
+    for (const book of books) await this.#writeBookFields(book.id, patch)
+    await this.reload()
+  }
+
+  async #writeBookFields(id: string, fields: Partial<Book>): Promise<void> {
+    await this.db
+      .update(schema.books)
+      .set({ ...fields, updatedAt: now(), syncedAt: null })
+      .where(eq(schema.books.id, id))
+  }
+
   async updateTags(book: Book, tags: string[]): Promise<void> {
+    await this.#applyTags(book, tags)
+    await this.reload()
+  }
+
+  async updateGroupTags(books: Book[], tags: string[]): Promise<void> {
+    for (const book of books) await this.#applyTags(book, tags)
+    await this.reload()
+  }
+
+  async #applyTags(book: Book, tags: string[]): Promise<void> {
     const existingTags = book.tags.map((bookTag) => bookTag.name)
     for (const tagToRemove of _.difference(existingTags, tags)) {
       await this.removeTag(book, tagToRemove)
@@ -63,7 +83,6 @@ class BooksStore {
     for (const tagToAdd of _.difference(tags, existingTags)) {
       await this.addTag(book, tagToAdd)
     }
-    await this.reload()
   }
 
   private async addTag(book: Book, tagName: string): Promise<void> {
@@ -85,6 +104,16 @@ class BooksStore {
   }
 
   async updateAuthors(book: Book, authors: string[]): Promise<void> {
+    await this.#applyAuthors(book, authors)
+    await this.reload()
+  }
+
+  async updateGroupAuthors(books: Book[], authors: string[]): Promise<void> {
+    for (const book of books) await this.#applyAuthors(book, authors)
+    await this.reload()
+  }
+
+  async #applyAuthors(book: Book, authors: string[]): Promise<void> {
     const existingAuthors = book.authors.map((bookAuthor) => bookAuthor.name)
     for (const authorToRemove of _.difference(existingAuthors, authors)) {
       await this.removeAuthor(book, authorToRemove)
@@ -92,7 +121,6 @@ class BooksStore {
     for (const authorToAdd of _.difference(authors, existingAuthors)) {
       await this.addAuthor(book, authorToAdd)
     }
-    await this.reload()
   }
 
   private async addAuthor(book: Book, authorName: string): Promise<void> {
@@ -114,6 +142,16 @@ class BooksStore {
   }
 
   async updateSeries(book: Book, entries: ParsedSeries[]): Promise<void> {
+    await this.#applySeries(book, entries)
+    await this.reload()
+  }
+
+  async updateGroupSeries(books: Book[], entries: ParsedSeries[]): Promise<void> {
+    for (const book of books) await this.#applySeries(book, entries)
+    await this.reload()
+  }
+
+  async #applySeries(book: Book, entries: ParsedSeries[]): Promise<void> {
     const incoming = entries.map((entry) => entry.name)
     for (const nameToRemove of _.difference(
       book.series.map((s) => s.name),
@@ -126,7 +164,6 @@ class BooksStore {
       if (current && current.label === entry.label && current.sortKey === entry.sortKey) continue
       await this.upsertSeries(book, entry)
     }
-    await this.reload()
   }
 
   private async upsertSeries(book: Book, entry: ParsedSeries): Promise<void> {
@@ -154,6 +191,17 @@ class BooksStore {
   }
 
   async remove(id: string): Promise<void> {
+    await this.#tombstoneBook(id)
+    await this.reload()
+  }
+
+  /** Soft-delete every copy in a group (one reload). */
+  async removeGroup(books: Book[]): Promise<void> {
+    for (const book of books) await this.#tombstoneBook(book.id)
+    await this.reload()
+  }
+
+  async #tombstoneBook(id: string): Promise<void> {
     const timestamp = now()
     await this.db
       .update(schema.books)
@@ -171,7 +219,6 @@ class BooksStore {
       .update(schema.bookSeries)
       .set({ deletedAt: timestamp, updatedAt: timestamp, syncedAt: null })
       .where(and(eq(schema.bookSeries.bookId, id), isNull(schema.bookSeries.deletedAt)))
-    await this.reload()
   }
 
   async reset(): Promise<void> {
