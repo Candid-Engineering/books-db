@@ -6,6 +6,7 @@
   import { trim } from 'lodash'
   import Editable from './core/Editable.svelte'
   import BookDetail from './BookDetail.svelte'
+  import BookCopiesList from './BookCopiesList.svelte'
   import { formatSeries, parseSeries, type ParsedSeries } from '$lib/series'
   import { converges, namesOf, readState } from '$lib/duplicates'
 
@@ -138,6 +139,9 @@
   <tr class="detail-row">
     <td colspan="9">
       <BookDetail book={primary} {booksStore} />
+      {#if grouped}
+        <BookCopiesList {books} {booksStore} />
+      {/if}
     </td>
   </tr>
 {/if}

@@ -105,4 +105,24 @@ describe('BooksTableRow — grouped copies', () => {
 
     expect(spy).toHaveBeenCalledWith(group)
   })
+
+  it('lists the individual copies when expanded', async () => {
+    await renderGroup(twoCopies)
+
+    await fireEvent.click(screen.getByRole('button', { name: /expand/i }))
+
+    expect(screen.getByText(/Copies \(2\)/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /delete copy 2/i })).toBeInTheDocument()
+  })
+})
+
+describe('BooksTableRow — single copy, expanded', () => {
+  it('does not show a copies list', async () => {
+    const store = await booksStoreWith([{ title: 'Dune', isbn13: '9780441172719' }])
+    render(BooksTableRow, { books: store.value, booksStore: store })
+
+    await fireEvent.click(screen.getByRole('button', { name: /expand/i }))
+
+    expect(screen.queryByText(/Copies \(/)).not.toBeInTheDocument()
+  })
 })
