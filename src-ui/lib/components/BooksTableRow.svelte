@@ -138,7 +138,7 @@
 {#if expanded}
   <tr class="detail-row">
     <td colspan="9">
-      <BookDetail book={primary} {booksStore} />
+      <BookDetail {books} {booksStore} />
       {#if grouped}
         <BookCopiesList {books} {booksStore} />
       {/if}
