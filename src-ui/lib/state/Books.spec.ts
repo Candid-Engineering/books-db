@@ -12,7 +12,6 @@ const duneMessiah: NewBook = {
   isbn13: '9780441172696',
   title: 'Dune Messiah',
   subtitle: 'Dune Chronicles, Book 2',
-  series: 'Dune (2)', // or 'Dune Chronicles, Book 2'
   copyrightDate: '1969',
   publicationDate: 'July 15, 1987',
   coverImages: {
@@ -228,16 +227,6 @@ describe('booksStore', () => {
         const editedBook = booksStore.value.find((book) => book.id === duneMessiahWithId.id)
         expect(editedBook?.pageCount).toBe(500)
       })
-
-      it('should edit the series of a book', async () => {
-        const updatedBook = {
-          ...duneMessiahWithId,
-          series: 'Dune Chronicles (Revised)',
-        }
-        await booksStore.edit(updatedBook)
-        const editedBook = booksStore.value.find((book) => book.id === duneMessiahWithId.id)
-        expect(editedBook?.series).toBe('Dune Chronicles (Revised)')
-      })
     })
 
     describe('#updateTags', () => {
@@ -253,6 +242,45 @@ describe('booksStore', () => {
         await booksStore.updateAuthors(duneMessiahWithId, ['Frank Herbert', 'Brian Herbert'])
         const editedBook = booksStore.value.find((book) => book.id === duneMessiahWithId.id)
         expect(editedBook?.authors.map((a) => a.name)).toContain('Frank Herbert')
+      })
+    })
+
+    describe('#updateSeries', () => {
+      it('stores a series membership with its position', async () => {
+        await booksStore.updateSeries(duneMessiahWithId, [{ name: 'Dune', label: '2', sortKey: 2 }])
+        const editedBook = booksStore.value.find((book) => book.id === duneMessiahWithId.id)
+        expect(editedBook?.series).toEqual([
+          expect.objectContaining({ name: 'Dune', label: '2', sortKey: 2 }),
+        ])
+      })
+
+      it('lets one book belong to more than one series', async () => {
+        await booksStore.updateSeries(duneMessiahWithId, [
+          { name: 'Dune', label: '2', sortKey: 2 },
+          { name: 'Hugo Award Winners', label: null, sortKey: null },
+        ])
+        const editedBook = booksStore.value.find((book) => book.id === duneMessiahWithId.id)
+        expect(editedBook?.series.map((s) => s.name).sort()).toEqual(['Dune', 'Hugo Award Winners'])
+      })
+
+      it('updates the position of a series the book is already in', async () => {
+        await booksStore.updateSeries(duneMessiahWithId, [{ name: 'Dune', label: '2', sortKey: 2 }])
+        const withSeries = booksStore.value.find((book) => book.id === duneMessiahWithId.id)!
+        await booksStore.updateSeries(withSeries, [{ name: 'Dune', label: '1.5', sortKey: 1.5 }])
+
+        const editedBook = booksStore.value.find((book) => book.id === duneMessiahWithId.id)
+        expect(editedBook?.series).toEqual([
+          expect.objectContaining({ name: 'Dune', label: '1.5', sortKey: 1.5 }),
+        ])
+      })
+
+      it('drops a series membership that is no longer present', async () => {
+        await booksStore.updateSeries(duneMessiahWithId, [{ name: 'Dune', label: '2', sortKey: 2 }])
+        const withSeries = booksStore.value.find((book) => book.id === duneMessiahWithId.id)!
+        await booksStore.updateSeries(withSeries, [])
+
+        const editedBook = booksStore.value.find((book) => book.id === duneMessiahWithId.id)
+        expect(editedBook?.series).toEqual([])
       })
     })
 
@@ -314,6 +342,23 @@ describe('booksStore', () => {
           )
         expect(rawAuthorRow.deletedAt).not.toBeNull()
         expect(rawAuthorRow.syncedAt).toBeNull()
+      })
+
+      it("should tombstone the book's active series memberships too", async () => {
+        await booksStore.updateSeries(duneMessiahWithId, [{ name: 'Dune', label: '2', sortKey: 2 }])
+        await booksStore.remove(duneMessiahWithId.id)
+
+        const [rawSeriesRow] = await testDb.drizzle
+          .select()
+          .from(schema.bookSeries)
+          .where(
+            and(
+              eq(schema.bookSeries.bookId, duneMessiahWithId.id),
+              eq(schema.bookSeries.name, 'Dune')
+            )
+          )
+        expect(rawSeriesRow.deletedAt).not.toBeNull()
+        expect(rawSeriesRow.syncedAt).toBeNull()
       })
     })
 
@@ -414,6 +459,51 @@ describe('booksStore', () => {
 
         const editedBook = booksStore.value.find((book) => book.id === duneMessiahWithId.id)
         expect(editedBook?.authors.map((a) => a.name)).toContain('Frank Herbert')
+      })
+    })
+
+    describe('series lifecycle', () => {
+      it('should mark a removed series membership as pending sync rather than deleting the row', async () => {
+        await booksStore.updateSeries(duneMessiahWithId, [{ name: 'Dune', label: '2', sortKey: 2 }])
+        const withSeries = booksStore.value.find((book) => book.id === duneMessiahWithId.id)!
+        await booksStore.updateSeries(withSeries, [])
+
+        const rawSeriesRows = await testDb.drizzle
+          .select()
+          .from(schema.bookSeries)
+          .where(
+            and(
+              eq(schema.bookSeries.bookId, duneMessiahWithId.id),
+              eq(schema.bookSeries.name, 'Dune')
+            )
+          )
+
+        expect(rawSeriesRows).toHaveLength(1)
+        expect(rawSeriesRows[0].deletedAt).not.toBeNull()
+        expect(rawSeriesRows[0].syncedAt).toBeNull()
+      })
+
+      it('should revive a previously-removed series membership on re-add instead of erroring or duplicating', async () => {
+        await booksStore.updateSeries(duneMessiahWithId, [{ name: 'Dune', label: '2', sortKey: 2 }])
+        const withSeries = booksStore.value.find((book) => book.id === duneMessiahWithId.id)!
+        await booksStore.updateSeries(withSeries, [])
+        const withSeriesRemoved = booksStore.value.find((book) => book.id === duneMessiahWithId.id)!
+        await booksStore.updateSeries(withSeriesRemoved, [{ name: 'Dune', label: '3', sortKey: 3 }])
+
+        const rawSeriesRows = await testDb.drizzle
+          .select()
+          .from(schema.bookSeries)
+          .where(
+            and(
+              eq(schema.bookSeries.bookId, duneMessiahWithId.id),
+              eq(schema.bookSeries.name, 'Dune')
+            )
+          )
+
+        expect(rawSeriesRows).toHaveLength(1)
+        expect(rawSeriesRows[0].deletedAt).toBeNull()
+        expect(rawSeriesRows[0].syncedAt).toBeNull()
+        expect(rawSeriesRows[0].label).toBe('3')
       })
     })
 

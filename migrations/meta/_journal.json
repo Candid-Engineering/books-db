@@ -57,6 +57,13 @@
       "when": 1787807446702,
       "tag": "20260827051046_add_book_authors_table",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1787987448453,
+      "tag": "20260829071048_add_book_series_table",
+      "breakpoints": true
     }
   ]
 }

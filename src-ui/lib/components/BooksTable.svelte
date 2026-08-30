@@ -44,6 +44,7 @@
         <th>Title</th>
         <th>Author</th>
         <th>Tags</th>
+        <th>Series</th>
         <th>Read?</th>
         <th>Scanned</th>
       </tr>
@@ -53,7 +54,7 @@
         <BooksTableRow {book} />
       {:else}
         <tr>
-          <td colspan="8">
+          <td colspan="9">
             <section class="section">
               <div class="content has-text-soft has-text-centered">
                 <p><i class="far fa-3x fa-frown"></i></p>

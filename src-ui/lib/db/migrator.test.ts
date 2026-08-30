@@ -122,4 +122,44 @@ describe('migrate against an already-populated table', () => {
       'authors'
     )
   })
+
+  it('backfills book_series verbatim from the legacy series column before dropping it', async () => {
+    const { drizzleDb, sqlite } = await createDb()
+    const journalWithSeriesColumn = JSON.stringify({
+      entries: [{ idx: 0, when: 1, tag: '0001_create_books_with_series', breakpoints: true }],
+    })
+    const migrationDataWithSeriesColumn = {
+      '0001_create_books_with_series':
+        'CREATE TABLE books (id text PRIMARY KEY, title text NOT NULL, series text);',
+    }
+    await migrate(drizzleDb, journalWithSeriesColumn, migrationDataWithSeriesColumn)
+    sqlite.run(
+      "INSERT INTO books (id, title, series) VALUES ('1', 'Dune Messiah', 'Dune (2)'), ('2', 'Standalone', NULL), ('3', 'Empty', '')"
+    )
+
+    const journal = JSON.stringify({
+      entries: [
+        ...(JSON.parse(journalWithSeriesColumn) as { entries: unknown[] }).entries,
+        { idx: 1, when: 2, tag: '0002_add_book_series_table', breakpoints: true },
+      ],
+    })
+    const migrationData = {
+      ...migrationDataWithSeriesColumn,
+      '0002_add_book_series_table':
+        'CREATE TABLE book_series (bookId text NOT NULL, name text NOT NULL, label text, sortKey real, PRIMARY KEY (bookId, name));' +
+        '--> statement-breakpoint\n' +
+        "INSERT INTO book_series (bookId, name) SELECT id, series FROM books WHERE series IS NOT NULL AND series != '';" +
+        '--> statement-breakpoint\n' +
+        'ALTER TABLE books DROP COLUMN series;',
+    }
+
+    await migrate(drizzleDb, journal, migrationData)
+
+    const seriesRows =
+      sqlite.exec('SELECT bookId, name, label, sortKey FROM book_series')[0]?.values ?? []
+    expect(seriesRows).toEqual([['1', 'Dune (2)', null, null]])
+    expect(sqlite.exec('PRAGMA table_info(books)')[0].values.map((row) => row[1])).not.toContain(
+      'series'
+    )
+  })
 })

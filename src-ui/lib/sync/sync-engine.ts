@@ -24,7 +24,14 @@ export async function hasUnsyncedData(db: SqliteRemoteDatabase<typeof schema>): 
     .from(schema.bookAuthors)
     .where(isNull(schema.bookAuthors.syncedAt))
     .limit(1)
-  return !!pendingAuthor
+  if (pendingAuthor) return true
+
+  const [pendingSeries] = await db
+    .select()
+    .from(schema.bookSeries)
+    .where(isNull(schema.bookSeries.syncedAt))
+    .limit(1)
+  return !!pendingSeries
 }
 
 export class SyncEngine {
@@ -50,13 +57,24 @@ export class SyncEngine {
       .select()
       .from(schema.bookAuthors)
       .where(isNull(schema.bookAuthors.syncedAt))
+    const pendingSeries = await this.db
+      .select()
+      .from(schema.bookSeries)
+      .where(isNull(schema.bookSeries.syncedAt))
 
-    if (pendingBooks.length === 0 && pendingTags.length === 0 && pendingAuthors.length === 0) return
+    if (
+      pendingBooks.length === 0 &&
+      pendingTags.length === 0 &&
+      pendingAuthors.length === 0 &&
+      pendingSeries.length === 0
+    )
+      return
 
     const { rejected } = await pushEntities(authToken, {
       books: pendingBooks,
       bookTags: pendingTags,
       bookAuthors: pendingAuthors,
+      bookSeries: pendingSeries,
     })
 
     const rejectedBookIds = new Set(rejected.filter((r) => r.type === 'books').map((r) => r.id))
@@ -65,6 +83,9 @@ export class SyncEngine {
     )
     const rejectedAuthorKeys = new Set(
       rejected.filter((r) => r.type === 'book_authors').map((r) => `${r.bookId}:${r.name}`)
+    )
+    const rejectedSeriesKeys = new Set(
+      rejected.filter((r) => r.type === 'book_series').map((r) => `${r.bookId}:${r.name}`)
     )
 
     const syncedAt = new Date()
@@ -94,6 +115,16 @@ export class SyncEngine {
           )
         )
     }
+
+    for (const series of pendingSeries) {
+      if (rejectedSeriesKeys.has(`${series.bookId}:${series.name}`)) continue
+      await this.db
+        .update(schema.bookSeries)
+        .set({ syncedAt })
+        .where(
+          and(eq(schema.bookSeries.bookId, series.bookId), eq(schema.bookSeries.name, series.name))
+        )
+    }
   }
 
   async pull(knownAuthToken?: string): Promise<void> {
@@ -105,6 +136,7 @@ export class SyncEngine {
       books: state?.booksSince ?? 0,
       bookTags: state?.bookTagsSince ?? 0,
       bookAuthors: state?.bookAuthorsSince ?? 0,
+      bookSeries: state?.bookSeriesSince ?? 0,
     }
 
     const { entities, cursors } = await pullEntities(authToken, since)
@@ -138,6 +170,16 @@ export class SyncEngine {
         })
     }
 
+    for (const series of entities.bookSeries) {
+      await this.db
+        .insert(schema.bookSeries)
+        .values({ ...series, syncedAt })
+        .onConflictDoUpdate({
+          target: [schema.bookSeries.bookId, schema.bookSeries.name],
+          set: { ...series, syncedAt },
+        })
+    }
+
     await this.db
       .insert(schema.syncState)
       .values({
@@ -145,6 +187,7 @@ export class SyncEngine {
         booksSince: cursors.books,
         bookTagsSince: cursors.bookTags,
         bookAuthorsSince: cursors.bookAuthors,
+        bookSeriesSince: cursors.bookSeries,
       })
       .onConflictDoUpdate({
         target: schema.syncState.singleton,
@@ -152,6 +195,7 @@ export class SyncEngine {
           booksSince: cursors.books,
           bookTagsSince: cursors.bookTags,
           bookAuthorsSince: cursors.bookAuthors,
+          bookSeriesSince: cursors.bookSeries,
         },
       })
 

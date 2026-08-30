@@ -20,6 +20,7 @@ describe('addBookByIsbn', () => {
           publish_date: 'October 1996',
           key: '/books/OL7524009M',
           subjects: ['Science Fiction'],
+          series: ['The Stainless Steel Rat #1'],
           isbn_10: ['0441004229'],
           isbn_13: ['9780441004225'],
         })
@@ -43,5 +44,12 @@ describe('addBookByIsbn', () => {
   it('fills in the tags', async () => {
     await addBookByIsbn(ISBN, booksStore)
     expect(booksStore.value[0]?.tags.map((t) => t.name)).toEqual(['Science Fiction'])
+  })
+
+  it('fills in the series with its parsed position', async () => {
+    await addBookByIsbn(ISBN, booksStore)
+    expect(booksStore.value[0]?.series).toEqual([
+      expect.objectContaining({ name: 'The Stainless Steel Rat', label: '1', sortKey: 1 }),
+    ])
   })
 })

@@ -1,10 +1,22 @@
 import { describe, it, expect } from 'vitest'
 import Papa from 'papaparse'
 import { booksToCsv } from './csv-export'
-import type { Book, BookAuthor } from '$lib/types/book'
+import type { Book, BookAuthor, BookSeries } from '$lib/types/book'
 
 function bookAuthor(name: string): BookAuthor {
   return { bookId: 'book-1', name, updatedAt: null, deletedAt: null, syncedAt: null }
+}
+
+function bookSeries(name: string, label: string | null = null): BookSeries {
+  return {
+    bookId: 'book-1',
+    name,
+    label,
+    sortKey: label ? Number.parseFloat(label) : null,
+    updatedAt: null,
+    deletedAt: null,
+    syncedAt: null,
+  }
 }
 
 function book(overrides: Partial<Book> = {}): Book {
@@ -15,7 +27,7 @@ function book(overrides: Partial<Book> = {}): Book {
     title: 'Dune',
     subtitle: null,
     authors: [bookAuthor('Frank Herbert')],
-    series: null,
+    series: [],
     pageCount: null,
     publicationDate: null,
     copyrightDate: null,
@@ -51,7 +63,7 @@ describe('booksToCsv', () => {
         authors: [bookAuthor('Frank Herbert')],
         isbn10: '0441172717',
         isbn13: '9780441172719',
-        series: 'Dune (1)',
+        series: [bookSeries('Dune', '1')],
         pageCount: 412,
         publicationDate: 'August 1965',
         copyrightDate: '1965',
@@ -65,7 +77,7 @@ describe('booksToCsv', () => {
       authors: 'Frank Herbert',
       isbn10: '0441172717',
       isbn13: '9780441172719',
-      series: 'Dune (1)',
+      series: 'Dune #1',
       pageCount: '412',
       publicationDate: 'August 1965',
       copyrightDate: '1965',
@@ -78,6 +90,14 @@ describe('booksToCsv', () => {
     ])
     const [row] = parseRows(csv)
     expect(row.authors).toBe('Frank Herbert; Bill Herbert')
+  })
+
+  it('joins multiple series memberships with a semicolon', () => {
+    const csv = booksToCsv([
+      book({ series: [bookSeries('Dune', '1'), bookSeries('Hugo Award Winners')] }),
+    ])
+    const [row] = parseRows(csv)
+    expect(row.series).toBe('Dune #1; Hugo Award Winners')
   })
 
   it('writes null fields as empty cells', () => {

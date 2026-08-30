@@ -175,14 +175,66 @@ describe('book', () => {
           isbn13: '9780441004225',
           pageCount: 402,
           publicationDate: 'October 1996',
-          series: 'The Stainless Steel Rat',
           // subtitle: undefined,
           title: 'Adventures of the Stainless Steel Rat',
         },
         tags: [],
         authors: ['Harry Harrison'],
+        series: [{ name: 'The Stainless Steel Rat', label: null, sortKey: null }],
       }
       expect(result).toEqual(expected)
+    })
+
+    it('parses a numbered series off the edition', async () => {
+      const discworldIsbn = '9780552167505'
+      mockServer.use(
+        http.get(`https://openlibrary.org/isbn/${discworldIsbn}.json`, () => {
+          return HttpResponse.json({
+            title: 'Sourcery',
+            key: '/books/OL1M',
+            works: [{ key: '/works/OL1W' }],
+            isbn_13: [discworldIsbn],
+            authors: [{ key: '/authors/OL2085461A' }],
+            series: ['Discworld #5'],
+          })
+        }),
+        http.get('https://openlibrary.org/authors/OL2085461A.json', () => {
+          return HttpResponse.json({ name: 'Terry Pratchett', key: '/authors/OL2085461A' })
+        })
+      )
+
+      const result = await getByISBN(discworldIsbn)
+
+      expect(result.series).toEqual([{ name: 'Discworld', label: '5', sortKey: 5 }])
+    })
+
+    it('falls back to the work record for the series when the edition has none', async () => {
+      const foundationIsbn = '9780307292063'
+      mockServer.use(
+        http.get(`https://openlibrary.org/isbn/${foundationIsbn}.json`, () => {
+          return HttpResponse.json({
+            title: 'The Foundation Trilogy',
+            key: '/books/OL26219343M',
+            works: [{ key: '/works/OL46390W' }],
+            isbn_13: [foundationIsbn],
+            authors: [{ key: '/authors/OL34221A' }],
+          })
+        }),
+        http.get('https://openlibrary.org/works/OL46390W.json', () => {
+          return HttpResponse.json({
+            key: '/works/OL46390W',
+            title: 'Foundation',
+            series: ['Foundation'],
+          })
+        }),
+        http.get('https://openlibrary.org/authors/OL34221A.json', () => {
+          return HttpResponse.json({ name: 'Isaac Asimov', key: '/authors/OL34221A' })
+        })
+      )
+
+      const result = await getByISBN(foundationIsbn)
+
+      expect(result.series).toEqual([{ name: 'Foundation', label: null, sortKey: null }])
     })
     it('falls back to the work record for authors when the edition has none of its own', async () => {
       const foundationIsbn = '9780307292063'

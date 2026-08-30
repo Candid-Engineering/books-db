@@ -45,6 +45,15 @@ describe('hasUnsyncedData', () => {
 
     expect(await hasUnsyncedData(testDb.drizzle)).toBe(true)
   })
+
+  it('is true when a series membership is pending sync even if its book is synced', async () => {
+    await testDb.drizzle
+      .insert(schema.books)
+      .values({ id: 'book-1', title: 'Dune', syncedAt: new Date() })
+    await testDb.drizzle.insert(schema.bookSeries).values({ bookId: 'book-1', name: 'Dune' })
+
+    expect(await hasUnsyncedData(testDb.drizzle)).toBe(true)
+  })
 })
 
 const BASE_URL = 'http://localhost:3000'
@@ -169,6 +178,36 @@ describe('SyncEngine#push', () => {
     expect(rejectedAuthor.syncedAt).toBeNull()
   })
 
+  it('marks pushed series memberships as synced by (bookId, name), not just books', async () => {
+    await testDb.drizzle.insert(schema.books).values({ id: 'book-1', title: 'Dune' })
+    await testDb.drizzle.insert(schema.bookSeries).values([
+      { bookId: 'book-1', name: 'Dune', label: '1', sortKey: 1 },
+      { bookId: 'book-1', name: 'Rejected Series' },
+    ])
+    mockServer.use(
+      http.post(`${BASE_URL}/sync/push`, () =>
+        HttpResponse.json({
+          rejected: [{ type: 'book_series', book_id: 'book-1', name: 'Rejected Series' }],
+        })
+      )
+    )
+
+    await createSyncEngine().push()
+
+    const [accepted] = await testDb.drizzle
+      .select()
+      .from(schema.bookSeries)
+      .where(and(eq(schema.bookSeries.bookId, 'book-1'), eq(schema.bookSeries.name, 'Dune')))
+    const [rejected] = await testDb.drizzle
+      .select()
+      .from(schema.bookSeries)
+      .where(
+        and(eq(schema.bookSeries.bookId, 'book-1'), eq(schema.bookSeries.name, 'Rejected Series'))
+      )
+    expect(accepted.syncedAt).not.toBeNull()
+    expect(rejected.syncedAt).toBeNull()
+  })
+
   it('does nothing when there is no auth token', async () => {
     await testDb.drizzle.insert(schema.books).values({ id: 'book-1', title: 'Dune' })
     const fetchSpy = vi.spyOn(global, 'fetch')
@@ -199,7 +238,6 @@ function wireBook(overrides: Record<string, unknown> = {}) {
     isbn13: null,
     title: 'Dune',
     subtitle: null,
-    series: null,
     page_count: null,
     publication_date: null,
     copyright_date: null,
@@ -217,8 +255,8 @@ describe('SyncEngine#pull', () => {
     mockServer.use(
       http.get(`${BASE_URL}/sync/pull`, () =>
         HttpResponse.json({
-          entities: { books: [wireBook()], book_tags: [], book_authors: [] },
-          cursors: { books: 1, book_tags: 0, book_authors: 0 },
+          entities: { books: [wireBook()], book_tags: [], book_authors: [], book_series: [] },
+          cursors: { books: 1, book_tags: 0, book_authors: 0, book_series: 0 },
         })
       )
     )
@@ -251,8 +289,9 @@ describe('SyncEngine#pull', () => {
               },
             ],
             book_authors: [],
+            book_series: [],
           },
-          cursors: { books: 0, book_tags: 1, book_authors: 0 },
+          cursors: { books: 0, book_tags: 1, book_authors: 0, book_series: 0 },
         })
       )
     )
@@ -284,8 +323,9 @@ describe('SyncEngine#pull', () => {
                 server_seq: 1,
               },
             ],
+            book_series: [],
           },
-          cursors: { books: 0, book_tags: 0, book_authors: 1 },
+          cursors: { books: 0, book_tags: 0, book_authors: 1, book_series: 0 },
         })
       )
     )
@@ -302,6 +342,44 @@ describe('SyncEngine#pull', () => {
     expect(author.syncedAt).not.toBeNull()
   })
 
+  it('applies pulled series memberships into the local db, marked as already synced', async () => {
+    await testDb.drizzle.insert(schema.books).values({ id: 'book-1', title: 'Dune' })
+    mockServer.use(
+      http.get(`${BASE_URL}/sync/pull`, () =>
+        HttpResponse.json({
+          entities: {
+            books: [],
+            book_tags: [],
+            book_authors: [],
+            book_series: [
+              {
+                book_id: 'book-1',
+                name: 'Dune',
+                label: '1',
+                sort_key: 1,
+                discarded_at: null,
+                updated_at: '2026-01-02T00:00:00.000Z',
+                server_seq: 1,
+              },
+            ],
+          },
+          cursors: { books: 0, book_tags: 0, book_authors: 0, book_series: 1 },
+        })
+      )
+    )
+
+    await createSyncEngine().pull()
+
+    const [series] = await testDb.drizzle
+      .select()
+      .from(schema.bookSeries)
+      .where(and(eq(schema.bookSeries.bookId, 'book-1'), eq(schema.bookSeries.name, 'Dune')))
+    expect(series).toBeDefined()
+    expect(series.label).toBe('1')
+    expect(series.sortKey).toBe(1)
+    expect(series.syncedAt).not.toBeNull()
+  })
+
   it('stores a tombstoned pulled row as deleted', async () => {
     mockServer.use(
       http.get(`${BASE_URL}/sync/pull`, () =>
@@ -310,8 +388,9 @@ describe('SyncEngine#pull', () => {
             books: [wireBook({ discarded_at: '2026-01-03T00:00:00.000Z' })],
             book_tags: [],
             book_authors: [],
+            book_series: [],
           },
-          cursors: { books: 1, book_tags: 0, book_authors: 0 },
+          cursors: { books: 1, book_tags: 0, book_authors: 0, book_series: 0 },
         })
       )
     )
@@ -333,14 +412,19 @@ describe('SyncEngine#pull', () => {
         callCount += 1
         if (callCount === 1) {
           return HttpResponse.json({
-            entities: { books: [wireBook({ server_seq: 7 })], book_tags: [], book_authors: [] },
-            cursors: { books: 7, book_tags: 0, book_authors: 0 },
+            entities: {
+              books: [wireBook({ server_seq: 7 })],
+              book_tags: [],
+              book_authors: [],
+              book_series: [],
+            },
+            cursors: { books: 7, book_tags: 0, book_authors: 0, book_series: 0 },
           })
         }
         secondRequestQuery = new URL(request.url).searchParams
         return HttpResponse.json({
-          entities: { books: [], book_tags: [], book_authors: [] },
-          cursors: { books: 7, book_tags: 0, book_authors: 0 },
+          entities: { books: [], book_tags: [], book_authors: [], book_series: [] },
+          cursors: { books: 7, book_tags: 0, book_authors: 0, book_series: 0 },
         })
       })
     )
@@ -356,8 +440,8 @@ describe('SyncEngine#pull', () => {
     mockServer.use(
       http.get(`${BASE_URL}/sync/pull`, () =>
         HttpResponse.json({
-          entities: { books: [wireBook()], book_tags: [], book_authors: [] },
-          cursors: { books: 1, book_tags: 0, book_authors: 0 },
+          entities: { books: [wireBook()], book_tags: [], book_authors: [], book_series: [] },
+          cursors: { books: 1, book_tags: 0, book_authors: 0, book_series: 0 },
         })
       )
     )
@@ -377,8 +461,8 @@ describe('SyncEngine#pull', () => {
     mockServer.use(
       http.get(`${BASE_URL}/sync/pull`, () =>
         HttpResponse.json({
-          entities: { books: [wireBook()], book_tags: [], book_authors: [] },
-          cursors: { books: 1, book_tags: 0, book_authors: 0 },
+          entities: { books: [wireBook()], book_tags: [], book_authors: [], book_series: [] },
+          cursors: { books: 1, book_tags: 0, book_authors: 0, book_series: 0 },
         })
       )
     )
@@ -422,8 +506,8 @@ describe('SyncEngine#sync', () => {
       http.post(`${BASE_URL}/sync/push`, () => HttpResponse.json({ rejected: [] })),
       http.get(`${BASE_URL}/sync/pull`, () =>
         HttpResponse.json({
-          entities: { books: [], book_tags: [], book_authors: [] },
-          cursors: { books: 0, book_tags: 0, book_authors: 0 },
+          entities: { books: [], book_tags: [], book_authors: [], book_series: [] },
+          cursors: { books: 0, book_tags: 0, book_authors: 0, book_series: 0 },
         })
       )
     )

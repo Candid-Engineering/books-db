@@ -5,6 +5,7 @@
   import Button from './core/Button.svelte'
   import { trim } from 'lodash'
   import EditableTd from './core/EditableTd.svelte'
+  import { formatSeries, parseSeries, type ParsedSeries } from '$lib/series'
 
   export let book: Book
 
@@ -22,6 +23,16 @@
   async function updateAuthors(book: Book, commaSeparatedAuthors: string): Promise<void> {
     const authors = commaSeparatedAuthors.split(',').map(trim)
     await booksStore.updateAuthors(book, authors)
+  }
+
+  // Freeform "Series Name #1, Other Series" - each comma-separated entry is
+  // parsed for a trailing position (see series.ts).
+  async function updateSeries(book: Book, commaSeparatedSeries: string): Promise<void> {
+    const entries = commaSeparatedSeries
+      .split(',')
+      .map((entry) => parseSeries(entry))
+      .filter((entry): entry is ParsedSeries => entry !== null)
+    await booksStore.updateSeries(book, entries)
   }
 
   const removeBook = async (id: string): Promise<void> => {
@@ -64,6 +75,10 @@
   <EditableTd
     value={book.tags.map((bookTag) => bookTag.name).join(', ')}
     onChange={(newValue: string) => updateTags(book, newValue)}
+  />
+  <EditableTd
+    value={book.series.map(formatSeries).join(', ')}
+    onChange={(newValue: string) => updateSeries(book, newValue)}
   />
   <td>
     <label class="b-checkbox checkbox is-regular m-1">
