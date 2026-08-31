@@ -23,6 +23,7 @@ export interface RemoteBook {
 export interface RemoteBookTag {
   bookId: string
   name: string
+  position: number | null
   deletedAt: Date | null
   updatedAt: Date
 }
@@ -30,6 +31,7 @@ export interface RemoteBookTag {
 export interface RemoteBookAuthor {
   bookId: string
   name: string
+  position: number | null
   deletedAt: Date | null
   updatedAt: Date
 }
@@ -39,6 +41,7 @@ export interface RemoteBookSeries {
   name: string
   label: string | null
   sortKey: number | null
+  position: number | null
   deletedAt: Date | null
   updatedAt: Date
 }
@@ -124,6 +127,7 @@ function bookTagToWire(tag: LocalBookTag): Record<string, unknown> {
   return {
     book_id: tag.bookId,
     name: tag.name,
+    position: tag.position,
     discarded_at: tag.deletedAt,
   }
 }
@@ -132,6 +136,7 @@ function bookAuthorToWire(author: LocalBookAuthor): Record<string, unknown> {
   return {
     book_id: author.bookId,
     name: author.name,
+    position: author.position,
     discarded_at: author.deletedAt,
   }
 }
@@ -142,6 +147,7 @@ function bookSeriesToWire(series: LocalBookSeries): Record<string, unknown> {
     name: series.name,
     label: series.label,
     sort_key: series.sortKey,
+    position: series.position,
     discarded_at: series.deletedAt,
   }
 }
@@ -164,6 +170,7 @@ interface WireBook {
 interface WireBookTag {
   book_id: string
   name: string
+  position: number | null
   discarded_at: string | null
   updated_at: string
 }
@@ -171,6 +178,7 @@ interface WireBookTag {
 interface WireBookAuthor {
   book_id: string
   name: string
+  position: number | null
   discarded_at: string | null
   updated_at: string
 }
@@ -180,6 +188,7 @@ interface WireBookSeries {
   name: string
   label: string | null
   sort_key: number | null
+  position: number | null
   discarded_at: string | null
   updated_at: string
 }
@@ -205,6 +214,7 @@ function bookTagFromWire(row: WireBookTag): RemoteBookTag {
   return {
     bookId: row.book_id,
     name: row.name,
+    position: row.position,
     deletedAt: row.discarded_at ? new Date(row.discarded_at) : null,
     updatedAt: new Date(row.updated_at),
   }
@@ -214,6 +224,7 @@ function bookAuthorFromWire(row: WireBookAuthor): RemoteBookAuthor {
   return {
     bookId: row.book_id,
     name: row.name,
+    position: row.position,
     deletedAt: row.discarded_at ? new Date(row.discarded_at) : null,
     updatedAt: new Date(row.updated_at),
   }
@@ -225,6 +236,7 @@ function bookSeriesFromWire(row: WireBookSeries): RemoteBookSeries {
     name: row.name,
     label: row.label,
     sortKey: row.sort_key,
+    position: row.position,
     deletedAt: row.discarded_at ? new Date(row.discarded_at) : null,
     updatedAt: new Date(row.updated_at),
   }
