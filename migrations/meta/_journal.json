@@ -64,6 +64,13 @@
       "when": 1787987448453,
       "tag": "20260829071048_add_book_series_table",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1788135050576,
+      "tag": "20260831001050_add_position_to_book_children",
+      "breakpoints": true
     }
   ]
 }

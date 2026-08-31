@@ -4,7 +4,14 @@ import { booksToCsv } from './csv-export'
 import type { Book, BookAuthor, BookSeries } from '$lib/types/book'
 
 function bookAuthor(name: string): BookAuthor {
-  return { bookId: 'book-1', name, updatedAt: null, deletedAt: null, syncedAt: null }
+  return {
+    bookId: 'book-1',
+    name,
+    position: null,
+    updatedAt: null,
+    deletedAt: null,
+    syncedAt: null,
+  }
 }
 
 function bookSeries(name: string, label: string | null = null): BookSeries {
@@ -13,6 +20,7 @@ function bookSeries(name: string, label: string | null = null): BookSeries {
     name,
     label,
     sortKey: label ? Number.parseFloat(label) : null,
+    position: null,
     updatedAt: null,
     deletedAt: null,
     syncedAt: null,

@@ -31,6 +31,7 @@ export const bookTags = sqliteTable(
       .notNull()
       .references(() => books.id, { onDelete: 'cascade' }), // automatically deletes tags when a book is deleted
     name: text().notNull(),
+    position: real(), // entry order within this book's tag list; null sorts last
     // See books.updatedAt for why this has no DB default.
     updatedAt: integer({ mode: 'timestamp' }),
     deletedAt: integer({ mode: 'timestamp' }), // tombstone; null = active
@@ -50,6 +51,7 @@ export const bookAuthors = sqliteTable(
       .notNull()
       .references(() => books.id, { onDelete: 'cascade' }), // automatically deletes authors when a book is deleted
     name: text().notNull(),
+    position: real(), // entry order within this book's author list; null sorts last
     // See books.updatedAt for why this has no DB default.
     updatedAt: integer({ mode: 'timestamp' }),
     deletedAt: integer({ mode: 'timestamp' }), // tombstone; null = active
@@ -71,6 +73,7 @@ export const bookSeries = sqliteTable(
     name: text().notNull(),
     label: text(), // display position as printed: "1", "1.5", "1–3", "Book Three"; null when unnumbered
     sortKey: real(), // ordering within the series ("1", "1.5", "0.1"); null → fall back to publicationDate, then title
+    position: real(), // entry order within this book's series list (distinct from sortKey); null sorts last
     // See books.updatedAt for why this has no DB default.
     updatedAt: integer({ mode: 'timestamp' }),
     deletedAt: integer({ mode: 'timestamp' }), // tombstone; null = active
