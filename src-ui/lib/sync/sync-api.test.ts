@@ -42,6 +42,7 @@ function localBookTag(overrides: Partial<LocalBookTag> = {}): LocalBookTag {
   return {
     bookId: 'book-1',
     name: 'Science Fiction',
+    position: 0,
     updatedAt: new Date('2026-01-01T00:00:00.000Z'),
     deletedAt: null,
     syncedAt: null,
@@ -53,6 +54,7 @@ function localBookAuthor(overrides: Partial<LocalBookAuthor> = {}): LocalBookAut
   return {
     bookId: 'book-1',
     name: 'Frank Herbert',
+    position: 0,
     updatedAt: new Date('2026-01-01T00:00:00.000Z'),
     deletedAt: null,
     syncedAt: null,
@@ -66,6 +68,7 @@ function localBookSeries(overrides: Partial<LocalBookSeries> = {}): LocalBookSer
     name: 'Dune',
     label: '1',
     sortKey: 1,
+    position: 0,
     updatedAt: new Date('2026-01-01T00:00:00.000Z'),
     deletedAt: null,
     syncedAt: null,
@@ -98,10 +101,21 @@ describe('pushEntities', () => {
                 discarded_at: null,
               },
             ],
-            book_tags: [{ book_id: 'book-1', name: 'Science Fiction', discarded_at: null }],
-            book_authors: [{ book_id: 'book-1', name: 'Frank Herbert', discarded_at: null }],
+            book_tags: [
+              { book_id: 'book-1', name: 'Science Fiction', position: 0, discarded_at: null },
+            ],
+            book_authors: [
+              { book_id: 'book-1', name: 'Frank Herbert', position: 0, discarded_at: null },
+            ],
             book_series: [
-              { book_id: 'book-1', name: 'Dune', label: '1', sort_key: 1, discarded_at: null },
+              {
+                book_id: 'book-1',
+                name: 'Dune',
+                label: '1',
+                sort_key: 1,
+                position: 0,
+                discarded_at: null,
+              },
             ],
           },
         })
@@ -208,6 +222,7 @@ describe('pullEntities', () => {
               {
                 book_id: 'book-1',
                 name: 'Science Fiction',
+                position: 2,
                 discarded_at: '2026-01-03T00:00:00.000Z',
                 updated_at: '2026-01-03T00:00:00.000Z',
                 server_seq: 3,
@@ -217,6 +232,7 @@ describe('pullEntities', () => {
               {
                 book_id: 'book-1',
                 name: 'Frank Herbert',
+                position: 0,
                 discarded_at: null,
                 updated_at: '2026-01-04T00:00:00.000Z',
                 server_seq: 2,
@@ -228,6 +244,7 @@ describe('pullEntities', () => {
                 name: 'Dune',
                 label: '1',
                 sort_key: 1,
+                position: 1,
                 discarded_at: null,
                 updated_at: '2026-01-05T00:00:00.000Z',
                 server_seq: 4,
@@ -263,6 +280,7 @@ describe('pullEntities', () => {
           {
             bookId: 'book-1',
             name: 'Science Fiction',
+            position: 2,
             deletedAt: new Date('2026-01-03T00:00:00.000Z'),
             updatedAt: new Date('2026-01-03T00:00:00.000Z'),
           },
@@ -271,6 +289,7 @@ describe('pullEntities', () => {
           {
             bookId: 'book-1',
             name: 'Frank Herbert',
+            position: 0,
             deletedAt: null,
             updatedAt: new Date('2026-01-04T00:00:00.000Z'),
           },
@@ -281,6 +300,7 @@ describe('pullEntities', () => {
             name: 'Dune',
             label: '1',
             sortKey: 1,
+            position: 1,
             deletedAt: null,
             updatedAt: new Date('2026-01-05T00:00:00.000Z'),
           },

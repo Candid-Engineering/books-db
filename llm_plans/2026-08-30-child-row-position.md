@@ -17,15 +17,18 @@ list order, ordered by in every read.
 
 ### Column
 
-`position integer` on `book_tags`, `book_authors`, `book_series`.
+`position` as a **float** (`real` / `t.float`) on `book_tags`, `book_authors`,
+`book_series` — matching `book_series.sort_key`'s type. Float, not integer, so a
+future op-based editor can insert between `1.0` and `2.0` at `1.5` (one row
+written, not a renumbered tail — fewer LWW-sync conflicts). Today's full-list
+editor just assigns `0.0, 1.0, 2.0…` from the incoming order.
 
 - **Client** (SQLite): nullable (`ALTER TABLE ... ADD COLUMN` against a table
   with rows can't take a non-constant default). Reads order by
   `(position, name)` so any null sorts deterministically.
-- **Rails** (Postgres): `integer, null: false, default: 0`; backfill existing
+- **Rails** (Postgres): `float, null: false, default: 0`; backfill existing
   rows `position = row_number() over (partition by book_id order by name) - 1`
-  (i.e. today's alphabetical order becomes the initial positions — least
-  surprising).
+  (today's alphabetical order becomes the initial positions — least surprising).
 
 `book_series.sort_key` stays — it's a different axis (a book's position
 *within* a series, for the future browse view). `position` is the order of a

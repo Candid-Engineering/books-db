@@ -229,19 +229,48 @@ describe('booksStore', () => {
       })
     })
 
+    const reload = () => booksStore.value.find((book) => book.id === duneMessiahWithId.id)!
+
     describe('#updateTags', () => {
       it('should update the tags of a book', async () => {
         await booksStore.updateTags(duneMessiahWithId, ['Science Fiction', 'Classic'])
-        const editedBook = booksStore.value.find((book) => book.id === duneMessiahWithId.id)
-        expect(editedBook?.tags.map((t) => t.name)).toContain('Science Fiction')
+        expect(reload().tags.map((t) => t.name)).toContain('Science Fiction')
+      })
+
+      it('keeps the tags in the order they were entered, not alphabetical', async () => {
+        await booksStore.updateTags(duneMessiahWithId, ['zebra', 'apple', 'mango'])
+        expect(reload().tags.map((t) => t.name)).toEqual(['zebra', 'apple', 'mango'])
+      })
+
+      it('re-orders an existing list and marks the moved rows pending sync', async () => {
+        await booksStore.updateTags(duneMessiahWithId, ['a', 'b', 'c'])
+        await booksStore.updateTags(reload(), ['c', 'a', 'b'])
+
+        expect(reload().tags.map((t) => t.name)).toEqual(['c', 'a', 'b'])
+        const rows = await testDb.drizzle
+          .select()
+          .from(schema.bookTags)
+          .where(eq(schema.bookTags.bookId, duneMessiahWithId.id))
+        expect(rows.every((r) => r.syncedAt === null)).toBe(true)
+      })
+
+      it('writes nothing when the list is unchanged', async () => {
+        await booksStore.updateTags(duneMessiahWithId, ['a', 'b'])
+        const before = reload().tags.map((t) => ({ name: t.name, position: t.position }))
+        await booksStore.updateTags(reload(), ['a', 'b'])
+        expect(reload().tags.map((t) => ({ name: t.name, position: t.position }))).toEqual(before)
       })
     })
 
     describe('#updateAuthors', () => {
       it('should update the authors of a book', async () => {
         await booksStore.updateAuthors(duneMessiahWithId, ['Frank Herbert', 'Brian Herbert'])
-        const editedBook = booksStore.value.find((book) => book.id === duneMessiahWithId.id)
-        expect(editedBook?.authors.map((a) => a.name)).toContain('Frank Herbert')
+        expect(reload().authors.map((a) => a.name)).toContain('Frank Herbert')
+      })
+
+      it('keeps authors in entry order (first author stays first)', async () => {
+        await booksStore.updateAuthors(duneMessiahWithId, ['Frank Herbert', 'Brian Herbert'])
+        expect(reload().authors.map((a) => a.name)).toEqual(['Frank Herbert', 'Brian Herbert'])
       })
     })
 
@@ -261,6 +290,15 @@ describe('booksStore', () => {
         ])
         const editedBook = booksStore.value.find((book) => book.id === duneMessiahWithId.id)
         expect(editedBook?.series.map((s) => s.name).sort()).toEqual(['Dune', 'Hugo Award Winners'])
+      })
+
+      it('keeps multiple series in the order they were entered', async () => {
+        await booksStore.updateSeries(duneMessiahWithId, [
+          { name: 'Zebra Chronicles', label: null, sortKey: null },
+          { name: 'Apple Saga', label: null, sortKey: null },
+        ])
+        const editedBook = booksStore.value.find((book) => book.id === duneMessiahWithId.id)
+        expect(editedBook?.series.map((s) => s.name)).toEqual(['Zebra Chronicles', 'Apple Saga'])
       })
 
       it('updates the position of a series the book is already in', async () => {

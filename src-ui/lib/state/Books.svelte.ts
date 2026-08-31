@@ -76,22 +76,26 @@ class BooksStore {
   }
 
   async #applyTags(book: Book, tags: string[]): Promise<void> {
-    const existingTags = book.tags.map((bookTag) => bookTag.name)
-    for (const tagToRemove of _.difference(existingTags, tags)) {
+    for (const tagToRemove of _.difference(
+      book.tags.map((bookTag) => bookTag.name),
+      tags
+    )) {
       await this.removeTag(book, tagToRemove)
     }
-    for (const tagToAdd of _.difference(tags, existingTags)) {
-      await this.addTag(book, tagToAdd)
+    for (const [position, name] of tags.entries()) {
+      const current = book.tags.find((t) => t.name === name && !t.deletedAt)
+      if (current && current.position === position) continue
+      await this.addTag(book, name, position)
     }
   }
 
-  private async addTag(book: Book, tagName: string): Promise<void> {
+  private async addTag(book: Book, tagName: string, position: number): Promise<void> {
     await this.db
       .insert(schema.bookTags)
-      .values({ bookId: book.id, name: tagName })
+      .values({ bookId: book.id, name: tagName, position })
       .onConflictDoUpdate({
         target: [schema.bookTags.bookId, schema.bookTags.name],
-        set: { deletedAt: null, updatedAt: now(), syncedAt: null },
+        set: { position, deletedAt: null, updatedAt: now(), syncedAt: null },
       })
   }
 
@@ -114,22 +118,26 @@ class BooksStore {
   }
 
   async #applyAuthors(book: Book, authors: string[]): Promise<void> {
-    const existingAuthors = book.authors.map((bookAuthor) => bookAuthor.name)
-    for (const authorToRemove of _.difference(existingAuthors, authors)) {
+    for (const authorToRemove of _.difference(
+      book.authors.map((bookAuthor) => bookAuthor.name),
+      authors
+    )) {
       await this.removeAuthor(book, authorToRemove)
     }
-    for (const authorToAdd of _.difference(authors, existingAuthors)) {
-      await this.addAuthor(book, authorToAdd)
+    for (const [position, name] of authors.entries()) {
+      const current = book.authors.find((a) => a.name === name && !a.deletedAt)
+      if (current && current.position === position) continue
+      await this.addAuthor(book, name, position)
     }
   }
 
-  private async addAuthor(book: Book, authorName: string): Promise<void> {
+  private async addAuthor(book: Book, authorName: string, position: number): Promise<void> {
     await this.db
       .insert(schema.bookAuthors)
-      .values({ bookId: book.id, name: authorName })
+      .values({ bookId: book.id, name: authorName, position })
       .onConflictDoUpdate({
         target: [schema.bookAuthors.bookId, schema.bookAuthors.name],
-        set: { deletedAt: null, updatedAt: now(), syncedAt: null },
+        set: { position, deletedAt: null, updatedAt: now(), syncedAt: null },
       })
   }
 
@@ -159,22 +167,35 @@ class BooksStore {
     )) {
       await this.removeSeries(book, nameToRemove)
     }
-    for (const entry of entries) {
+    for (const [position, entry] of entries.entries()) {
       const current = book.series.find((s) => s.name === entry.name && !s.deletedAt)
-      if (current && current.label === entry.label && current.sortKey === entry.sortKey) continue
-      await this.upsertSeries(book, entry)
+      if (
+        current &&
+        current.label === entry.label &&
+        current.sortKey === entry.sortKey &&
+        current.position === position
+      )
+        continue
+      await this.upsertSeries(book, entry, position)
     }
   }
 
-  private async upsertSeries(book: Book, entry: ParsedSeries): Promise<void> {
+  private async upsertSeries(book: Book, entry: ParsedSeries, position: number): Promise<void> {
     await this.db
       .insert(schema.bookSeries)
-      .values({ bookId: book.id, name: entry.name, label: entry.label, sortKey: entry.sortKey })
+      .values({
+        bookId: book.id,
+        name: entry.name,
+        label: entry.label,
+        sortKey: entry.sortKey,
+        position,
+      })
       .onConflictDoUpdate({
         target: [schema.bookSeries.bookId, schema.bookSeries.name],
         set: {
           label: entry.label,
           sortKey: entry.sortKey,
+          position,
           deletedAt: null,
           updatedAt: now(),
           syncedAt: null,
@@ -230,9 +251,18 @@ class BooksStore {
     this.#value = await this.db.query.books.findMany({
       where: isNull(schema.books.deletedAt),
       with: {
-        tags: { where: isNull(schema.bookTags.deletedAt) },
-        authors: { where: isNull(schema.bookAuthors.deletedAt) },
-        series: { where: isNull(schema.bookSeries.deletedAt) },
+        tags: {
+          where: isNull(schema.bookTags.deletedAt),
+          orderBy: (t, { asc }) => [asc(t.position), asc(t.name)],
+        },
+        authors: {
+          where: isNull(schema.bookAuthors.deletedAt),
+          orderBy: (a, { asc }) => [asc(a.position), asc(a.name)],
+        },
+        series: {
+          where: isNull(schema.bookSeries.deletedAt),
+          orderBy: (s, { asc }) => [asc(s.position), asc(s.name)],
+        },
       },
     })
     return this
